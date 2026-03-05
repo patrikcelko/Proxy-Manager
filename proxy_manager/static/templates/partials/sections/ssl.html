@@ -1,0 +1,37 @@
+<section class="section" id="sec-ssl-certificates">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                Manage SSL/TLS certificates for HAProxy. Generate Certbot commands for Let's Encrypt issuance, renewal
+                &amp; revocation. SSL cipher/protocol tuning lives in Global Settings.
+            </span>
+        </div>
+        <button class="btn" onclick="openSslCertificateModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Certificate
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="ssl-search" placeholder="Search certificates..." oninput="filterSslCertificates()">
+        </div>
+    </div>
+    <div id="ssl-certificates-grid" class="items-grid"></div>
+    <div class="empty-state" id="ssl-certificates-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-lock" />
+        </svg>
+        <p>
+            No SSL certificates configured. Add one to generate Certbot commands for automated Let's Encrypt certificate
+            management.
+        </p>
+    </div>
+</section>

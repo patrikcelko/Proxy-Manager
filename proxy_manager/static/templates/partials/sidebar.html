@@ -1,0 +1,115 @@
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <img src="/static/assets/images/logo.png" alt="Proxy Manager" class="sidebar-logo">
+        <div class="sidebar-header-text">
+            <h2><span class="accent">Proxy</span> Manager</h2>
+            <p class="sidebar-subtitle">HAProxy Configuration Panel</p>
+        </div>
+    </div>
+    <ul class="nav-list">
+        <li class="nav-item active" data-section="overview" data-label="Dashboard" onclick="switchSection('overview')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-grid" />
+            </svg>
+            Dashboard
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Configuration</div>
+        <li class="nav-item" data-section="global" data-label="Global Settings" onclick="switchSection('global')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-settings" />
+            </svg>
+            Global Settings
+        </li>
+        <li class="nav-item" data-section="defaults" data-label="Defaults" onclick="switchSection('defaults')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-edit-pen" />
+            </svg>
+            Defaults
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Proxy Rules</div>
+        <li class="nav-item" data-section="frontends" data-label="Frontends" onclick="switchSection('frontends')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-globe" />
+            </svg>
+            Frontends
+        </li>
+        <li class="nav-item" data-section="backends" data-label="Backends" onclick="switchSection('backends')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-server" />
+            </svg>
+            Backends
+        </li>
+        <li class="nav-item" data-section="acl" data-label="ACL Routing" onclick="switchSection('acl')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-routing" />
+            </svg>
+            ACL Routing
+        </li>
+        <li class="nav-item" data-section="listen" data-label="Listen / Stats" onclick="switchSection('listen')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-activity" />
+            </svg>
+            Listen / Stats
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Security</div>
+        <li class="nav-item" data-section="userlists" data-label="User Lists" onclick="switchSection('userlists')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-users" />
+            </svg>
+            User Lists
+        </li>
+        <li class="nav-item" data-section="ssl-certificates" data-label="SSL / TLS" onclick="switchSection('ssl-certificates')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-shield" />
+            </svg>
+            SSL / TLS
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Advanced</div>
+        <li class="nav-item" data-section="resolvers" data-label="DNS Resolvers" onclick="switchSection('resolvers')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-clock" />
+            </svg>
+            DNS Resolvers
+        </li>
+        <li class="nav-item" data-section="peers" data-label="Peers" onclick="switchSection('peers')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-rss" />
+            </svg>
+            Peers
+        </li>
+        <li class="nav-item" data-section="mailers" data-label="Mailers" onclick="switchSection('mailers')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-mail" />
+            </svg>
+            Mailers
+        </li>
+        <li class="nav-item" data-section="http-errors" data-label="HTTP Errors" onclick="switchSection('http-errors')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-alert-triangle" />
+            </svg>
+            HTTP Errors
+        </li>
+        <li class="nav-item" data-section="caches" data-label="Cache" onclick="switchSection('caches')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-activity" />
+            </svg>
+            Cache
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Tools</div>
+        <li class="nav-item" data-section="config" data-label="Config Import/Export" onclick="switchSection('config')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-file-text-header" />
+            </svg>
+            Config Import/Export
+        </li>
+    </ul>
+    <div class="sidebar-footer">
+        <div class="sidebar-version-footer">v{{ version }}</div>
+    </div>
+</nav>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>

@@ -1,0 +1,42 @@
+<section class="section" id="sec-backends">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <div class="info-card-content">
+                <strong>Backend Server Pools</strong>
+                <span>
+                    Upstream server groups with load balancing algorithms, health checks, connection management,
+                    session persistence, and optional HTTP Basic Auth. Each backend can contain multiple servers with
+                    individual weights, SSL settings, and health monitors.
+                </span>
+            </div>
+        </div>
+        <button class="btn" onclick="openBackendModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Backend
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="backend-search" placeholder="Search backends by name, mode, balance..."
+                oninput="filterBackends()">
+        </div>
+    </div>
+    <div id="backends-grid" class="items-grid"></div>
+    <div class="empty-state" id="backends-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-server" />
+        </svg>
+        <p>No backends configured yet.</p>
+        <p style="font-size:.8rem;color:var(--text-dim)">
+            Create a backend to define upstream server pools with load balancing and health checks.
+        </p>
+    </div>
+</section>

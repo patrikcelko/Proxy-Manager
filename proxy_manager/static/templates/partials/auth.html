@@ -1,0 +1,35 @@
+<div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+        <div class="auth-header">
+            <img src="/static/assets/images/logo.png" alt="Proxy Manager" class="auth-logo">
+            <div class="auth-header-text">
+                <h1><span class="accent">Proxy</span> Manager</h1>
+                <p class="auth-subtitle">HAProxy Configuration Management</p>
+            </div>
+        </div>
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+            <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+        </div>
+        <div class="auth-tab-content active" id="auth-login">
+            <form onsubmit="handleLogin(event)">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="admin@example.com">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="Enter password">
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+            </form>
+        </div>
+        <div class="auth-tab-content" id="auth-register">
+            <form onsubmit="handleRegister(event)">
+                <label>Name</label>
+                <input type="text" id="register-name" required placeholder="Your name">
+                <label>Email</label>
+                <input type="email" id="register-email" required placeholder="admin@example.com">
+                <label>Password</label>
+                <input type="password" id="register-password" required minlength="6" placeholder="Min 6 characters">
+                <button type="submit" class="btn btn-primary btn-full">Register</button>
+            </form>
+        </div>
+    </div>
+</div>

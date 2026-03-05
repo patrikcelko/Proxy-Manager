@@ -1,0 +1,35 @@
+<section class="section" id="sec-http-errors">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                Named groups of custom HTTP error responses. Use errorfiles &lt;name&gt; in frontends or
+                backends.
+            </span>
+        </div>
+        <button class="btn" onclick="openHttpErrorsModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Error Group
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="http-error-search" placeholder="Search errors by name, status code, type..."
+                oninput="filterHttpErrors()">
+        </div>
+    </div>
+    <div id="http-errors-grid" class="items-grid"></div>
+    <div class="empty-state" id="http-errors-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-alert-triangle" />
+        </svg>
+        <p>No HTTP error groups configured. Add one with custom error pages for status codes.</p>
+    </div>
+</section>

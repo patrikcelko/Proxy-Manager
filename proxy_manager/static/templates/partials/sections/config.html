@@ -1,0 +1,48 @@
+<section class="section" id="sec-config">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>Import an existing HAProxy configuration or export the current state as a complete config file.</span>
+        </div>
+    </div>
+    <div class="config-actions">
+        <div class="config-panel">
+            <h3>Import HAProxy Config</h3>
+            <p class="config-desc">
+                Paste your HAProxy configuration text. This will parse all sections (global,
+                defaults, frontends, backends, listen, userlists, ACL rules) into the database.
+            </p>
+            <textarea id="config-import-text" rows="14" placeholder="Paste HAProxy config here..."></textarea>
+            <div class="config-btn-row">
+                <label class="toggle-wrap">
+                    <input type="checkbox" id="config-merge"> Merge (keep existing data)
+                </label>
+                <button class="btn" onclick="importConfig()">
+                    <svg width="14" height="14" stroke-width="2">
+                        <use href="#i-upload" />
+                    </svg>
+                    Import
+                </button>
+            </div>
+        </div>
+        <div class="config-panel">
+            <h3>Export HAProxy Config</h3>
+            <p class="config-desc">
+                Generate the complete HAProxy configuration file from all database entries. Use this
+                to deploy to your HAProxy server.
+            </p>
+            <textarea id="config-export-text" rows="14" readonly placeholder="Click Export to generate..."></textarea>
+            <div class="config-btn-row">
+                <button class="btn" onclick="exportConfig()">
+                    <svg width="14" height="14" stroke-width="2">
+                        <use href="#i-download" />
+                    </svg>
+                    Export
+                </button>
+                <button class="btn btn-secondary" onclick="copyExport()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+</section>

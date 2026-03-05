@@ -1,0 +1,41 @@
+<section class="section" id="sec-frontends">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <div class="info-card-content">
+                <strong>Frontend Entry Points</strong>
+                <span>
+                    Client-facing entry points with bind addresses, SSL termination, request inspection, HTTP headers,
+                    security rules, and routing to backends.
+                </span>
+            </div>
+        </div>
+        <button class="btn" onclick="openFrontendModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Frontend
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="frontend-search" placeholder="Search frontends by name, mode, backend, binds..."
+                oninput="filterFrontends()">
+        </div>
+    </div>
+    <div id="frontends-grid" class="items-grid"></div>
+    <div class="empty-state" id="frontends-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-globe-simple" />
+        </svg>
+        <p>No frontends configured yet.</p>
+        <p style="font-size:.8rem;color:var(--text-dim)">
+            Create a frontend to start accepting traffic with bind addresses and routing rules.
+        </p>
+    </div>
+</section>

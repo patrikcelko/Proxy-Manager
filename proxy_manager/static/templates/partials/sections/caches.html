@@ -1,0 +1,35 @@
+<section class="section" id="sec-caches">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                HTTP response caching sections. Reference via http-request cache-use &lt;name&gt; and http-response
+                cache-store &lt;name&gt;.
+            </span>
+        </div>
+        <button class="btn" onclick="openCacheModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Cache
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="cache-search" placeholder="Search caches by name, comment..."
+                oninput="filterCaches()">
+        </div>
+    </div>
+    <div id="caches-grid" class="items-grid"></div>
+    <div class="empty-state" id="caches-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-activity" />
+        </svg>
+        <p>No cache sections configured. Add one for HTTP response caching.</p>
+    </div>
+</section>

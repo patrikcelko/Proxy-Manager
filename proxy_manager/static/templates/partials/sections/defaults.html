@@ -1,0 +1,49 @@
+<section class="section" id="sec-defaults">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                Default parameters inherited by all frontends and backends: timeouts, logging, options, and error
+                handling.
+            </span>
+        </div>
+        <button class="btn" onclick="openDefaultsQuickAdd()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Setting
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="defaults-search" placeholder="Search directives..."
+                oninput="filterSettings('defaults')">
+        </div>
+    </div>
+    <div class="stabs" id="defaults-tabs"></div>
+    <div class="data-table-wrap">
+        <table class="data-table" id="defaults-table">
+            <thead>
+                <tr>
+                    <th>Directive</th>
+                    <th>Value</th>
+                    <th>Comment</th>
+                    <th class="th-order">Order</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="empty-state" id="defaults-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-edit-pen" />
+        </svg>
+        <p>No default settings yet. Add <em>timeout connect</em>, <em>timeout client</em>, <em>mode http</em>, etc.</p>
+    </div>
+</section>

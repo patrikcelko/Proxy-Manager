@@ -1,0 +1,45 @@
+<header class="top-bar" id="top-bar">
+    <div class="top-bar-left">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+            <svg width="18" height="18" stroke-width="2">
+                <use href="#i-menu" />
+            </svg>
+        </button>
+        <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar">
+            <svg width="18" height="18" stroke-width="2"><use href="#i-chevron-left"/></svg>
+        </button>
+        <h1 class="top-bar-title" id="top-bar-page-title">Dashboard</h1>
+    </div>
+    <div class="top-bar-right">
+        <div class="top-bar-user" id="top-bar-user" onclick="toggleUserMenu(event)">
+            <div class="user-avatar" id="user-avatar">
+                <svg width="18" height="18" stroke-width="2">
+                    <use href="#i-user" />
+                </svg>
+            </div>
+            <span class="user-name" id="user-name">User</span>
+            <svg class="user-chevron" width="12" height="12" stroke-width="2">
+                <use href="#i-chevron-down" />
+            </svg>
+        </div>
+        <div class="user-dropdown" id="user-dropdown">
+            <div class="user-dropdown-header">
+                <div class="user-dropdown-name" id="dropdown-user-name">User</div>
+                <div class="user-dropdown-email" id="dropdown-user-email">user@example.com</div>
+            </div>
+            <div class="user-dropdown-sep"></div>
+            <button class="user-dropdown-item" onclick="openUserSettings()">
+                <svg width="14" height="14" stroke-width="2">
+                    <use href="#i-settings" />
+                </svg>
+                User Settings
+            </button>
+            <button class="user-dropdown-item danger" onclick="logout()">
+                <svg width="14" height="14" stroke-width="2">
+                    <use href="#i-logout" />
+                </svg>
+                Logout
+            </button>
+        </div>
+    </div>
+</header>

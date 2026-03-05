@@ -1,0 +1,35 @@
+<section class="section" id="sec-mailers">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                Mailer sections for sending email alerts on server state changes. Referenced via email-alert mailers
+                &lt;name&gt;.
+            </span>
+        </div>
+        <button class="btn" onclick="openMailerModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Mailer Section
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="mailer-search" placeholder="Search mailers by name, comment, entry..."
+                oninput="filterMailers()">
+        </div>
+    </div>
+    <div id="mailers-grid" class="items-grid"></div>
+    <div class="empty-state" id="mailers-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-mail" />
+        </svg>
+        <p>No mailer sections configured. Add one to enable email alerts for server state changes.</p>
+    </div>
+</section>

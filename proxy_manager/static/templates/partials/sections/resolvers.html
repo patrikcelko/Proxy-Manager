@@ -1,0 +1,35 @@
+<section class="section" id="sec-resolvers">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <span>
+                DNS resolver sections for dynamic server name resolution. Used with server ... resolvers &lt;name&gt;
+                in backends.
+            </span>
+        </div>
+        <button class="btn" onclick="openResolverModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Resolver
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="resolver-search" placeholder="Search resolvers by name, comment, nameserver..."
+                oninput="filterResolvers()">
+        </div>
+    </div>
+    <div id="resolvers-grid" class="items-grid"></div>
+    <div class="empty-state" id="resolvers-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-clock" />
+        </svg>
+        <p>No DNS resolvers configured. Add a resolver section for dynamic backend server resolution.</p>
+    </div>
+</section>

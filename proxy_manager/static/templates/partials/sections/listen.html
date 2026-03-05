@@ -1,0 +1,41 @@
+<section class="section" id="sec-listen">
+    <div class="section-header">
+        <div class="info-card">
+            <svg class="info-card-icon" width="18" height="18" stroke-width="2">
+                <use href="#i-info" />
+            </svg>
+            <div class="info-card-content">
+                <strong>Listen / Stats Blocks</strong>
+                <span>
+                    Combined frontend+backend blocks for HAProxy stats dashboards, Prometheus exporters, TCP proxying,
+                    and database load balancers.
+                </span>
+            </div>
+        </div>
+        <button class="btn" onclick="openListenModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-plus" />
+            </svg>
+            Add Listen Block
+        </button>
+    </div>
+    <div class="section-toolbar">
+        <div class="search">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-search" />
+            </svg>
+            <input type="text" id="listen-search" placeholder="Search listen blocks by name, mode, address..."
+                oninput="filterListenBlocks()">
+        </div>
+    </div>
+    <div id="listen-grid" class="items-grid"></div>
+    <div class="empty-state" id="listen-empty" style="display:none">
+        <svg width="48" height="48" stroke-width="1.5">
+            <use href="#i-activity" />
+        </svg>
+        <p>No listen blocks configured yet.</p>
+        <p style="font-size:.8rem;color:var(--text-dim)">
+            Create a listen block for HAProxy stats, Prometheus metrics, or TCP proxying.
+        </p>
+    </div>
+</section>

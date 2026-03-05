@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Proxy Manager</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/icons/favicon.ico">
+    <link rel="stylesheet" href="/static/assets/css/main.css?v={{ version }}">
+</head>
+
+<body>
+
+    {% include "partials/icons-sprite.html" %}
+    {% include "partials/auth.html" %}
+
+    <div class="app-layout" id="app-layout" style="display:none">
+        {% include "partials/topbar.html" %}
+        {% include "partials/sidebar.html" %}
+
+        <main class="main-content">
+            {% include "partials/sections/overview.html" %}
+            {% include "partials/sections/global.html" %}
+            {% include "partials/sections/defaults.html" %}
+            {% include "partials/sections/frontends.html" %}
+            {% include "partials/sections/backends.html" %}
+            {% include "partials/sections/acl.html" %}
+            {% include "partials/sections/listen.html" %}
+            {% include "partials/sections/userlists.html" %}
+            {% include "partials/sections/resolvers.html" %}
+            {% include "partials/sections/peers.html" %}
+            {% include "partials/sections/mailers.html" %}
+            {% include "partials/sections/http-errors.html" %}
+            {% include "partials/sections/caches.html" %}
+            {% include "partials/sections/ssl.html" %}
+            {% include "partials/sections/config.html" %}
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal-content"></div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <footer class="app-footer" id="app-footer" style="display:none"></footer>
+
+    <script src="/static/js/core/api.js?v={{ version }}"></script>
+    <script src="/static/js/core/utils.js?v={{ version }}"></script>
+    <script src="/static/js/core/icons.js?v={{ version }}"></script>
+    <script src="/static/js/core/ui.js?v={{ version }}"></script>
+    <script src="/static/js/core/auth.js?v={{ version }}"></script>
+    <script src="/static/js/sections/overview.js?v={{ version }}"></script>
+    <script src="/static/js/sections/settings.js?v={{ version }}"></script>
+    <script src="/static/js/sections/frontends.js?v={{ version }}"></script>
+    <script src="/static/js/sections/backends.js?v={{ version }}"></script>
+    <script src="/static/js/sections/acl.js?v={{ version }}"></script>
+    <script src="/static/js/sections/listen.js?v={{ version }}"></script>
+    <script src="/static/js/sections/userlists.js?v={{ version }}"></script>
+    <script src="/static/js/sections/resolvers.js?v={{ version }}"></script>
+    <script src="/static/js/sections/peers.js?v={{ version }}"></script>
+    <script src="/static/js/sections/mailers.js?v={{ version }}"></script>
+    <script src="/static/js/sections/http-errors.js?v={{ version }}"></script>
+    <script src="/static/js/sections/caches.js?v={{ version }}"></script>
+    <script src="/static/js/sections/ssl.js?v={{ version }}"></script>
+    <script src="/static/js/sections/config.js?v={{ version }}"></script>
+    <script src="/static/js/app.js?v={{ version }}"></script>
+</body>
+
+</html>
