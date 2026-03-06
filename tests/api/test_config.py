@@ -154,3 +154,134 @@ async def test_roundtrip(client: AsyncClient) -> None:
     assert "be_web" in exported
     assert "fe_http" in exported
     assert "stats" in exported
+
+
+async def test_import_export_backend_fields(auth_client: AsyncClient) -> None:
+    """Import export backend fields."""
+
+    cfg = """
+        backend test_be
+        mode http
+        balance roundrobin
+        cookie SRVID insert indirect nocache
+        timeout server 30s
+        timeout connect 5s
+        http-reuse aggressive
+        option httplog
+        server s1 10.0.0.1:80 weight 100 ssl verify none check inter 3s rise 2 fall 3 backup
+    """
+
+    r = await auth_client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    assert r.status_code == 200
+
+    r = await auth_client.get("/api/config/export")
+    assert r.status_code == 200
+    exported = r.json()["config_text"]
+
+    assert "cookie SRVID insert indirect nocache" in exported
+    assert "timeout server 30s" in exported
+    assert "timeout connect 5s" in exported
+    assert "http-reuse aggressive" in exported
+    assert "option httplog" in exported
+    assert "weight 100" in exported
+    assert "ssl" in exported
+    assert "verify none" in exported
+    assert "check" in exported
+    assert "inter 3s" in exported
+    assert "rise 2" in exported
+    assert "fall 3" in exported
+    assert "backup" in exported
+
+
+async def test_import_export_frontend_fields(auth_client: AsyncClient) -> None:
+    """Import export frontend fields."""
+
+    cfg = """
+        frontend test_fe
+        bind *:80
+        mode http
+        maxconn 5000
+        timeout client 30s
+        timeout http-request 10s
+        option httplog
+        option forwardfor
+        compression algo gzip
+        compression type text/html text/css
+    """
+
+    r = await auth_client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    assert r.status_code == 200
+
+    r = await auth_client.get("/api/config/export")
+    assert r.status_code == 200
+    exported = r.json()["config_text"]
+
+    assert "maxconn 5000" in exported
+    assert "timeout client 30s" in exported
+    assert "timeout http-request 10s" in exported
+    assert "option httplog" in exported
+    assert "option forwardfor" in exported
+    assert "compression algo gzip" in exported
+    assert "compression type text/html text/css" in exported
+
+
+async def test_import_export_resolver_new_fields(auth_client: AsyncClient) -> None:
+    """Test import/export round-trip for resolver hold_nx, hold_aa, parse-resolv-conf."""
+
+    cfg = """
+        resolvers mydns
+        parse-resolv-conf
+        nameserver dns1 8.8.8.8:53
+        nameserver dns2 1.1.1.1:53
+        resolve_retries 3
+        timeout resolve 1s
+        timeout retry 1s
+        hold valid 10s
+        hold nx 60s
+        hold aa 5s
+        accepted_payload_size 8192
+    """
+
+    r = await auth_client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    assert r.status_code == 200
+
+    r = await auth_client.get("/api/config/export")
+    assert r.status_code == 200
+    exported = r.json()["config_text"]
+
+    assert "resolvers mydns" in exported
+    assert "parse-resolv-conf" in exported
+    assert "nameserver dns1 8.8.8.8:53" in exported
+    assert "nameserver dns2 1.1.1.1:53" in exported
+    assert "resolve_retries 3" in exported
+    assert "timeout resolve 1s" in exported
+    assert "timeout retry 1s" in exported
+    assert "hold valid 10s" in exported
+    assert "hold nx 60s" in exported
+    assert "hold aa 5s" in exported
+    assert "accepted_payload_size 8192" in exported
+
+
+async def test_import_export_peers_new_fields(auth_client: AsyncClient) -> None:
+    """Test import/export round-trip for peer bind and default-server."""
+
+    cfg = """
+        peers mypeers
+        bind :10000 ssl crt /etc/ssl/cert.pem
+        default-server ssl verify none
+        peer haproxy1 10.0.0.1:10000
+        peer haproxy2 10.0.0.2:10000
+    """
+
+    r = await auth_client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    assert r.status_code == 200
+
+    r = await auth_client.get("/api/config/export")
+    assert r.status_code == 200
+    exported = r.json()["config_text"]
+
+    assert "peers mypeers" in exported
+    assert "bind :10000 ssl crt /etc/ssl/cert.pem" in exported
+    assert "default-server ssl verify none" in exported
+    assert "peer haproxy1 10.0.0.1:10000" in exported
+    assert "peer haproxy2 10.0.0.2:10000" in exported

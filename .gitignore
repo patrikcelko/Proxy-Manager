@@ -121,5 +121,3 @@ proxy_manager/static/js/admin.bundle.js
 proxy_manager/static/js/admin.bundle.js.map
 
 node_modules/
-
-package-lock.json

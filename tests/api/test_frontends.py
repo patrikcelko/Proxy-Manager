@@ -215,3 +215,96 @@ async def test_list_by_frontend(client: AsyncClient) -> None:
     resp = await client.get(f"/api/frontends/{fid}/acl-rules")
     assert resp.status_code == 200
     assert resp.json()["count"] == 2
+
+
+async def test_create_frontend_with_all_new_fields(auth_client: AsyncClient) -> None:
+    """Create frontend with all new fields."""
+
+    payload = {
+        "name": "fe-full",
+        "mode": "http",
+        "timeout_client": "30s",
+        "timeout_http_request": "10s",
+        "timeout_http_keep_alive": "5s",
+        "maxconn": 10000,
+        "option_httplog": True,
+        "option_tcplog": False,
+        "option_forwardfor": True,
+        "compression_algo": "gzip",
+        "compression_type": "text/html text/css",
+    }
+
+    r = await auth_client.post("/api/frontends", json=payload)
+    assert r.status_code == 201
+
+    d = r.json()
+    assert d["timeout_client"] == "30s"
+    assert d["timeout_http_request"] == "10s"
+    assert d["timeout_http_keep_alive"] == "5s"
+    assert d["maxconn"] == 10000
+    assert d["option_httplog"] is True
+    assert d["option_tcplog"] is False
+    assert d["option_forwardfor"] is True
+    assert d["compression_algo"] == "gzip"
+    assert d["compression_type"] == "text/html text/css"
+
+
+async def test_update_frontend_new_fields(auth_client: AsyncClient) -> None:
+    """Update frontend new fields."""
+
+    r = await auth_client.post("/api/frontends", json={"name": "fe-upd"})
+    assert r.status_code == 201
+
+    fid = r.json()["id"]
+    r = await auth_client.put(
+        f"/api/frontends/{fid}",
+        json={
+            "name": "fe-upd",
+            "timeout_client": "60s",
+            "maxconn": 5000,
+            "option_forwardfor": True,
+        },
+    )
+    assert r.status_code == 200
+
+    d = r.json()
+    assert d["timeout_client"] == "60s"
+    assert d["maxconn"] == 5000
+    assert d["option_forwardfor"] is True
+
+
+async def test_frontend_detail_includes_new_fields(auth_client: AsyncClient) -> None:
+    """Frontend detail includes new fields."""
+
+    r = await auth_client.post(
+        "/api/frontends",
+        json={
+            "name": "fe-detail",
+            "timeout_client": "15s",
+            "option_httplog": True,
+        },
+    )
+    assert r.status_code == 201
+
+    fid = r.json()["id"]
+    r = await auth_client.get(f"/api/frontends/{fid}")
+    assert r.status_code == 200
+
+    d = r.json()
+    assert d["timeout_client"] == "15s"
+    assert d["option_httplog"] is True
+    assert "binds" in d
+    assert "options" in d
+
+
+async def test_frontend_defaults(auth_client: AsyncClient) -> None:
+    """Frontend defaults."""
+
+    r = await auth_client.post("/api/frontends", json={"name": "fe-default"})
+    assert r.status_code == 201
+
+    d = r.json()
+    assert d["timeout_client"] is None
+    assert d["maxconn"] is None
+    assert d["option_httplog"] is False
+    assert d["option_forwardfor"] is False
