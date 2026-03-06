@@ -50,6 +50,7 @@ async def test_update(session: AsyncSession) -> None:
     assert updated.name == "new-mailers"
     assert updated.timeout_mail == "30s"
 
+
 async def test_delete(session: AsyncSession) -> None:
     """Delete a single mailer section."""
 

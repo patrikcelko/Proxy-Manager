@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    name: Python Tests
+    name: Python
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,7 +37,7 @@ jobs:
         run: pytest --tb=short -q
 
   frontend:
-    name: TypeScript Tests
+    name: TypeScript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
