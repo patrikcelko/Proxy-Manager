@@ -5,8 +5,6 @@ Config generator tests
 Comprehensive tests for `generate_config` and round-trip verification.
 """
 
-from __future__ import annotations
-
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -56,7 +54,7 @@ def _mock(spec: type, **attrs: Any) -> MagicMock:
     m = MagicMock(spec=spec)
 
     # Reset all mapped-column attributes to None/False
-    for col in getattr(spec, "__table__", MagicMock()).columns: # pyright: ignore[reportAttributeAccessIssue]
+    for col in getattr(spec, "__table__", MagicMock()).columns:  # pyright: ignore[reportAttributeAccessIssue]
         col_type = str(col.type)
         if "BOOLEAN" in col_type:
             setattr(m, col.name, False)
