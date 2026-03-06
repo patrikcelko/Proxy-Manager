@@ -1,0 +1,23 @@
+{
+  "name": "proxy-manager-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild proxy_manager/static/ts/app.ts --bundle --outfile=proxy_manager/static/js/admin.bundle.js --format=iife --target=es2020 --minify --sourcemap",
+    "build:dev": "esbuild proxy_manager/static/ts/app.ts --bundle --outfile=proxy_manager/static/js/admin.bundle.js --format=iife --target=es2020 --sourcemap",
+    "watch": "esbuild proxy_manager/static/ts/app.ts --bundle --outfile=proxy_manager/static/js/admin.bundle.js --format=iife --target=es2020 --sourcemap --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@vitest/coverage-v8": "^4.0.18",
+    "esbuild": "^0.27.3",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.18"
+  }
+}
