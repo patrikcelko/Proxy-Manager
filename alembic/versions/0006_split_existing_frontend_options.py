@@ -18,10 +18,7 @@ depends_on: Sequence[str] | None = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    rows = conn.execute(
-        sa.text(
-            "SELECT id, directive, value FROM frontend_options WHERE value = '' OR value IS NULL")
-    ).fetchall()
+    rows = conn.execute(sa.text("SELECT id, directive, value FROM frontend_options WHERE value = '' OR value IS NULL")).fetchall()
 
     for row in rows:
         directive = row[1] or ""
@@ -29,23 +26,18 @@ def upgrade() -> None:
 
         if len(parts) == 2:
             conn.execute(
-                sa.text(
-                    "UPDATE frontend_options SET directive = :d, value = :v WHERE id = :id"),
+                sa.text("UPDATE frontend_options SET directive = :d, value = :v WHERE id = :id"),
                 {"d": parts[0], "v": parts[1], "id": row[0]},
             )
 
 
 def downgrade() -> None:
     conn = op.get_bind()
-    rows = conn.execute(
-        sa.text(
-            "SELECT id, directive, value FROM frontend_options WHERE value != '' AND value IS NOT NULL")
-    ).fetchall()
+    rows = conn.execute(sa.text("SELECT id, directive, value FROM frontend_options WHERE value != '' AND value IS NOT NULL")).fetchall()
 
     for row in rows:
         combined = f"{row[1]} {row[2]}".strip()
         conn.execute(
-            sa.text(
-                "UPDATE frontend_options SET directive = :d, value = '' WHERE id = :id"),
+            sa.text("UPDATE frontend_options SET directive = :d, value = '' WHERE id = :id"),
             {"d": combined, "id": row[0]},
         )

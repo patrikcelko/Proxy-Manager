@@ -53,11 +53,7 @@ def upgrade() -> None:
     op.create_table(
         "userlist_entries",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "userlist_id", sa.Integer(),
-            sa.ForeignKey("userlists.id", ondelete="CASCADE"),
-            nullable=False
-        ),
+        sa.Column("userlist_id", sa.Integer(), sa.ForeignKey("userlists.id", ondelete="CASCADE"), nullable=False),
         sa.Column("username", sa.String(255), nullable=False),
         sa.Column("password_hash", sa.Text(), nullable=True),
         sa.Column("sort_order", sa.Integer(), server_default="0"),
@@ -74,22 +70,14 @@ def upgrade() -> None:
     op.create_table(
         "frontend_binds",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "frontend_id", sa.Integer(),
-            sa.ForeignKey("frontends.id", ondelete="CASCADE"),
-            nullable=False
-        ),
+        sa.Column("frontend_id", sa.Integer(), sa.ForeignKey("frontends.id", ondelete="CASCADE"), nullable=False),
         sa.Column("bind_line", sa.Text(), nullable=False),
         sa.Column("sort_order", sa.Integer(), server_default="0"),
     )
     op.create_table(
         "frontend_options",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "frontend_id", sa.Integer(),
-            sa.ForeignKey("frontends.id", ondelete="CASCADE"),
-            nullable=False
-        ),
+        sa.Column("frontend_id", sa.Integer(), sa.ForeignKey("frontends.id", ondelete="CASCADE"), nullable=False),
         sa.Column("directive", sa.Text(), nullable=False),
         sa.Column("sort_order", sa.Integer(), server_default="0"),
     )
@@ -97,11 +85,7 @@ def upgrade() -> None:
     op.create_table(
         "acl_rules",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "frontend_id", sa.Integer(),
-            sa.ForeignKey("frontends.id", ondelete="CASCADE"),
-            nullable=True
-        ),
+        sa.Column("frontend_id", sa.Integer(), sa.ForeignKey("frontends.id", ondelete="CASCADE"), nullable=True),
         sa.Column("domain", sa.String(255), nullable=False),
         sa.Column("backend_name", sa.String(255), nullable=True),
         sa.Column("acl_match_type", sa.String(50), server_default="hdr"),
@@ -124,9 +108,7 @@ def upgrade() -> None:
         sa.Column("retries", sa.Integer(), nullable=True),
         sa.Column("retry_on", sa.String(255), nullable=True),
         sa.Column("auth_userlist", sa.String(255), nullable=True),
-        sa.Column(
-            "health_check_enabled", sa.Boolean(), server_default="false"
-        ),
+        sa.Column("health_check_enabled", sa.Boolean(), server_default="false"),
         sa.Column("health_check_method", sa.String(50), nullable=True),
         sa.Column("health_check_uri", sa.Text(), nullable=True),
         sa.Column("errorfile", sa.Text(), nullable=True),
@@ -136,11 +118,7 @@ def upgrade() -> None:
     op.create_table(
         "backend_servers",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column(
-            "backend_id", sa.Integer(),
-            sa.ForeignKey("backends.id", ondelete="CASCADE"),
-            nullable=False
-        ),
+        sa.Column("backend_id", sa.Integer(), sa.ForeignKey("backends.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("address", sa.String(255), nullable=False),
         sa.Column("port", sa.Integer(), nullable=False),

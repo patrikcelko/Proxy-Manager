@@ -34,9 +34,7 @@ def upgrade() -> None:
 
     # Migrate existing bind_address data into bind rows
     conn = op.get_bind()
-    rows = conn.execute(
-        sa.text("SELECT id, bind_address FROM listen_blocks WHERE bind_address IS NOT NULL AND bind_address != ''")
-    ).fetchall()
+    rows = conn.execute(sa.text("SELECT id, bind_address FROM listen_blocks WHERE bind_address IS NOT NULL AND bind_address != ''")).fetchall()
     for row in rows:
         conn.execute(
             sa.text("INSERT INTO listen_block_binds (listen_block_id, bind_line, sort_order) VALUES (:lid, :bl, 0)"),
@@ -53,12 +51,7 @@ def downgrade() -> None:
     )
 
     conn = op.get_bind()
-    rows = conn.execute(
-        sa.text(
-            "SELECT DISTINCT ON (listen_block_id) listen_block_id, bind_line "
-            "FROM listen_block_binds ORDER BY listen_block_id, sort_order, id"
-        )
-    ).fetchall()
+    rows = conn.execute(sa.text("SELECT DISTINCT ON (listen_block_id) listen_block_id, bind_line FROM listen_block_binds ORDER BY listen_block_id, sort_order, id")).fetchall()
     for row in rows:
         conn.execute(
             sa.text("UPDATE listen_blocks SET bind_address = :bl WHERE id = :lid"),

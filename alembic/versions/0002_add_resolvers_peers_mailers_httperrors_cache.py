@@ -21,9 +21,7 @@ def upgrade() -> None:
     op.create_table(
         "resolvers",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "name", sa.String(255), unique=True, nullable=False, index=True
-        ),
+        sa.Column("name", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("resolve_retries", sa.Integer(), nullable=True),
         sa.Column("timeout_resolve", sa.String(50), nullable=True),
         sa.Column("timeout_retry", sa.String(50), nullable=True),
@@ -39,24 +37,17 @@ def upgrade() -> None:
     op.create_table(
         "resolver_nameservers",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "resolver_id", sa.Integer(), sa.ForeignKey("resolvers.id", ondelete="CASCADE"),
-            nullable=False, index=True
-        ),
+        sa.Column("resolver_id", sa.Integer(), sa.ForeignKey("resolvers.id", ondelete="CASCADE"), nullable=False, index=True),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("address", sa.String(255), nullable=False),
         sa.Column("port", sa.Integer(), nullable=False, server_default="53"),
-        sa.Column(
-            "sort_order", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
     )
 
     op.create_table(
         "peer_sections",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "name", sa.String(255), unique=True, nullable=False, index=True
-        ),
+        sa.Column("name", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("comment", sa.Text(), nullable=True),
         sa.Column("extra_options", sa.Text(), nullable=True),
     )
@@ -72,20 +63,14 @@ def upgrade() -> None:
         ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("address", sa.String(255), nullable=False),
-        sa.Column(
-            "port", sa.Integer(), nullable=False, server_default="10000"
-        ),
-        sa.Column(
-            "sort_order", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("port", sa.Integer(), nullable=False, server_default="10000"),
+        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
     )
 
     op.create_table(
         "mailer_sections",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "name", sa.String(255), unique=True, nullable=False, index=True
-        ),
+        sa.Column("name", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("timeout_mail", sa.String(50), nullable=True),
         sa.Column("comment", sa.Text(), nullable=True),
     )
@@ -102,17 +87,13 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("address", sa.String(255), nullable=False),
         sa.Column("port", sa.Integer(), nullable=False, server_default="25"),
-        sa.Column(
-            "sort_order", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
     )
 
     op.create_table(
         "http_errors_sections",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "name", sa.String(255), unique=True, nullable=False, index=True
-        ),
+        sa.Column("name", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("comment", sa.Text(), nullable=True),
     )
     op.create_table(
@@ -126,21 +107,15 @@ def upgrade() -> None:
             index=True,
         ),
         sa.Column("status_code", sa.Integer(), nullable=False),
-        sa.Column(
-            "type", sa.String(20), nullable=False, server_default="errorfile"
-        ),
+        sa.Column("type", sa.String(20), nullable=False, server_default="errorfile"),
         sa.Column("value", sa.Text(), nullable=False),
-        sa.Column(
-            "sort_order", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
     )
 
     op.create_table(
         "cache_sections",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "name", sa.String(255), unique=True, nullable=False, index=True
-        ),
+        sa.Column("name", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("total_max_size", sa.Integer(), nullable=True),
         sa.Column("max_object_size", sa.Integer(), nullable=True),
         sa.Column("max_age", sa.Integer(), nullable=True),

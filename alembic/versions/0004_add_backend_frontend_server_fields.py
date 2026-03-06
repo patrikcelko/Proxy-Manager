@@ -18,104 +18,44 @@ depends_on: Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "backends", sa.Column("cookie", sa.String(500), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("timeout_server", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("timeout_connect", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("timeout_queue", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("http_check_expect", sa.String(500), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("default_server_options", sa.Text(), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("http_reuse", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("hash_type", sa.String(100), nullable=True)
-    )
-    op.add_column(
-        "backends",
-        sa.Column("option_httplog", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "backends", sa.Column("option_tcplog", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "backends", sa.Column("compression_algo", sa.String(100), nullable=True)
-    )
-    op.add_column(
-        "backends", sa.Column("compression_type", sa.String(500), nullable=True)
-    )
+    op.add_column("backends", sa.Column("cookie", sa.String(500), nullable=True))
+    op.add_column("backends", sa.Column("timeout_server", sa.String(50), nullable=True))
+    op.add_column("backends", sa.Column("timeout_connect", sa.String(50), nullable=True))
+    op.add_column("backends", sa.Column("timeout_queue", sa.String(50), nullable=True))
+    op.add_column("backends", sa.Column("http_check_expect", sa.String(500), nullable=True))
+    op.add_column("backends", sa.Column("default_server_options", sa.Text(), nullable=True))
+    op.add_column("backends", sa.Column("http_reuse", sa.String(50), nullable=True))
+    op.add_column("backends", sa.Column("hash_type", sa.String(100), nullable=True))
+    op.add_column("backends", sa.Column("option_httplog", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("backends", sa.Column("option_tcplog", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("backends", sa.Column("compression_algo", sa.String(100), nullable=True))
+    op.add_column("backends", sa.Column("compression_type", sa.String(500), nullable=True))
 
-    op.add_column(
-        "backend_servers", sa.Column("weight", sa.Integer(), nullable=True)
-    )
-    op.add_column(
-        "backend_servers",
-        sa.Column("ssl_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "backend_servers", sa.Column("ssl_verify", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backend_servers",
-        sa.Column("backup", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "backend_servers", sa.Column("inter", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("fastinter", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("downinter", sa.String(50), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("rise", sa.Integer(), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("fall", sa.Integer(), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("cookie_value", sa.String(255), nullable=True)
-    )
-    op.add_column(
-        "backend_servers", sa.Column("send_proxy", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "backend_servers", sa.Column("send_proxy_v2", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
+    op.add_column("backend_servers", sa.Column("weight", sa.Integer(), nullable=True))
+    op.add_column("backend_servers", sa.Column("ssl_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("backend_servers", sa.Column("ssl_verify", sa.String(50), nullable=True))
+    op.add_column("backend_servers", sa.Column("backup", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("backend_servers", sa.Column("inter", sa.String(50), nullable=True))
+    op.add_column("backend_servers", sa.Column("fastinter", sa.String(50), nullable=True))
+    op.add_column("backend_servers", sa.Column("downinter", sa.String(50), nullable=True))
+    op.add_column("backend_servers", sa.Column("rise", sa.Integer(), nullable=True))
+    op.add_column("backend_servers", sa.Column("fall", sa.Integer(), nullable=True))
+    op.add_column("backend_servers", sa.Column("cookie_value", sa.String(255), nullable=True))
+    op.add_column("backend_servers", sa.Column("send_proxy", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("backend_servers", sa.Column("send_proxy_v2", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     op.add_column("backend_servers", sa.Column("slowstart", sa.String(50), nullable=True))
     op.add_column("backend_servers", sa.Column("resolve_prefer", sa.String(20), nullable=True))
     op.add_column("backend_servers", sa.Column("resolvers_ref", sa.String(255), nullable=True))
     op.add_column("backend_servers", sa.Column("on_marked_down", sa.String(50), nullable=True))
-    op.add_column(
-        "backend_servers",
-        sa.Column("disabled", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
+    op.add_column("backend_servers", sa.Column("disabled", sa.Boolean(), nullable=False, server_default=sa.text("false")))
 
     op.add_column("frontends", sa.Column("timeout_client", sa.String(50), nullable=True))
     op.add_column("frontends", sa.Column("timeout_http_request", sa.String(50), nullable=True))
     op.add_column("frontends", sa.Column("timeout_http_keep_alive", sa.String(50), nullable=True))
     op.add_column("frontends", sa.Column("maxconn", sa.Integer(), nullable=True))
-    op.add_column(
-        "frontends", sa.Column("option_httplog", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "frontends", sa.Column("option_tcplog", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
-    op.add_column(
-        "frontends", sa.Column("option_forwardfor", sa.Boolean(), nullable=False, server_default=sa.text("false"))
-    )
+    op.add_column("frontends", sa.Column("option_httplog", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("frontends", sa.Column("option_tcplog", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+    op.add_column("frontends", sa.Column("option_forwardfor", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     op.add_column("frontends", sa.Column("compression_algo", sa.String(100), nullable=True))
     op.add_column("frontends", sa.Column("compression_type", sa.String(500), nullable=True))
 
