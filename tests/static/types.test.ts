@@ -1,5 +1,6 @@
 /**
- * Tests for TypeScript type definitions.
+ * Test types
+ * ==========
  */
 
 import { describe, it, expect } from "vitest";
@@ -129,7 +130,7 @@ describe("type interfaces", () => {
     });
 
     it("Setting", () => {
-        const s: Setting = { id: 1, directive: "maxconn", value: "4096", sort_order: 0, category: "performance" };
+        const s: Setting = { id: 1, directive: "maxconn", value: "4096", type: "global", sort_order: 0, category: "performance" };
         expect(s.directive).toBe("maxconn");
     });
 

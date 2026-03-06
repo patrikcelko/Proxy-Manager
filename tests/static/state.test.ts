@@ -1,5 +1,6 @@
 /**
- * Tests for the shared state module.
+ * State tests
+ * ===========
  */
 
 import { describe, it, expect } from "vitest";
