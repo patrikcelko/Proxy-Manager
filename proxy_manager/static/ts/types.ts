@@ -299,6 +299,7 @@ export interface Setting {
     id: number;
     directive: string;
     value: string;
+    type: string;
     sort_order?: number;
     comment?: string | null;
     category?: string;
