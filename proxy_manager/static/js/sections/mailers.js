@@ -112,7 +112,7 @@ function openMailerModal(existing = null) {
             <div class="form-help">Maximum time to send an email (e.g. 10s, 30s, 1m)</div>
         </div><div>
             <label>&nbsp;</label>
-            <div class="form-help" style="margin-top:.5rem">If not set, HAProxy uses a default timeout. Recommended: 10–30 seconds for reliable SMTP delivery.</div>
+            <div class="form-help" style="margin-top:.5rem">If not set, HAProxy uses a default timeout. Recommended: 10-30 seconds for reliable SMTP delivery.</div>
         </div></div>
 
         <div class="form-collapsible" style="margin-top:1rem">

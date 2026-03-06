@@ -115,7 +115,7 @@ async function renderFlowCanvas() {
 
         const aclCol = sortedAcls.length ? sortedAcls.map(a => `<div class="flow-node acl" data-backend="${escHtml(a.backend_name || '')}" data-fid="${a.frontend_id || ''}">
             <div class="fn-name">${escHtml(a.domain)}</div>
-            <div class="fn-detail">${a.is_redirect ? 'redirect ' + (a.redirect_code || 301) : '→ ' + escHtml(a.backend_name || '')}</div>
+            <div class="fn-detail">${a.is_redirect ? 'redirect ' + (a.redirect_code || 301) : '-> ' + escHtml(a.backend_name || '')}</div>
         </div>`).join('')
             : '<div class="flow-empty-col">No ACL rules</div>';
 
@@ -219,7 +219,7 @@ function drawFlowConnections() {
         return `<path d="M${from.x},${from.y} C${from.x},${from.y + dy} ${to.x},${to.y - dy} ${to.x},${to.y}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}" />`;
     }
 
-    /* Client → all Frontends */
+    /* Client -> all Frontends */
     const clientNode = diagram.querySelector('.flow-node.client');
     if (clientNode) {
         diagram.querySelectorAll('.flow-node.fe').forEach(feNode => {
@@ -227,7 +227,7 @@ function drawFlowConnections() {
         });
     }
 
-    /* Frontend → ACL (if ACL has frontend_id) */
+    /* Frontend -> ACL (if ACL has frontend_id) */
     diagram.querySelectorAll('.flow-node.acl').forEach(aclNode => {
         const fid = aclNode.dataset.fid;
         if (fid) {
@@ -238,7 +238,7 @@ function drawFlowConnections() {
         }
     });
 
-    /* Frontend → Backend (default_backend, direct route without ACL) */
+    /* Frontend -> Backend (default_backend, direct route without ACL) */
     diagram.querySelectorAll('.flow-node.fe').forEach(feNode => {
         const defBe = feNode.dataset.defaultBackend;
         if (defBe) {
@@ -249,7 +249,7 @@ function drawFlowConnections() {
         }
     });
 
-    /* ACL → Backend */
+    /* ACL -> Backend */
     diagram.querySelectorAll('.flow-node.acl').forEach(aclNode => {
         const bName = aclNode.dataset.backend;
         if (bName) {
@@ -260,7 +260,7 @@ function drawFlowConnections() {
         }
     });
 
-    /* Backend → Auth userlist */
+    /* Backend -> Auth userlist */
     diagram.querySelectorAll('.flow-node.be').forEach(beNode => {
         const authName = beNode.dataset.auth;
         if (authName) {
@@ -271,7 +271,7 @@ function drawFlowConnections() {
         }
     });
 
-    /* Backend → Servers */
+    /* Backend -> Servers */
     diagram.querySelectorAll('.flow-node.srv').forEach(srvNode => {
         const beName = srvNode.dataset.backend;
         if (beName) {

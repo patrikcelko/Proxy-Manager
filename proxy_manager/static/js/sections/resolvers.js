@@ -154,7 +154,7 @@ function openResolverModal(existing = null) {
 
         <div class="form-row"><div>
             <label>Accepted Payload Size</label><input type="number" id="m-payload" value="${r.accepted_payload_size != null ? r.accepted_payload_size : ''}" placeholder="8192" min="512" max="65535">
-            <div class="form-help">Max DNS response size in bytes (512–65535)</div>
+            <div class="form-help">Max DNS response size in bytes (512-65535)</div>
         </div><div>
             <label class="toggle-wrap" style="margin-top:1.5rem">
                 <input type="checkbox" id="m-parse-resolv-conf" ${r.parse_resolv_conf ? 'checked' : ''}>
