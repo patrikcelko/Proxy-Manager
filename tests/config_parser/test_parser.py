@@ -5,6 +5,8 @@ Config parser tests
 Comprehensive tests for `parse_config` and related parser dataclasses.
 """
 
+import textwrap
+
 from proxy_manager.config_parser.parser import (
     ParsedCacheSection,
     ParsedHttpErrorEntry,
@@ -19,7 +21,7 @@ from proxy_manager.config_parser.parser import (
     parse_config,
 )
 
-MINIMAL_CONFIG = """\
+MINIMAL_CONFIG = textwrap.dedent("""\
     global
         log 127.0.0.1 local0
         maxconn 4096
@@ -37,7 +39,7 @@ MINIMAL_CONFIG = """\
         mode http
         balance roundrobin
     server web1 10.0.0.1:8080 check
-"""
+""")
 
 
 def test_parse_global() -> None:
@@ -69,12 +71,12 @@ def test_parse_empty() -> None:
 def test_parse_global_comment_block() -> None:
     """Comment block before a directive is attached as `comment`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
             # Important setting
             maxconn 4096
             log 127.0.0.1 local0
-    """
+    """)
     parsed = parse_config(config)
     maxconn = [s for s in parsed.global_settings if s.directive == "maxconn"][0]
 
@@ -84,10 +86,10 @@ def test_parse_global_comment_block() -> None:
 def test_parse_settings_directive_only() -> None:
     """Directive without a value stores empty string."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
             daemon
-    """
+    """)
 
     parsed = parse_config(config)
     daemon = [s for s in parsed.global_settings if s.directive == "daemon"]
@@ -98,10 +100,10 @@ def test_parse_settings_directive_only() -> None:
 def test_parse_inline_comment_in_global() -> None:
     """`_strip_inline_comment` extracts `#` mid-line."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
             maxconn 4096  # max connections
-    """
+    """)
 
     parsed = parse_config(config)
     gs = [s for s in parsed.global_settings if s.directive == "maxconn"]
@@ -113,10 +115,10 @@ def test_parse_inline_comment_in_global() -> None:
 def test_parse_inline_comment_quoted() -> None:
     """`#` inside quotes is NOT treated as a comment."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
             log "syslog#local0" facility
-    """
+    """)
 
     parsed = parse_config(config)
     gs = [s for s in parsed.global_settings if s.directive == "log"]
@@ -139,7 +141,7 @@ def test_parse_frontend() -> None:
 
 def test_parse_frontend_new_fields() -> None:
     """Timeout / maxconn / option fields in a frontend."""
-    cfg = """\
+    cfg = textwrap.dedent("""\
 
         frontend myfe
         bind *:80
@@ -154,7 +156,7 @@ def test_parse_frontend_new_fields() -> None:
         option forwardfor
         compression algo gzip
         compression type text/html text/css
-    """
+    """)
 
     parsed = parse_config(cfg)
     assert len(parsed.frontends) == 1
@@ -174,11 +176,11 @@ def test_parse_frontend_new_fields() -> None:
 def test_parse_frontend_maxconn_invalid() -> None:
     """Invalid maxconn in frontend is silently ignored."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             maxconn invalid
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.frontends[0].maxconn is None
@@ -187,11 +189,11 @@ def test_parse_frontend_maxconn_invalid() -> None:
 def test_parse_frontend_inline_comment() -> None:
     """Inline comment in a frontend option is stripped."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             http-request set-header X-Test foo  # test header
-    """
+    """)
 
     parsed = parse_config(config)
     opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
@@ -201,11 +203,11 @@ def test_parse_frontend_inline_comment() -> None:
 def test_simple_option_directive_only() -> None:
     """Simple option is recognised."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_test
         bind *:80
         option httplog
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.frontends[0].name == "fe_test"
@@ -214,13 +216,13 @@ def test_simple_option_directive_only() -> None:
 def test_option_split_directive_value() -> None:
     """Multi-word option is split into directive + value."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_split
         bind *:80
         http-request set-header X-Forwarded-Proto https
         http-response del-header server
         capture request header User-Agent len 64
-    """
+    """)
 
     parsed = parse_config(config)
     fe = parsed.frontends[0]
@@ -235,11 +237,11 @@ def test_option_split_directive_value() -> None:
 def test_option_no_value() -> None:
     """Single-word directive gets the rest as value."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_noval
         bind *:80
         http-request del-header Proxy
-    """
+    """)
 
     parsed = parse_config(config)
     opts_by_dir = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
@@ -250,12 +252,12 @@ def test_option_no_value() -> None:
 def test_option_with_comment() -> None:
     """Comment lines before a directive are attached."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_comment
         bind *:80
         # Security header cleanup
         http-request del-header Proxy
-    """
+    """)
 
     parsed = parse_config(config)
     proxy_opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
@@ -266,13 +268,13 @@ def test_option_with_comment() -> None:
 def test_option_order_preserved() -> None:
     """Options maintain insertion order."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_order
         bind *:80
         http-request set-header X-A one
         http-response del-header server
         tcp-request inspect-delay 10s
-    """
+    """)
 
     parsed = parse_config(config)
     directives = [o.directive for o in parsed.frontends[0].options]
@@ -282,11 +284,11 @@ def test_option_order_preserved() -> None:
 def test_stick_table_option() -> None:
     """`stick-table` directive is parsed as an option."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_stick
         bind *:80
         stick-table type ipv6 size 100k expire 90s store http_req_rate(15s)
-    """
+    """)
 
     parsed = parse_config(config)
     stick_opts = [o for o in parsed.frontends[0].options if o.directive == "stick-table"]
@@ -298,12 +300,12 @@ def test_stick_table_option() -> None:
 def test_acl_as_option() -> None:
     """Non-routing ACL stored as a generic option."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_acl
         bind *:80
         acl whitelist_ips src 10.0.0.0/8
         http-request deny deny_status 429 if !whitelist_ips
-    """
+    """)
 
     parsed = parse_config(config)
     acl_opts = [o for o in parsed.frontends[0].options if o.directive == "acl"]
@@ -314,11 +316,11 @@ def test_acl_as_option() -> None:
 def test_redirect_non_acl_as_option() -> None:
     """Non-ACL redirect stored as a generic option."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_redir
         bind *:80
         redirect scheme https code 301 if !{ ssl_fc }
-    """
+    """)
 
     parsed = parse_config(config)
     redir_opts = [o for o in parsed.frontends[0].options if o.directive == "redirect"]
@@ -329,13 +331,13 @@ def test_redirect_non_acl_as_option() -> None:
 def test_multiple_comments_before_option() -> None:
     """Multi-line comment block is joined."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_multicomment
         bind *:80
         # Line one
         # Line two
         http-request set-header X-Test foo
-    """
+    """)
 
     parsed = parse_config(config)
     opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
@@ -348,7 +350,7 @@ def test_multiple_comments_before_option() -> None:
 def test_mixed_options_and_known_fields() -> None:
     """Known fields do NOT appear in the options list."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_mixed
         bind *:80
         mode http
@@ -357,7 +359,7 @@ def test_mixed_options_and_known_fields() -> None:
         maxconn 5000
         http-request set-header X-A value1
         option forwardfor
-    """
+    """)
 
     parsed = parse_config(config)
     fe = parsed.frontends[0]
@@ -374,7 +376,7 @@ def test_mixed_options_and_known_fields() -> None:
 def test_roundtrip_parser_preserves_split() -> None:
     """Complex config preserves directive / value split."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_complex
         bind *:80
         bind *:443 ssl crt /etc/haproxy/certs/site.pem
@@ -389,7 +391,7 @@ def test_roundtrip_parser_preserves_split() -> None:
         http-request track-sc0 src
         acl whitelist_ips src 10.0.0.0/8
         http-request deny deny_status 429 if { sc_http_req_rate(0) gt 300 } !whitelist_ips
-    """
+    """)
 
     parsed = parse_config(config)
     fe = parsed.frontends[0]
@@ -407,11 +409,11 @@ def test_roundtrip_parser_preserves_split() -> None:
 def test_parse_frontend_non_acl_redirect_as_option() -> None:
     """Redirect not matching ACL pattern becomes a generic option."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             redirect scheme https code 301 if !{ ssl_fc }
-    """
+    """)
 
     parsed = parse_config(config)
     redir = [o for o in parsed.frontends[0].options if o.directive == "redirect"]
@@ -422,13 +424,13 @@ def test_parse_frontend_non_acl_redirect_as_option() -> None:
 def test_parse_frontend_acl_use_backend() -> None:
     """ACL + `use_backend` pair is parsed."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             mode http
             acl ACL_example_com hdr(Host) -i example.com
             use_backend be_example if ACL_example_com
-    """
+    """)
 
     parsed = parse_config(config)
     fe = parsed.frontends[0]
@@ -441,13 +443,13 @@ def test_parse_frontend_acl_use_backend() -> None:
 def test_parse_frontend_acl_redirect() -> None:
     """ACL redirect branch is parsed."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             mode http
             acl ACL_old_site hdr(Host) -i old.example.com
             redirect prefix https://new.example.com code 301 if ACL_old_site
-    """
+    """)
 
     parsed = parse_config(config)
     acl = parsed.frontends[0].acls[0]
@@ -461,14 +463,14 @@ def test_parse_frontend_acl_redirect() -> None:
 def test_parse_frontend_acl_with_comment() -> None:
     """Preceding comment is attached to the ACL."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:80
             mode http
             # Route to API backend
             acl ACL_api hdr(Host) -i api.example.com
             use_backend be_api if ACL_api
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.frontends[0].acls[0].comment == "Route to API backend"
@@ -477,7 +479,7 @@ def test_parse_frontend_acl_with_comment() -> None:
 def test_no_ssl_in_config() -> None:
     """Config without SSL produces no SSL certificates."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_http
         bind *:80
         mode http
@@ -485,7 +487,7 @@ def test_no_ssl_in_config() -> None:
 
         backend be_web
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 0
@@ -494,7 +496,7 @@ def test_no_ssl_in_config() -> None:
 def test_ssl_pem_file_in_frontend() -> None:
     """`ssl crt /path/to/file.pem` extracts one cert."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/haproxy/certs/site.pem
         mode http
@@ -502,7 +504,7 @@ def test_ssl_pem_file_in_frontend() -> None:
 
         backend be_web
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -519,14 +521,14 @@ def test_ssl_pem_file_in_frontend() -> None:
 def test_ssl_directory_in_frontend() -> None:
     """Directory path (no extension) is handled."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/haproxy/certs
         default_backend be_web
 
         backend be_web
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -539,13 +541,13 @@ def test_ssl_directory_in_frontend() -> None:
 def test_ssl_in_listen_block() -> None:
     """Listen block with ssl crt extracts cert."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen stats
         bind *:9000 ssl crt /etc/ssl/private/stats.pem
         mode http
         stats enable
         stats uri /stats
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -558,14 +560,14 @@ def test_ssl_in_listen_block() -> None:
 def test_letsencrypt_domain_extraction() -> None:
     """Letsencrypt-style path extracts the domain name."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/letsencrypt/live/example.com/fullchain.pem
         default_backend be_web
 
         backend be_web
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -575,11 +577,11 @@ def test_letsencrypt_domain_extraction() -> None:
 def test_letsencrypt_wildcard_domain() -> None:
     """Letsencrypt wildcard cert path is handled."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_wild
         bind *:443 ssl crt /etc/letsencrypt/live/wildcard.example.org/fullchain.pem
         default_backend be_app
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.ssl_certificates[0].domain == "wildcard.example.org"
@@ -588,7 +590,7 @@ def test_letsencrypt_wildcard_domain() -> None:
 def test_multiple_ssl_binds_different_sections() -> None:
     """SSL certs from frontend and listen blocks are all extracted."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/letsencrypt/live/app.example.com/fullchain.pem
         default_backend be_app
@@ -599,7 +601,7 @@ def test_multiple_ssl_binds_different_sections() -> None:
 
         backend be_app
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 2
@@ -612,7 +614,7 @@ def test_multiple_ssl_binds_different_sections() -> None:
 def test_duplicate_ssl_path_deduplicated() -> None:
     """Same cert path in multiple sections produces a single entry."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_one
         bind *:443 ssl crt /etc/haproxy/cert.pem
         default_backend be_a
@@ -626,7 +628,7 @@ def test_duplicate_ssl_path_deduplicated() -> None:
 
         backend be_b
         server s2 10.0.0.2:80 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -636,11 +638,11 @@ def test_duplicate_ssl_path_deduplicated() -> None:
 def test_ssl_with_additional_options() -> None:
     """Extra bind options (`alpn`, `strict-sni`) don't break extraction."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 strict-sni ssl crt /etc/nethostssl alpn h2,http/1.1
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -653,11 +655,11 @@ def test_ssl_with_additional_options() -> None:
 def test_ssl_crt_with_quoted_path() -> None:
     """Quoted cert path is handled."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt "/etc/haproxy/my cert.pem"
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -667,11 +669,11 @@ def test_ssl_crt_with_quoted_path() -> None:
 def test_ssl_cert_default_fields() -> None:
     """Extracted SSL certs have correct default values."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/haproxy/site.pem
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     sc = parsed.ssl_certificates[0]
@@ -688,11 +690,11 @@ def test_ssl_cert_default_fields() -> None:
 def test_bind_without_ssl_keyword() -> None:
     """Bind without `ssl` keyword does NOT extract cert."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_http
         bind *:80
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 0
@@ -701,11 +703,11 @@ def test_bind_without_ssl_keyword() -> None:
 def test_complex_bind_with_multiple_addresses() -> None:
     """Multi-address bind with ssl crt works."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind ipv4@10.0.0.1:443,ipv6@::1:443 ssl crt /etc/letsencrypt/live/mysite.io/fullchain.pem alpn h2,http/1.1
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -715,7 +717,7 @@ def test_complex_bind_with_multiple_addresses() -> None:
 def test_multiple_frontends_different_certs() -> None:
     """Each frontend with a different cert produces separate entries."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_site_a
         bind *:443 ssl crt /etc/letsencrypt/live/site-a.com/fullchain.pem
         default_backend be_a
@@ -729,7 +731,7 @@ def test_multiple_frontends_different_certs() -> None:
 
         backend be_b
         server s2 10.0.0.2:80 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 2
@@ -767,11 +769,11 @@ def test_parsed_ssl_certificate_dataclass() -> None:
 def test_non_standard_cert_domain_name() -> None:
     """Domain with dots in filename uses the filename as domain."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 ssl crt /etc/ssl/certs/my.domain.com.pem
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.ssl_certificates[0].domain == "my.domain.com"
@@ -780,7 +782,7 @@ def test_non_standard_cert_domain_name() -> None:
 def test_example_config_ssl_extraction() -> None:
     """Integration test: example config extracts multiple SSL certs."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
         log 127.0.0.1 local0
         ca-base /etc/ssl/certs
@@ -804,7 +806,7 @@ def test_example_config_ssl_extraction() -> None:
 
         backend be_web
         server s1 10.0.0.1:8080 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 2
@@ -817,7 +819,7 @@ def test_example_config_ssl_extraction() -> None:
 def test_ssl_cert_source_comment() -> None:
     """Comment indicates which section the cert was extracted from."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_web
         bind *:443 ssl crt /etc/ssl/web.pem
         default_backend be_web
@@ -825,7 +827,7 @@ def test_ssl_cert_source_comment() -> None:
         listen api
         bind *:8443 ssl crt /etc/ssl/api.pem
         stats enable
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 2
@@ -838,11 +840,11 @@ def test_ssl_cert_source_comment() -> None:
 def test_case_insensitive_ssl_keyword() -> None:
     """SSL keyword matching is case-insensitive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_https
         bind *:443 SSL CRT /etc/haproxy/cert.pem
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -851,12 +853,12 @@ def test_case_insensitive_ssl_keyword() -> None:
 def test_multiple_bind_lines_one_frontend() -> None:
     """Only SSL bind lines produce certs."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe_mixed
         bind *:80
         bind *:443 ssl crt /etc/ssl/site.pem
         default_backend be_web
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -866,11 +868,11 @@ def test_multiple_bind_lines_one_frontend() -> None:
 def test_parse_ssl_cert_no_basename() -> None:
     """Trailing slash still extracts something."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:443 ssl crt /etc/certs/
             default_backend be
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -879,11 +881,11 @@ def test_parse_ssl_cert_no_basename() -> None:
 def test_parse_ssl_cert_fullchain_in_letsencrypt() -> None:
     """Letsencrypt `fullchain.pem` resolves domain from parent dir."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:443 ssl crt /etc/letsencrypt/live/site.example.com/fullchain.pem
             default_backend be
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.ssl_certificates[0].domain == "site.example.com"
@@ -892,11 +894,11 @@ def test_parse_ssl_cert_fullchain_in_letsencrypt() -> None:
 def test_parse_ssl_cert_crt_extension() -> None:
     """`.crt` extension in fullchain_path."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:443 ssl crt /etc/ssl/server.crt
             default_backend be
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.ssl_certificates[0].fullchain_path == "/etc/ssl/server.crt"
@@ -905,11 +907,11 @@ def test_parse_ssl_cert_crt_extension() -> None:
 def test_parse_ssl_cert_letsencrypt_bad_live_path() -> None:
     """Letsencrypt path with empty domain after `live/`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         frontend fe
             bind *:443 ssl crt /etc/letsencrypt/live/
             default_backend be
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
@@ -932,7 +934,7 @@ def test_parse_backend() -> None:
 def test_parse_multiple_backends() -> None:
     """Multiple backend sections."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be_a
         mode http
         server s1 1.1.1.1:80 check
@@ -940,7 +942,7 @@ def test_parse_multiple_backends() -> None:
         backend be_b
         mode http
         server s2 2.2.2.2:80 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.backends) == 2
@@ -953,7 +955,7 @@ def test_parse_multiple_backends() -> None:
 def test_parse_backend_new_fields() -> None:
     """Backend with all tier-1 fields."""
 
-    cfg = """\
+    cfg = textwrap.dedent("""\
 
         backend mybackend
         mode http
@@ -971,7 +973,7 @@ def test_parse_backend_new_fields() -> None:
         compression algo gzip deflate
         compression type text/html text/css
         server srv1 10.0.0.1:80 check weight 100 ssl verify none backup
-    """
+    """)
 
     parsed = parse_config(cfg)
     be = parsed.backends[0]
@@ -999,12 +1001,12 @@ def test_parse_backend_new_fields() -> None:
 def test_parse_backend_comment() -> None:
     """Comment before directives is attached to `be.comment`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be_web
             # Main backend for web
             mode http
             server s1 10.0.0.1:80 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].comment == "Main backend for web"
@@ -1013,10 +1015,10 @@ def test_parse_backend_comment() -> None:
 def test_parse_backend_retries_invalid() -> None:
     """Invalid retries falls back to extra_options."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             retries abc
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1028,10 +1030,10 @@ def test_parse_backend_retries_invalid() -> None:
 def test_parse_backend_retry_on() -> None:
     """`retry-on` directive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             retry-on conn-failure empty-response
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].retry_on == "conn-failure empty-response"
@@ -1040,10 +1042,10 @@ def test_parse_backend_retry_on() -> None:
 def test_parse_backend_option_redispatch() -> None:
     """`option redispatch`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             option redispatch
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].option_redispatch is True
@@ -1052,10 +1054,10 @@ def test_parse_backend_option_redispatch() -> None:
 def test_parse_backend_errorfile() -> None:
     """`errorfile` directive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             errorfile 503 /errors/503.http
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].errorfile == "503 /errors/503.http"
@@ -1064,10 +1066,10 @@ def test_parse_backend_errorfile() -> None:
 def test_parse_backend_cookie() -> None:
     """`cookie` directive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             cookie SRVID insert indirect nocache
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].cookie == "SRVID insert indirect nocache"
@@ -1076,12 +1078,12 @@ def test_parse_backend_cookie() -> None:
 def test_parse_backend_timeouts() -> None:
     """`timeout server/connect/queue`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             timeout server 30s
             timeout connect 5s
             timeout queue 60s
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1093,10 +1095,10 @@ def test_parse_backend_timeouts() -> None:
 def test_parse_backend_default_server() -> None:
     """`default-server` directive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             default-server inter 3s fall 3 rise 2
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].default_server_options == "inter 3s fall 3 rise 2"
@@ -1105,11 +1107,11 @@ def test_parse_backend_default_server() -> None:
 def test_parse_backend_http_reuse_hash_type() -> None:
     """`http-reuse` and `hash-type`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             http-reuse aggressive
             hash-type consistent sdbm
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1120,11 +1122,11 @@ def test_parse_backend_http_reuse_hash_type() -> None:
 def test_parse_backend_compression() -> None:
     """`compression algo/type`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             compression algo gzip deflate
             compression type text/html text/css
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1135,11 +1137,11 @@ def test_parse_backend_compression() -> None:
 def test_parse_backend_auth_userlist() -> None:
     """`acl authorized http_auth(...)`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             acl authorized http_auth(admins)
             http-request auth realm Login unless authorized
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].auth_userlist == "admins"
@@ -1148,12 +1150,12 @@ def test_parse_backend_auth_userlist() -> None:
 def test_parse_backend_http_check_connect() -> None:
     """`http-check connect` (silently handled)."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             option httpchk
             http-check connect
             http-check send meth GET uri /health
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1165,10 +1167,10 @@ def test_parse_backend_http_check_connect() -> None:
 def test_parse_backend_http_check_expect() -> None:
     """`http-check expect`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             http-check expect status 200
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].http_check_expect == "status 200"
@@ -1177,11 +1179,11 @@ def test_parse_backend_http_check_expect() -> None:
 def test_parse_backend_with_inline_comment() -> None:
     """Inline comment on a backend directive is stripped."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             mode http  # production mode
             server s1 10.0.0.1:80 check
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].mode == "http"
@@ -1190,11 +1192,11 @@ def test_parse_backend_with_inline_comment() -> None:
 def test_parse_backend_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             stick on src
             stick-table type ip size 1m expire 10s
-    """
+    """)
 
     parsed = parse_config(config)
     be = parsed.backends[0]
@@ -1206,10 +1208,10 @@ def test_parse_backend_extra_options() -> None:
 def test_parse_backend_option_tcplog() -> None:
     """`option tcplog` in backend."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             option tcplog
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].option_tcplog is True
@@ -1218,10 +1220,10 @@ def test_parse_backend_option_tcplog() -> None:
 def test_parse_backend_option_forwardfor() -> None:
     """`option forwardfor` in backend."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             option forwardfor
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.backends[0].option_forwardfor is True
@@ -1230,10 +1232,10 @@ def test_parse_backend_option_forwardfor() -> None:
 def test_parse_server_with_extra_params() -> None:
     """Server with extra params."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be_test
         server s1 10.0.0.1:80 check maxconn 100
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1272,10 +1274,10 @@ def test_parse_server_fields() -> None:
 def test_parse_server_maxconn_invalid() -> None:
     """Invalid maxconn falls back to extra_params."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 maxconn abc
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1288,10 +1290,10 @@ def test_parse_server_maxconn_invalid() -> None:
 def test_parse_server_maxqueue_invalid() -> None:
     """Invalid maxqueue falls back to extra_params."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 maxqueue xyz
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1304,10 +1306,10 @@ def test_parse_server_maxqueue_invalid() -> None:
 def test_parse_server_weight_invalid() -> None:
     """Invalid weight falls back to extra_params."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 weight heavy
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1319,10 +1321,10 @@ def test_parse_server_weight_invalid() -> None:
 
 def test_parse_server_rise_fall_invalid() -> None:
     """Invalid rise/fall falls back to extra_params."""
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 rise fast fall slow
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1336,10 +1338,10 @@ def test_parse_server_rise_fall_invalid() -> None:
 def test_parse_server_send_proxy_v1() -> None:
     """`send-proxy` (v1) parsing."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 send-proxy
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1350,10 +1352,10 @@ def test_parse_server_send_proxy_v1() -> None:
 def test_parse_server_unknown_tokens() -> None:
     """Unknown tokens fall back to extra_params."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 check ca-file /etc/ssl/ca.pem sni str(example.com)
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1365,10 +1367,10 @@ def test_parse_server_unknown_tokens() -> None:
 def test_parse_server_fastinter_downinter() -> None:
     """`fastinter` / `downinter` token parsing."""
 
-    config = """\
+    config = textwrap.dedent("""\
         backend be
             server s1 10.0.0.1:80 check inter 3s fastinter 1s downinter 5s
-    """
+    """)
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
@@ -1380,11 +1382,11 @@ def test_parse_server_fastinter_downinter() -> None:
 def test_parse_userlist() -> None:
     """Userlist section is parsed."""
 
-    config = """\
+    config = textwrap.dedent("""\
         userlist myusers
         user admin password $6$rounds=5000$salt$hash
         user viewer password $5$otherhash
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.userlists) == 1
@@ -1397,10 +1399,10 @@ def test_parse_userlist() -> None:
 def test_parse_userlist_inline_comment() -> None:
     """Inline comment is stripped from userlist entries."""
 
-    config = """\
+    config = textwrap.dedent("""\
         userlist admins
             user admin password $6$hash  # admin user
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.userlists[0].entries) == 1
@@ -1410,13 +1412,13 @@ def test_parse_userlist_inline_comment() -> None:
 def test_parse_listen() -> None:
     """Listen section is parsed."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen stats
         bind *:8404
         mode http
         stats enable
         stats uri /stats
-    """
+    """)
     parsed = parse_config(config)
     assert len(parsed.listen_blocks) == 1
 
@@ -1428,7 +1430,7 @@ def test_parse_listen() -> None:
 def test_parse_listen_expanded_fields() -> None:
     """Listen block with all expanded fields."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen mysql-proxy
         bind *:3306
         mode tcp
@@ -1442,7 +1444,7 @@ def test_parse_listen_expanded_fields() -> None:
         option forwardfor
         option mysql-check user haproxy
         server db1 10.0.0.1:3306 check
-    """
+    """)
 
     parsed = parse_config(config)
     lb = parsed.listen_blocks[0]
@@ -1467,14 +1469,14 @@ def test_parse_listen_expanded_fields() -> None:
 def test_parse_listen_timeout_server_connect() -> None:
     """Listen block timeout fields."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen proxy
             bind *:3306
             mode tcp
             timeout server 60s
             timeout connect 5s
             default-server inter 3s
-    """
+    """)
 
     parsed = parse_config(config)
     lb = parsed.listen_blocks[0]
@@ -1486,11 +1488,11 @@ def test_parse_listen_timeout_server_connect() -> None:
 def test_parse_listen_maxconn_invalid() -> None:
     """Invalid maxconn in listen block."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen proxy
             bind *:80
             maxconn invalid
-    """
+    """)
 
     parsed = parse_config(config)
     lb = parsed.listen_blocks[0]
@@ -1502,11 +1504,11 @@ def test_parse_listen_maxconn_invalid() -> None:
 def test_parse_listen_option_httplog() -> None:
     """`option httplog` in listen block."""
 
-    config = """\
+    config = textwrap.dedent("""\
         listen stats
             bind *:8080
             option httplog
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.listen_blocks[0].option_httplog is True
@@ -1522,11 +1524,11 @@ def test_no_resolvers() -> None:
 def test_basic_resolver() -> None:
     """Basic resolver section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         nameserver dns2 8.8.4.4:53
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.resolvers) == 1
@@ -1543,13 +1545,13 @@ def test_basic_resolver() -> None:
 def test_resolver_with_timeouts() -> None:
     """Resolver with timeout fields."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         resolve_retries 3
         timeout resolve 1s
         timeout retry 1s
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1561,7 +1563,7 @@ def test_resolver_with_timeouts() -> None:
 def test_resolver_with_hold_timers() -> None:
     """Resolver with hold timers."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         hold valid 10s
@@ -1569,7 +1571,7 @@ def test_resolver_with_hold_timers() -> None:
         hold refused 30s
         hold timeout 30s
         hold obsolete 30s
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1583,12 +1585,12 @@ def test_resolver_with_hold_timers() -> None:
 def test_resolver_with_hold_nx_aa() -> None:
     """`hold nx` and `hold aa` fields."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         hold nx 60s
         hold aa 5s
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1599,11 +1601,11 @@ def test_resolver_with_hold_nx_aa() -> None:
 def test_resolver_with_parse_resolv_conf() -> None:
     """`parse-resolv-conf` directive."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         parse-resolv-conf
         nameserver dns1 8.8.8.8:53
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.resolvers[0].parse_resolv_conf == 1
@@ -1612,10 +1614,10 @@ def test_resolver_with_parse_resolv_conf() -> None:
 def test_resolver_without_parse_resolv_conf() -> None:
     """Resolver without `parse-resolv-conf`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.resolvers[0].parse_resolv_conf is None
@@ -1624,11 +1626,11 @@ def test_resolver_without_parse_resolv_conf() -> None:
 def test_resolver_accepted_payload_size() -> None:
     """`accepted_payload_size` field."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         accepted_payload_size 8192
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.resolvers[0].accepted_payload_size == 8192
@@ -1637,7 +1639,7 @@ def test_resolver_accepted_payload_size() -> None:
 def test_resolver_all_fields() -> None:
     """Resolver with every possible field."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers full-dns
         nameserver dns1 8.8.8.8:53
         nameserver dns2 1.1.1.1:53
@@ -1653,7 +1655,7 @@ def test_resolver_all_fields() -> None:
         hold aa 5s
         accepted_payload_size 4096
         parse-resolv-conf
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1676,13 +1678,13 @@ def test_resolver_all_fields() -> None:
 def test_multiple_resolver_sections() -> None:
     """Multiple resolver sections."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers dns-primary
         nameserver ns1 8.8.8.8:53
 
         resolvers dns-secondary
         nameserver ns2 1.1.1.1:53
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.resolvers) == 2
@@ -1695,9 +1697,9 @@ def test_multiple_resolver_sections() -> None:
 def test_resolver_empty_nameservers() -> None:
     """Resolver with no nameservers."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers orphan
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1737,10 +1739,10 @@ def test_nameserver_dataclass_defaults() -> None:
 def test_resolver_nameserver_non_standard_port() -> None:
     """Nameserver on non-standard port."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 10.0.0.1:5353
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.resolvers[0].nameservers[0].port == 5353
@@ -1749,12 +1751,12 @@ def test_resolver_nameserver_non_standard_port() -> None:
 def test_resolver_with_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         resolve_retries 3
         some-future-directive value
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1765,12 +1767,12 @@ def test_resolver_with_extra_options() -> None:
 def test_resolver_nameserver_order() -> None:
     """Nameserver order is preserved."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers mydns
         nameserver dns1 8.8.8.8:53
         nameserver dns2 8.8.4.4:53
         nameserver dns3 1.1.1.1:53
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1782,10 +1784,10 @@ def test_resolver_nameserver_order() -> None:
 def test_parse_resolver_resolve_retries_invalid() -> None:
     """Invalid `resolve_retries` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers dns
             resolve_retries abc
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1797,10 +1799,10 @@ def test_parse_resolver_resolve_retries_invalid() -> None:
 def test_parse_resolver_accepted_payload_invalid() -> None:
     """Invalid `accepted_payload_size` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers dns
             accepted_payload_size big
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1812,14 +1814,14 @@ def test_parse_resolver_accepted_payload_invalid() -> None:
 def test_parse_resolver_hold_other_refused_timeout_obsolete() -> None:
     """`hold other/refused/timeout/obsolete` parsing."""
 
-    config = """\
+    config = textwrap.dedent("""\
         resolvers dns
             nameserver ns1 8.8.8.8:53
             hold other 10s
             hold refused 20s
             hold timeout 30s
             hold obsolete 40s
-    """
+    """)
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
@@ -1839,11 +1841,11 @@ def test_no_peers() -> None:
 def test_basic_peer_section() -> None:
     """Basic peer section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         peer haproxy1 10.0.0.1:10000
         peer haproxy2 10.0.0.2:10000
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.peers) == 1
@@ -1860,14 +1862,14 @@ def test_basic_peer_section() -> None:
 def test_multiple_peer_sections() -> None:
     """Multiple peer sections."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers cluster_a
         peer node1 10.0.1.1:10000
 
         peers cluster_b
         peer node2 10.0.2.1:10000
         peer node3 10.0.2.2:10000
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.peers) == 2
@@ -1880,11 +1882,11 @@ def test_multiple_peer_sections() -> None:
 def test_peer_with_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         peer haproxy1 10.0.0.1:10000
         table stick_table type ip size 1m expire 10m
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1896,9 +1898,9 @@ def test_peer_with_extra_options() -> None:
 def test_peer_empty_entries() -> None:
     """Peer section with no entries."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers orphan
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1929,11 +1931,11 @@ def test_peer_section_dataclass_defaults() -> None:
 def test_peer_with_default_bind() -> None:
     """`bind` directive in peers section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         bind :10000 ssl crt /etc/ssl/cert.pem
         peer haproxy1 10.0.0.1:10000
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1945,11 +1947,11 @@ def test_peer_with_default_bind() -> None:
 def test_peer_with_default_server() -> None:
     """`default-server` directive in peers section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         default-server ssl verify none
         peer haproxy1 10.0.0.1:10000
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1961,13 +1963,13 @@ def test_peer_with_default_server() -> None:
 def test_peer_with_bind_and_default_server() -> None:
     """Both `bind` and `default-server` in peers."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         bind :10000 ssl crt /etc/ssl/cert.pem
         default-server ssl verify none
         peer haproxy1 10.0.0.1:10000
         peer haproxy2 10.0.0.2:10000
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1979,10 +1981,10 @@ def test_peer_with_bind_and_default_server() -> None:
 def test_peer_with_ipv6_address() -> None:
     """Peer with IPv6 address."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers v6cluster
         peer node1 ::1:10000
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -1993,12 +1995,12 @@ def test_peer_with_ipv6_address() -> None:
 def test_three_peers_in_section() -> None:
     """Three peers in one section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers mypeers
         peer haproxy1 10.2.100.1:10000
         peer haproxy2 10.2.100.2:10000
         peer haproxy3 10.2.100.3:10000
-    """
+    """)
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
@@ -2013,11 +2015,11 @@ def test_three_peers_in_section() -> None:
 def test_parse_peer_default_server() -> None:
     """`default-server` in peers parser."""
 
-    config = """\
+    config = textwrap.dedent("""\
         peers cluster
             default-server ssl verify none
             peer node1 10.0.0.1:10000
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.peers[0].default_server_options == "ssl verify none"
@@ -2033,11 +2035,11 @@ def test_no_http_errors() -> None:
 def test_basic_errorfile_section() -> None:
     """Basic errorfile section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors custom-errors
         errorfile 503 /etc/haproxy/errors/503.http
         errorfile 504 /etc/haproxy/errors/504.http
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.http_errors) == 1
@@ -2054,10 +2056,10 @@ def test_basic_errorfile_section() -> None:
 def test_errorloc302_type() -> None:
     """`errorloc302` type."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors redirects
         errorloc302 503 https://maintenance.example.com
-    """
+    """)
 
     parsed = parse_config(config)
     he = parsed.http_errors[0]
@@ -2069,10 +2071,10 @@ def test_errorloc302_type() -> None:
 def test_errorloc303_type() -> None:
     """`errorloc303` type."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors redirect303
         errorloc303 500 https://error.example.com/500
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.http_errors[0].entries[0].type == "errorloc303"
@@ -2081,10 +2083,10 @@ def test_errorloc303_type() -> None:
 def test_errorloc_type() -> None:
     """`errorloc` type."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors redirect_generic
         errorloc 502 https://sorry.example.com
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.http_errors[0].entries[0].type == "errorloc"
@@ -2093,13 +2095,13 @@ def test_errorloc_type() -> None:
 def test_multiple_http_errors_sections() -> None:
     """Multiple http-errors sections."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors custom-errors
         errorfile 503 /etc/haproxy/errors/503.http
 
         http-errors redirect-errors
         errorloc302 503 https://maintenance.example.com
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.http_errors) == 2
@@ -2112,7 +2114,7 @@ def test_multiple_http_errors_sections() -> None:
 def test_many_errorfiles() -> None:
     """Full set of errorfiles."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors full-set
         errorfile 400 /etc/haproxy/errors/400.http
         errorfile 403 /etc/haproxy/errors/403.http
@@ -2121,7 +2123,7 @@ def test_many_errorfiles() -> None:
         errorfile 502 /etc/haproxy/errors/502.http
         errorfile 503 /etc/haproxy/errors/503.http
         errorfile 504 /etc/haproxy/errors/504.http
-    """
+    """)
 
     parsed = parse_config(config)
     he = parsed.http_errors[0]
@@ -2153,12 +2155,12 @@ def test_http_errors_section_dataclass_defaults() -> None:
 def test_http_errors_with_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors custom-errors
         errorfile 503 /etc/haproxy/errors/503.http
         log global
         custom-directive value
-    """
+    """)
 
     parsed = parse_config(config)
     he = parsed.http_errors[0]
@@ -2169,13 +2171,13 @@ def test_http_errors_with_extra_options() -> None:
 def test_http_errors_mixed_types() -> None:
     """Section with mixed errorfile and errorloc types."""
 
-    config = """\
+    config = textwrap.dedent("""\
         http-errors mixed
         errorfile 400 /etc/haproxy/errors/400.http
         errorloc302 503 https://maintenance.example.com
         errorloc303 502 https://error.example.com/502
         errorfile 504 /etc/haproxy/errors/504.http
-    """
+    """)
 
     parsed = parse_config(config)
     he = parsed.http_errors[0]
@@ -2195,12 +2197,12 @@ def test_no_caches() -> None:
 def test_basic_cache() -> None:
     """Basic cache section."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache my_cache
         total-max-size 4
         max-object-size 524288
         max-age 60
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.caches) == 1
@@ -2217,14 +2219,14 @@ def test_basic_cache() -> None:
 def test_cache_all_fields() -> None:
     """Cache with all fields populated."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache static-cache
         total-max-size 64
         max-object-size 524288
         max-age 3600
         max-secondary-entries 10
         process-vary 1
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2238,10 +2240,10 @@ def test_cache_all_fields() -> None:
 def test_cache_minimal() -> None:
     """Minimal cache: only `total-max-size`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache tiny
         total-max-size 1
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2253,7 +2255,7 @@ def test_cache_minimal() -> None:
 def test_multiple_caches() -> None:
     """Multiple cache sections."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache cache_a
         total-max-size 32
         max-age 300
@@ -2261,7 +2263,7 @@ def test_multiple_caches() -> None:
         cache cache_b
         total-max-size 64
         max-age 600
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.caches) == 2
@@ -2274,12 +2276,12 @@ def test_multiple_caches() -> None:
 def test_cache_with_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache my_cache
         total-max-size 4
         max-age 60
         some-future-directive value
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2290,12 +2292,12 @@ def test_cache_with_extra_options() -> None:
 def test_cache_large_values() -> None:
     """Cache with large MB sizes."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache large
         total-max-size 1024
         max-object-size 10485760
         max-age 86400
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2320,11 +2322,11 @@ def test_cache_section_dataclass_defaults() -> None:
 def test_process_vary_off() -> None:
     """`process-vary 0`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache novary
         total-max-size 4
         process-vary 0
-    """
+    """)
 
     parsed = parse_config(config)
     assert parsed.caches[0].process_vary == 0
@@ -2333,10 +2335,10 @@ def test_process_vary_off() -> None:
 def test_parse_cache_total_max_size_invalid() -> None:
     """Invalid `total-max-size` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache c1
             total-max-size big
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2348,10 +2350,10 @@ def test_parse_cache_total_max_size_invalid() -> None:
 def test_parse_cache_max_object_size_invalid() -> None:
     """Invalid `max-object-size` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache c1
             max-object-size huge
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2363,10 +2365,10 @@ def test_parse_cache_max_object_size_invalid() -> None:
 def test_parse_cache_max_age_invalid() -> None:
     """Invalid `max-age` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache c1
             max-age forever
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2378,10 +2380,10 @@ def test_parse_cache_max_age_invalid() -> None:
 def test_parse_cache_max_secondary_entries_invalid() -> None:
     """Invalid `max-secondary-entries` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache c1
             max-secondary-entries many
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2393,10 +2395,10 @@ def test_parse_cache_max_secondary_entries_invalid() -> None:
 def test_parse_cache_process_vary_invalid() -> None:
     """Invalid `process-vary` goes to `extra_options`."""
 
-    config = """\
+    config = textwrap.dedent("""\
         cache c1
             process-vary yes
-    """
+    """)
 
     parsed = parse_config(config)
     c = parsed.caches[0]
@@ -2408,13 +2410,10 @@ def test_parse_cache_process_vary_invalid() -> None:
 def test_basic_mailer_section() -> None:
     """Basic mailer section."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers mymailers
             mailer smtp1 smtp.example.com:25
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     assert len(parsed.mailers) == 1
@@ -2428,14 +2427,11 @@ def test_basic_mailer_section() -> None:
 def test_mailer_with_timeout() -> None:
     """Mailer with timeout."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers alert-mailers
             timeout mail 10s
             mailer smtp1 smtp.internal.net:587
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2446,16 +2442,13 @@ def test_mailer_with_timeout() -> None:
 def test_multiple_mailer_entries() -> None:
     """Multiple mailer entries."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers multi-smtp
             timeout mail 30s
             mailer primary mail.primary.com:25
             mailer secondary mail.secondary.com:587
             mailer tertiary mail.tertiary.com:2525
-    """
-    )
+    """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2471,17 +2464,14 @@ def test_multiple_mailer_entries() -> None:
 def test_multiple_mailer_sections() -> None:
     """Multiple mailer sections."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers primary-mailers
             mailer smtp1 smtp1.example.com:25
 
             mailers backup-mailers
             timeout mail 5s
             mailer smtp-bak backup.example.com:587
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     assert len(parsed.mailers) == 2
@@ -2493,17 +2483,14 @@ def test_multiple_mailer_sections() -> None:
 def test_mailer_ignores_comments() -> None:
     """Comments are ignored in mailer sections."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers commented
             # This is a comment
             timeout mail 10s
             mailer smtp1 smtp.example.com:25
             # Another comment
             mailer smtp2 backup.example.com:587
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2514,13 +2501,10 @@ def test_mailer_ignores_comments() -> None:
 def test_mailer_empty_entries() -> None:
     """Mailer section with no entries."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers empty-mailers
             timeout mail 15s
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2550,16 +2534,13 @@ def test_mailer_section_dataclass_defaults() -> None:
 def test_mailer_with_extra_options() -> None:
     """Unknown directives go to `extra_options`."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers mymailers
             timeout mail 10s
             mailer smtp1 smtp.example.com:25
             log global
             custom-directive value
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2570,13 +2551,10 @@ def test_mailer_with_extra_options() -> None:
 def test_mailer_high_port() -> None:
     """Mailer on a high port."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers custom-port
             mailer relay relay.internal.net:2525
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     assert parsed.mailers[0].entries[0].port == 2525
@@ -2586,15 +2564,12 @@ def test_mailer_high_port() -> None:
 def test_mailer_smtp_auth_metadata() -> None:
     """`_pm_mailer_auth` metadata comment for SMTP authentication."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers auth-mailers
             timeout mail 10s
             mailer smtp1 smtp.gmail.com:587
             # _pm_mailer_auth smtp1 smtp_auth=true smtp_user=user@gmail.com smtp_password=app-pass use_tls=false use_starttls=true
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2611,15 +2586,12 @@ def test_mailer_smtp_auth_metadata() -> None:
 def test_mailer_smtp_auth_multiple_entries() -> None:
     """SMTP auth metadata for multiple mailer entries."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers multi-auth
             mailer smtp1 smtp.example.com:587
             # _pm_mailer_auth smtp1 smtp_auth=true smtp_user=admin smtp_password=secret use_tls=true use_starttls=false
             mailer smtp2 backup.example.com:25
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
@@ -2634,13 +2606,10 @@ def test_mailer_smtp_auth_multiple_entries() -> None:
 def test_mailer_no_auth_metadata() -> None:
     """Entries without auth metadata keep defaults."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers plain-mailers
             mailer relay relay.example.com:25
-    """
-    )
+    """)
 
     parsed = parse_config(config)
     e = parsed.mailers[0].entries[0]
@@ -2665,14 +2634,11 @@ def test_mailer_entry_dataclass_smtp_auth_defaults() -> None:
 def test_mailer_smtp_auth_tls_only() -> None:
     """TLS without STARTTLS."""
 
-    config = (
-        MINIMAL_CONFIG
-        + """
+    config = MINIMAL_CONFIG + textwrap.dedent("""
             mailers tls-mailers
             mailer smtp1 smtp.example.com:465
             # _pm_mailer_auth smtp1 smtp_auth=true smtp_user=user smtp_password=pass use_tls=true use_starttls=false
-        """
-    )
+        """)
 
     parsed = parse_config(config)
     e = parsed.mailers[0].entries[0]
@@ -2684,7 +2650,7 @@ def test_mailer_smtp_auth_tls_only() -> None:
 def test_example_config_integration() -> None:
     """Integration test: parse example config with multiple section types."""
 
-    config = """\
+    config = textwrap.dedent("""\
         global
         log 127.0.0.1 local0
 
@@ -2709,7 +2675,7 @@ def test_example_config_integration() -> None:
         max-age 3600
         max-secondary-entries 10
         process-vary 1
-    """
+    """)
 
     parsed = parse_config(config)
     assert len(parsed.peers) == 1
