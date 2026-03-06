@@ -74,9 +74,7 @@ class ListenBlockBind(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    listen_block_id: Mapped[int] = mapped_column(
-        ForeignKey("listen_blocks.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    listen_block_id: Mapped[int] = mapped_column(ForeignKey("listen_blocks.id", ondelete="CASCADE"), nullable=False, index=True)
     """Foreign key to the parent listen block."""
 
     bind_line: Mapped[str] = mapped_column(Text, nullable=False)
@@ -189,11 +187,7 @@ async def delete_all_listen_blocks(session: AsyncSession) -> None:
 async def list_listen_block_binds(session: AsyncSession, listen_block_id: int) -> list[ListenBlockBind]:
     """Return all binds for a given listen block."""
 
-    stmt = (
-        select(ListenBlockBind)
-        .where(ListenBlockBind.listen_block_id == listen_block_id)
-        .order_by(ListenBlockBind.sort_order, ListenBlockBind.id)
-    )
+    stmt = select(ListenBlockBind).where(ListenBlockBind.listen_block_id == listen_block_id).order_by(ListenBlockBind.sort_order, ListenBlockBind.id)
     result = await session.execute(stmt)
 
     return list(result.scalars().all())

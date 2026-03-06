@@ -25,10 +25,7 @@ def _get_secret_key() -> str:
     secret_key = os.environ.get("PM_SECRET_KEY") or os.environ.get("SECRET_KEY")
 
     if not secret_key:
-        raise RuntimeError(
-            "PM_SECRET_KEY environment variable must be set. "
-            'Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
-        )
+        raise RuntimeError('PM_SECRET_KEY environment variable must be set. Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
     _secret_key_cache = secret_key
 
     return _secret_key_cache

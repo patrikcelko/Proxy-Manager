@@ -143,9 +143,7 @@ async def get_peer_entry(session: AsyncSession, entry_id: int) -> PeerEntry | No
 async def list_peer_entries(session: AsyncSession, section_id: int) -> list[PeerEntry]:
     """Return all entries for a given peer section."""
 
-    result = await session.execute(
-        select(PeerEntry).where(PeerEntry.peer_section_id == section_id).order_by(PeerEntry.sort_order, PeerEntry.id)
-    )
+    result = await session.execute(select(PeerEntry).where(PeerEntry.peer_section_id == section_id).order_by(PeerEntry.sort_order, PeerEntry.id))
 
     return list(result.scalars().all())
 

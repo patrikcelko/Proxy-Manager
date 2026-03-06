@@ -51,9 +51,7 @@ async def get_default_setting(session: AsyncSession, setting_id: int) -> Default
     return await session.get(DefaultSetting, setting_id)
 
 
-async def create_default_setting(
-    session: AsyncSession, *, directive: str, value: str, comment: str | None = None, sort_order: int = 0
-) -> DefaultSetting:
+async def create_default_setting(session: AsyncSession, *, directive: str, value: str, comment: str | None = None, sort_order: int = 0) -> DefaultSetting:
     """Create and persist a new default setting."""
 
     setting = DefaultSetting(directive=directive, value=value, comment=comment, sort_order=sort_order)

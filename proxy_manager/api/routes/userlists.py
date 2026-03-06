@@ -137,9 +137,7 @@ async def api_create_entry(userlist_id: int, body: UserlistEntryCreate, session:
 
 
 @router.put("/api/userlists/{userlist_id}/entries/{entry_id}", response_model=UserlistEntryResponse)
-async def api_update_entry(
-    userlist_id: int, entry_id: int, body: UserlistEntryUpdate, session: DBSession
-) -> UserlistEntryResponse:
+async def api_update_entry(userlist_id: int, entry_id: int, body: UserlistEntryUpdate, session: DBSession) -> UserlistEntryResponse:
     """Update a userlist entry password or name."""
 
     entry = await get_userlist_entry(session, entry_id)

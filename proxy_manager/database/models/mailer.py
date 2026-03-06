@@ -155,11 +155,7 @@ async def get_mailer_entry(session: AsyncSession, entry_id: int) -> MailerEntry 
 async def list_mailer_entries(session: AsyncSession, section_id: int) -> list[MailerEntry]:
     """Return all entries for a given mailer section."""
 
-    result = await session.execute(
-        select(MailerEntry)
-        .where(MailerEntry.mailer_section_id == section_id)
-        .order_by(MailerEntry.sort_order, MailerEntry.id)
-    )
+    result = await session.execute(select(MailerEntry).where(MailerEntry.mailer_section_id == section_id).order_by(MailerEntry.sort_order, MailerEntry.id))
     return list(result.scalars().all())
 
 

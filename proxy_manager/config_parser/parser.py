@@ -1085,9 +1085,7 @@ def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
 
         m = _NS_RE.match(content)
         if m:
-            r.nameservers.append(
-                ParsedResolverNameserver(name=m.group(1), address=m.group(2), port=int(m.group(3)), order=ns_order)
-            )
+            r.nameservers.append(ParsedResolverNameserver(name=m.group(1), address=m.group(2), port=int(m.group(3)), order=ns_order))
             ns_order += 1
             continue
 
@@ -1146,9 +1144,7 @@ def _parse_peers(result: ParsedConfig, name: str, lines: list[str]) -> None:
 
         m = _PEER_RE.match(content)
         if m:
-            ps.entries.append(
-                ParsedPeerEntry(name=m.group(1), address=m.group(2), port=int(m.group(3)), order=entry_order)
-            )
+            ps.entries.append(ParsedPeerEntry(name=m.group(1), address=m.group(2), port=int(m.group(3)), order=entry_order))
             entry_order += 1
             continue
 

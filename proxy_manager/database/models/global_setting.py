@@ -50,9 +50,7 @@ async def get_global_setting(session: AsyncSession, setting_id: int) -> GlobalSe
     return await session.get(GlobalSetting, setting_id)
 
 
-async def create_global_setting(
-    session: AsyncSession, *, directive: str, value: str, comment: str | None = None, sort_order: int = 0
-) -> GlobalSetting:
+async def create_global_setting(session: AsyncSession, *, directive: str, value: str, comment: str | None = None, sort_order: int = 0) -> GlobalSetting:
     """Create and persist a new global setting."""
 
     setting = GlobalSetting(directive=directive, value=value, comment=comment, sort_order=sort_order)

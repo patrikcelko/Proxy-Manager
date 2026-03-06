@@ -43,9 +43,7 @@ async def api_list_global_settings(session: DBSession) -> SettingListResponse:
 async def api_create_global_setting(body: SettingCreate, session: DBSession) -> SettingResponse:
     """Create a new global setting."""
 
-    row = await create_global_setting(
-        session, directive=body.directive, value=body.value, comment=body.comment, sort_order=body.sort_order
-    )
+    row = await create_global_setting(session, directive=body.directive, value=body.value, comment=body.comment, sort_order=body.sort_order)
     return SettingResponse.model_validate(row)
 
 
@@ -92,9 +90,7 @@ async def api_list_default_settings(session: DBSession) -> SettingListResponse:
 async def api_create_default_setting(body: SettingCreate, session: DBSession) -> SettingResponse:
     """Create a new default setting."""
 
-    row = await create_default_setting(
-        session, directive=body.directive, value=body.value, comment=body.comment, sort_order=body.sort_order
-    )
+    row = await create_default_setting(session, directive=body.directive, value=body.value, comment=body.comment, sort_order=body.sort_order)
     return SettingResponse.model_validate(row)
 
 

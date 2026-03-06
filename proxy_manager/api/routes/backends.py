@@ -144,9 +144,7 @@ async def api_create_server(backend_id: int, body: BackendServerCreate, session:
 
 
 @router.put("/api/backends/{backend_id}/servers/{server_id}", response_model=BackendServerResponse)
-async def api_update_server(
-    backend_id: int, server_id: int, body: BackendServerUpdate, session: DBSession
-) -> BackendServerResponse:
+async def api_update_server(backend_id: int, server_id: int, body: BackendServerUpdate, session: DBSession) -> BackendServerResponse:
     """Update a backend server."""
 
     srv = await get_backend_server(session, server_id)

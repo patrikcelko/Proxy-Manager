@@ -398,12 +398,7 @@ def generate_config(
                 tls = getattr(e, "use_tls", False)
                 starttls = getattr(e, "use_starttls", False)
                 parts.append(
-                    f"{_INDENT}# _pm_mailer_auth {e.name}"
-                    f" smtp_auth=true"
-                    f" smtp_user={user}"
-                    f" smtp_password={pwd}"
-                    f" use_tls={str(tls).lower()}"
-                    f" use_starttls={str(starttls).lower()}"
+                    f"{_INDENT}# _pm_mailer_auth {e.name} smtp_auth=true smtp_user={user} smtp_password={pwd} use_tls={str(tls).lower()} use_starttls={str(starttls).lower()}"
                 )
 
         if ms.extra_options:

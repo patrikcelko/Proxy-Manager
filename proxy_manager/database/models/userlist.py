@@ -111,11 +111,7 @@ async def delete_userlist(session: AsyncSession, ul: Userlist) -> None:
 async def list_userlist_entries(session: AsyncSession, userlist_id: int) -> list[UserlistEntry]:
     """Return all entries for a given userlist."""
 
-    stmt = (
-        select(UserlistEntry)
-        .where(UserlistEntry.userlist_id == userlist_id)
-        .order_by(UserlistEntry.sort_order, UserlistEntry.id)
-    )
+    stmt = select(UserlistEntry).where(UserlistEntry.userlist_id == userlist_id).order_by(UserlistEntry.sort_order, UserlistEntry.id)
     result = await session.execute(stmt)
 
     return list(result.scalars().all())
@@ -127,9 +123,7 @@ async def get_userlist_entry(session: AsyncSession, entry_id: int) -> UserlistEn
     return await session.get(UserlistEntry, entry_id)
 
 
-async def create_userlist_entry(
-    session: AsyncSession, *, userlist_id: int, username: str, password_hash: str, sort_order: int = 0
-) -> UserlistEntry:
+async def create_userlist_entry(session: AsyncSession, *, userlist_id: int, username: str, password_hash: str, sort_order: int = 0) -> UserlistEntry:
     """Create and persist a new userlist entry."""
 
     entry = UserlistEntry(

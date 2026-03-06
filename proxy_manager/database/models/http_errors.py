@@ -142,11 +142,7 @@ async def get_http_error_entry(session: AsyncSession, entry_id: int) -> HttpErro
 async def list_http_error_entries(session: AsyncSession, section_id: int) -> list[HttpErrorEntry]:
     """Return all entries for a given http-errors section."""
 
-    result = await session.execute(
-        select(HttpErrorEntry)
-        .where(HttpErrorEntry.section_id == section_id)
-        .order_by(HttpErrorEntry.sort_order, HttpErrorEntry.id)
-    )
+    result = await session.execute(select(HttpErrorEntry).where(HttpErrorEntry.section_id == section_id).order_by(HttpErrorEntry.sort_order, HttpErrorEntry.id))
 
     return list(result.scalars().all())
 

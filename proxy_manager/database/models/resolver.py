@@ -173,11 +173,7 @@ async def get_resolver_nameserver(session: AsyncSession, ns_id: int) -> Resolver
 async def list_resolver_nameservers(session: AsyncSession, resolver_id: int) -> list[ResolverNameserver]:
     """Return all nameservers for a given resolver."""
 
-    result = await session.execute(
-        select(ResolverNameserver)
-        .where(ResolverNameserver.resolver_id == resolver_id)
-        .order_by(ResolverNameserver.sort_order, ResolverNameserver.id)
-    )
+    result = await session.execute(select(ResolverNameserver).where(ResolverNameserver.resolver_id == resolver_id).order_by(ResolverNameserver.sort_order, ResolverNameserver.id))
 
     return list(result.scalars().all())
 

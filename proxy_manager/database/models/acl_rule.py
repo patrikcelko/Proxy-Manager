@@ -18,9 +18,7 @@ class AclRule(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    frontend_id: Mapped[int | None] = mapped_column(
-        ForeignKey("frontends.id", ondelete="CASCADE"), nullable=True, index=True
-    )
+    frontend_id: Mapped[int | None] = mapped_column(ForeignKey("frontends.id", ondelete="CASCADE"), nullable=True, index=True)
     """Foreign key to the parent frontend."""
 
     domain: Mapped[str] = mapped_column(String(500), nullable=False)

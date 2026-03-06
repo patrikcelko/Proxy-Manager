@@ -72,11 +72,7 @@ async def _check_ssl_certificates():
                     if cert.expires_at is None:
                         continue
 
-                    days_left = (
-                        (cert.expires_at.replace(tzinfo=UTC) - now).days
-                        if cert.expires_at.tzinfo is None
-                        else (cert.expires_at - now).days
-                    )
+                    days_left = (cert.expires_at.replace(tzinfo=UTC) - now).days if cert.expires_at.tzinfo is None else (cert.expires_at - now).days
                     logger.warning(
                         "SSL certificate for %s expires in %d days (auto_renew=%s)",
                         cert.domain,

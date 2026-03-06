@@ -316,11 +316,7 @@ async def delete_backend(session: AsyncSession, be: Backend) -> None:
 async def list_backend_servers(session: AsyncSession, backend_id: int) -> list[BackendServer]:
     """Return all servers for a given backend, ordered by sort_order."""
 
-    stmt = (
-        select(BackendServer)
-        .where(BackendServer.backend_id == backend_id)
-        .order_by(BackendServer.sort_order, BackendServer.id)
-    )
+    stmt = select(BackendServer).where(BackendServer.backend_id == backend_id).order_by(BackendServer.sort_order, BackendServer.id)
 
     result = await session.execute(stmt)
     return list(result.scalars().all())

@@ -242,19 +242,13 @@ async def delete_frontend(session: AsyncSession, fe: Frontend) -> None:
 async def list_frontend_binds(session: AsyncSession, frontend_id: int) -> list[FrontendBind]:
     """Return all binds for a given frontend."""
 
-    stmt = (
-        select(FrontendBind)
-        .where(FrontendBind.frontend_id == frontend_id)
-        .order_by(FrontendBind.sort_order, FrontendBind.id)
-    )
+    stmt = select(FrontendBind).where(FrontendBind.frontend_id == frontend_id).order_by(FrontendBind.sort_order, FrontendBind.id)
     result = await session.execute(stmt)
 
     return list(result.scalars().all())
 
 
-async def create_frontend_bind(
-    session: AsyncSession, *, frontend_id: int, bind_line: str, sort_order: int = 0
-) -> FrontendBind:
+async def create_frontend_bind(session: AsyncSession, *, frontend_id: int, bind_line: str, sort_order: int = 0) -> FrontendBind:
     """Create and persist a new frontend bind."""
 
     bind = FrontendBind(frontend_id=frontend_id, bind_line=bind_line, sort_order=sort_order)
@@ -303,11 +297,7 @@ async def get_frontend_bind(session: AsyncSession, bind_id: int) -> FrontendBind
 async def list_frontend_options(session: AsyncSession, frontend_id: int) -> list[FrontendOption]:
     """Return all options for a given frontend."""
 
-    stmt = (
-        select(FrontendOption)
-        .where(FrontendOption.frontend_id == frontend_id)
-        .order_by(FrontendOption.sort_order, FrontendOption.id)
-    )
+    stmt = select(FrontendOption).where(FrontendOption.frontend_id == frontend_id).order_by(FrontendOption.sort_order, FrontendOption.id)
     result = await session.execute(stmt)
 
     return list(result.scalars().all())
