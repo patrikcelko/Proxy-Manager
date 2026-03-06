@@ -42,11 +42,14 @@ proxy_manager = ["static/**/*", "templates/**/*"]
 
 [tool.ruff]
 target-version = "py313"
-line-length = 120
+line-length = 180
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "S", "SIM"]
 ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["proxy_manager"]
@@ -65,3 +68,22 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "def __repr__",
 ]
+
+[tool.pyright]
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+typeCheckingMode = "strict"
+include = ["proxy_manager"]
+exclude = ["tests", "alembic", "**/__pycache__"]
+reportMissingTypeStubs = false
+reportMissingImports = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+reportUnknownLambdaType = false
+reportCallInDefaultInitializer = false
+reportImplicitOverride = false
+reportUntypedFunctionDecorator = false
+reportUntypedBaseClass = false
+reportInvalidTypeForm = false
