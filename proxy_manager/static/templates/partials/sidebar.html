@@ -101,13 +101,33 @@
         </li>
         <div class="nav-separator"></div>
         <div class="nav-label">Tools</div>
-        <li class="nav-item" data-section="config" data-label="Config Import/Export" onclick="switchSection('config')">
+        <li class="nav-item" data-section="config" data-label="Config Export" onclick="switchSection('config')">
             <svg width="16" height="16" stroke-width="2">
                 <use href="#i-file-text-header" />
             </svg>
-            Config Import/Export
+            Config Export
+        </li>
+        <li class="nav-item" data-section="history" data-label="History" onclick="switchSection('history')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-clock" />
+            </svg>
+            History
         </li>
     </ul>
+    <div class="sidebar-actions" id="sidebar-actions" style="display:none">
+        <button class="btn btn-full sidebar-save-btn" id="sidebar-save-btn" onclick="openSaveVersionModal()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-check" />
+            </svg>
+            Save Version
+        </button>
+        <button class="btn btn-secondary btn-full sidebar-discard-btn" id="sidebar-discard-btn" onclick="discardChanges()">
+            <svg width="14" height="14" stroke-width="2">
+                <use href="#i-x-circle" />
+            </svg>
+            Discard Changes
+        </button>
+    </div>
     <div class="sidebar-footer">
         <div class="sidebar-version-footer">v{{ version }}</div>
     </div>

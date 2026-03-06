@@ -73,11 +73,14 @@ export function logout(): void {
 /** Shows the main application layout and loads initial data. */
 export function showApp(): void {
     document.getElementById("auth-overlay")!.style.display = "none";
+    document.getElementById("setup-overlay")!.style.display = "none";
     document.getElementById("app-layout")!.style.display = "flex";
     document.getElementById("app-footer")!.style.display = "block";
     restoreSidebarState();
     loadUserInfo();
     loadOverview();
+    // Refresh version badges asynchronously
+    import("../sections/versions").then((m) => m.refreshPendingBadges());
 }
 
 /** Updates the UI elements (avatar, name, email) from the current user object. */

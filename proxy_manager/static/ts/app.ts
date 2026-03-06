@@ -131,7 +131,10 @@ import {
     deleteSslCertificate,
     showCertbotCommand,
 } from "./sections/ssl";
-import { importConfig, exportConfig, copyExport } from "./sections/config";
+import { exportConfig, copyExport } from "./sections/config";
+import { initEmpty, initImport, showSetup } from "./sections/setup";
+import { loadHistory, toggleHistoryDiff, rollbackVersion } from "./sections/history";
+import { checkVersionStatus, refreshPendingBadges, openSaveVersionModal, saveVersion, discardChanges } from "./sections/versions";
 
 /*  Expose onclick handlers on window  */
 Object.assign(window, {
@@ -312,9 +315,25 @@ Object.assign(window, {
     showCertbotCommand,
 
     /* config */
-    importConfig,
     exportConfig,
     copyExport,
+
+    /* setup */
+    initEmpty,
+    initImport,
+    showSetup,
+
+    /* history */
+    loadHistory,
+    toggleHistoryDiff,
+    rollbackVersion,
+
+    /* versions */
+    checkVersionStatus,
+    refreshPendingBadges,
+    openSaveVersionModal,
+    saveVersion,
+    discardChanges,
 });
 
 /*  Init event listeners  */
@@ -343,7 +362,16 @@ document.getElementById("form-register")?.addEventListener("submit", handleRegis
         state.allBackends = (be as any).items || be;
         state.allAclRules = (acl as any).items || acl;
         state.cachedUserlists = (ul as any).items || ul;
-        showApp();
+
+        // Check version status — show setup if not initialized
+        const initialized = await checkVersionStatus();
+        if (!initialized) {
+            // Show auth overlay first, then setup
+            document.getElementById("auth-overlay")!.style.display = "none";
+            showSetup();
+        } else {
+            showApp();
+        }
     } catch {
         logout();
     }

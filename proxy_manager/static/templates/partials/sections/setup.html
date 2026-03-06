@@ -1,0 +1,25 @@
+<div class="setup-overlay" id="setup-overlay" style="display:none">
+    <div class="setup-container">
+        <div class="setup-header">
+            <img src="/static/assets/images/logo.png" alt="Proxy Manager" class="setup-logo">
+            <h1><span class="accent">Proxy</span> Manager</h1>
+            <p class="setup-subtitle">Welcome! Choose how to start your HAProxy configuration.</p>
+        </div>
+        <div class="setup-options">
+            <div class="setup-card" onclick="initEmpty()">
+                <svg width="40" height="40" stroke-width="1.5">
+                    <use href="#i-file" />
+                </svg>
+                <h3>Start Fresh</h3>
+                <p>Create an empty configuration and build your HAProxy setup from scratch using the visual editor.</p>
+            </div>
+            <div class="setup-card" onclick="initImport()">
+                <svg width="40" height="40" stroke-width="1.5">
+                    <use href="#i-upload" />
+                </svg>
+                <h3>Import Config</h3>
+                <p>Import an existing HAProxy configuration file to populate all sections automatically.</p>
+            </div>
+        </div>
+    </div>
+</div>

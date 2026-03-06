@@ -19,6 +19,7 @@ from proxy_manager.api.routes.resolvers import router as resolvers_router
 from proxy_manager.api.routes.settings import router as settings_router
 from proxy_manager.api.routes.ssl_certificates import router as ssl_router
 from proxy_manager.api.routes.userlists import router as userlists_router
+from proxy_manager.api.routes.versions import router as versions_router
 
 router = APIRouter()
 
@@ -36,3 +37,4 @@ router.include_router(http_errors_router)
 router.include_router(caches_router)
 router.include_router(ssl_router)
 router.include_router(config_io_router)
+router.include_router(versions_router)

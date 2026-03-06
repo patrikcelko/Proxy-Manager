@@ -7,6 +7,7 @@ from proxy_manager.database.models.acl_rule import AclRule
 from proxy_manager.database.models.backend import Backend, BackendServer
 from proxy_manager.database.models.base import Base
 from proxy_manager.database.models.cache import CacheSection
+from proxy_manager.database.models.config_version import ConfigVersion
 from proxy_manager.database.models.default_setting import DefaultSetting
 from proxy_manager.database.models.frontend import Frontend, FrontendBind, FrontendOption
 from proxy_manager.database.models.global_setting import GlobalSetting
@@ -25,6 +26,7 @@ __all__ = [
     "BackendServer",
     "Base",
     "CacheSection",
+    "ConfigVersion",
     "DefaultSetting",
     "Frontend",
     "FrontendBind",

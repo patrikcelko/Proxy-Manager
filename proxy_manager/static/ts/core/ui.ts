@@ -20,6 +20,7 @@ import { loadMailers } from "../sections/mailers";
 import { loadHttpErrors } from "../sections/http-errors";
 import { loadCaches } from "../sections/caches";
 import { loadSslCertificates } from "../sections/ssl";
+import { loadHistory } from "../sections/history";
 
 /** Human-readable titles displayed in the top bar for each section. */
 const _sectionTitles: Record<string, string> = {
@@ -37,7 +38,8 @@ const _sectionTitles: Record<string, string> = {
     mailers: "Mailers",
     "http-errors": "HTTP Errors",
     caches: "Cache",
-    config: "Config Import/Export",
+    config: "Config Export",
+    history: "Version History",
 };
 
 /** Switches the active SPA section, updates nav highlighting, and triggers data loading. */
@@ -64,6 +66,7 @@ export function switchSection(name: string): void {
         "http-errors": loadHttpErrors,
         caches: loadCaches,
         "ssl-certificates": loadSslCertificates,
+        history: loadHistory,
     };
     if (loaders[name]) loaders[name]();
 }

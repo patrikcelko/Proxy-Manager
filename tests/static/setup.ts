@@ -6,6 +6,7 @@ import { vi } from "vitest";
 
 document.body.innerHTML = `
   <div id="auth-overlay" style="display:flex"></div>
+  <div id="setup-overlay" style="display:none"></div>
   <div id="app-layout" style="display:none"></div>
   <div id="app-footer" style="display:none"></div>
   <div id="toast-container"></div>

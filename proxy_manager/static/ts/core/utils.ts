@@ -7,6 +7,7 @@
 
 import { api, toast } from "./api";
 import { closeModal } from "./ui";
+import { refreshPendingBadges } from "../sections/versions";
 
 /** Escapes HTML special characters to prevent XSS in rendered templates. */
 export function escHtml(s: unknown): string {
@@ -33,6 +34,7 @@ export async function crudSave(baseUrl: string, body: unknown, entityId: number 
         toast("Saved");
         closeModal();
         reloadFn();
+        refreshPendingBadges();
     } catch (err) {
         toast((err as Error).message, "error");
     }
@@ -45,6 +47,7 @@ export async function crudDelete(url: string, confirmMsg: string, reloadFn: () =
         await api(url, { method: "DELETE" });
         toast("Deleted");
         reloadFn();
+        refreshPendingBadges();
     } catch (err) {
         toast((err as Error).message, "error");
     }

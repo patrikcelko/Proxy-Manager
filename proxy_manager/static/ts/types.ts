@@ -398,3 +398,60 @@ export interface FlowPoint {
     x: number;
     y: number;
 }
+
+/*  Version Control Types  */
+
+export interface VersionStatus {
+    initialized: boolean;
+    has_pending: boolean;
+    pending_counts: Record<string, number>;
+    current_hash: string | null;
+}
+
+export interface VersionSummary {
+    hash: string;
+    message: string;
+    user_name: string;
+    created_at: string;
+    parent_hash: string | null;
+}
+
+export interface FieldChange {
+    field: string;
+    old: unknown;
+    new: unknown;
+}
+
+export interface EntityUpdate {
+    entity: string;
+    old: Record<string, unknown>;
+    new: Record<string, unknown>;
+    changes: FieldChange[];
+}
+
+export interface SectionDiff {
+    created: Record<string, unknown>[];
+    deleted: Record<string, unknown>[];
+    updated: EntityUpdate[];
+    total: number;
+}
+
+export interface VersionDetail {
+    hash: string;
+    message: string;
+    user_name: string;
+    created_at: string;
+    parent_hash: string | null;
+    diff: Record<string, SectionDiff>;
+}
+
+export interface PendingChanges {
+    has_pending: boolean;
+    pending_counts: Record<string, number>;
+    sections: Record<string, SectionDiff>;
+}
+
+export interface VersionListResponse {
+    items: VersionSummary[];
+    total: number;
+}

@@ -1,0 +1,706 @@
+"""
+Configuration snapshot utilities
+=================================
+
+Functions for taking, comparing, and restoring configuration snapshots.
+A snapshot is a JSON-serializable dictionary representing the complete
+state of all HAProxy configuration entities in the database.
+"""
+
+import json
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from proxy_manager.database.models.acl_rule import create_acl_rule, delete_all_acl_rules, list_all_acl_rules
+from proxy_manager.database.models.backend import (
+    create_backend,
+    create_backend_server,
+    delete_all_backends,
+    list_backend_servers,
+    list_backends,
+)
+from proxy_manager.database.models.cache import create_cache_section, delete_all_cache_sections, list_cache_sections
+from proxy_manager.database.models.default_setting import (
+    create_default_setting,
+    delete_all_default_settings,
+    list_default_settings,
+)
+from proxy_manager.database.models.frontend import (
+    create_frontend,
+    create_frontend_bind,
+    create_frontend_option,
+    delete_all_frontends,
+    list_frontend_binds,
+    list_frontend_options,
+    list_frontends,
+)
+from proxy_manager.database.models.global_setting import (
+    create_global_setting,
+    delete_all_global_settings,
+    list_global_settings,
+)
+from proxy_manager.database.models.http_errors import (
+    create_http_error_entry,
+    create_http_errors_section,
+    delete_all_http_errors_sections,
+    list_http_error_entries,
+    list_http_errors_sections,
+)
+from proxy_manager.database.models.listen_block import (
+    create_listen_block,
+    create_listen_block_bind,
+    delete_all_listen_blocks,
+    list_listen_block_binds,
+    list_listen_blocks,
+)
+from proxy_manager.database.models.mailer import (
+    create_mailer_entry,
+    create_mailer_section,
+    delete_all_mailer_sections,
+    list_mailer_entries,
+    list_mailer_sections,
+)
+from proxy_manager.database.models.peer import (
+    create_peer_entry,
+    create_peer_section,
+    delete_all_peer_sections,
+    list_peer_entries,
+    list_peer_sections,
+)
+from proxy_manager.database.models.resolver import (
+    create_resolver,
+    create_resolver_nameserver,
+    delete_all_resolvers,
+    list_resolver_nameservers,
+    list_resolvers,
+)
+from proxy_manager.database.models.ssl_certificate import (
+    create_ssl_certificate,
+    delete_all_ssl_certificates,
+    list_ssl_certificates,
+)
+from proxy_manager.database.models.userlist import (
+    create_userlist,
+    create_userlist_entry,
+    delete_all_userlists,
+    list_userlist_entries,
+    list_userlists,
+)
+
+# Sections tracked for diff/badge display, mapped to sidebar section IDs
+SECTION_SIDEBAR_MAP: dict[str, str] = {
+    "global_settings": "global",
+    "default_settings": "defaults",
+    "frontends": "frontends",
+    "acl_rules": "acl",
+    "backends": "backends",
+    "listen_blocks": "listen",
+    "userlists": "userlists",
+    "resolvers": "resolvers",
+    "peers": "peers",
+    "mailers": "mailers",
+    "http_errors": "http-errors",
+    "caches": "caches",
+    "ssl_certificates": "ssl-certificates",
+}
+
+
+async def take_snapshot(session: AsyncSession) -> dict:
+    """Take a full JSON-serializable snapshot of all config entities."""
+
+    snapshot: dict = {}
+
+    # ── Global settings ──
+    gs = await list_global_settings(session)
+    snapshot["global_settings"] = [
+        {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
+        for s in gs
+    ]
+
+    # ── Default settings ──
+    ds = await list_default_settings(session)
+    snapshot["default_settings"] = [
+        {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
+        for s in ds
+    ]
+
+    # ── Userlists ──
+    uls = await list_userlists(session)
+    userlists_data = []
+    for ul in uls:
+        entries = await list_userlist_entries(session, ul.id)
+        userlists_data.append({
+            "name": ul.name,
+            "entries": [
+                {"username": e.username, "password_hash": e.password_hash, "sort_order": e.sort_order}
+                for e in entries
+            ],
+        })
+    snapshot["userlists"] = userlists_data
+
+    # ── Frontends (binds + options, ACL rules tracked separately) ──
+    fes = await list_frontends(session)
+    frontends_data = []
+    fe_name_map: dict[int, str] = {}
+    for fe in fes:
+        fe_name_map[fe.id] = fe.name
+        binds = await list_frontend_binds(session, fe.id)
+        opts = await list_frontend_options(session, fe.id)
+        frontends_data.append({
+            "name": fe.name, "mode": fe.mode, "default_backend": fe.default_backend,
+            "timeout_client": fe.timeout_client, "timeout_http_request": fe.timeout_http_request,
+            "timeout_http_keep_alive": fe.timeout_http_keep_alive, "maxconn": fe.maxconn,
+            "option_httplog": fe.option_httplog, "option_tcplog": fe.option_tcplog,
+            "option_forwardfor": fe.option_forwardfor,
+            "compression_algo": fe.compression_algo, "compression_type": fe.compression_type,
+            "comment": fe.comment,
+            "binds": [{"bind_line": b.bind_line, "sort_order": b.sort_order} for b in binds],
+            "options": [
+                {"directive": o.directive, "value": o.value, "comment": o.comment, "sort_order": o.sort_order}
+                for o in opts
+            ],
+        })
+    snapshot["frontends"] = frontends_data
+
+    # ── ACL rules (stored separately with frontend_name for portability) ──
+    all_acls = await list_all_acl_rules(session)
+    snapshot["acl_rules"] = [
+        {
+            "frontend_name": fe_name_map.get(acl.frontend_id, ""),
+            "domain": acl.domain, "backend_name": acl.backend_name,
+            "acl_match_type": acl.acl_match_type, "is_redirect": acl.is_redirect,
+            "redirect_target": acl.redirect_target, "redirect_code": acl.redirect_code,
+            "comment": acl.comment, "sort_order": acl.sort_order, "enabled": acl.enabled,
+        }
+        for acl in all_acls
+    ]
+
+    # ── Backends + servers ──
+    bes = await list_backends(session)
+    backends_data = []
+    for be in bes:
+        srvs = await list_backend_servers(session, be.id)
+        backends_data.append({
+            "name": be.name, "mode": be.mode, "balance": be.balance,
+            "option_forwardfor": be.option_forwardfor, "option_redispatch": be.option_redispatch,
+            "retries": be.retries, "retry_on": be.retry_on,
+            "auth_userlist": be.auth_userlist,
+            "health_check_enabled": be.health_check_enabled,
+            "health_check_method": be.health_check_method, "health_check_uri": be.health_check_uri,
+            "errorfile": be.errorfile, "comment": be.comment, "extra_options": be.extra_options,
+            "cookie": be.cookie,
+            "timeout_server": be.timeout_server, "timeout_connect": be.timeout_connect,
+            "timeout_queue": be.timeout_queue,
+            "http_check_expect": be.http_check_expect,
+            "default_server_options": be.default_server_options,
+            "http_reuse": be.http_reuse, "hash_type": be.hash_type,
+            "option_httplog": be.option_httplog, "option_tcplog": be.option_tcplog,
+            "compression_algo": be.compression_algo, "compression_type": be.compression_type,
+            "servers": [
+                {
+                    "name": s.name, "address": s.address, "port": s.port,
+                    "check_enabled": s.check_enabled, "maxconn": s.maxconn,
+                    "maxqueue": s.maxqueue, "extra_params": s.extra_params,
+                    "sort_order": s.sort_order, "weight": s.weight,
+                    "ssl_enabled": s.ssl_enabled, "ssl_verify": s.ssl_verify,
+                    "backup": s.backup, "inter": s.inter,
+                    "fastinter": s.fastinter, "downinter": s.downinter,
+                    "rise": s.rise, "fall": s.fall,
+                    "cookie_value": s.cookie_value,
+                    "send_proxy": s.send_proxy, "send_proxy_v2": s.send_proxy_v2,
+                    "slowstart": s.slowstart, "resolve_prefer": s.resolve_prefer,
+                    "resolvers_ref": s.resolvers_ref,
+                    "on_marked_down": s.on_marked_down, "disabled": s.disabled,
+                }
+                for s in srvs
+            ],
+        })
+    snapshot["backends"] = backends_data
+
+    # ── Listen blocks + binds ──
+    lbs = await list_listen_blocks(session)
+    listen_data = []
+    for lb in lbs:
+        binds = await list_listen_block_binds(session, lb.id)
+        listen_data.append({
+            "name": lb.name, "mode": lb.mode, "balance": lb.balance, "maxconn": lb.maxconn,
+            "timeout_client": lb.timeout_client, "timeout_server": lb.timeout_server,
+            "timeout_connect": lb.timeout_connect,
+            "default_server_params": lb.default_server_params,
+            "option_forwardfor": lb.option_forwardfor,
+            "option_httplog": lb.option_httplog, "option_tcplog": lb.option_tcplog,
+            "content": lb.content, "comment": lb.comment, "sort_order": lb.sort_order,
+            "binds": [{"bind_line": b.bind_line, "sort_order": b.sort_order} for b in binds],
+        })
+    snapshot["listen_blocks"] = listen_data
+
+    # ── Resolvers + nameservers ──
+    res = await list_resolvers(session)
+    resolvers_data = []
+    for r in res:
+        ns = await list_resolver_nameservers(session, r.id)
+        resolvers_data.append({
+            "name": r.name, "resolve_retries": r.resolve_retries,
+            "timeout_resolve": r.timeout_resolve, "timeout_retry": r.timeout_retry,
+            "hold_valid": r.hold_valid, "hold_other": r.hold_other,
+            "hold_refused": r.hold_refused, "hold_timeout": r.hold_timeout,
+            "hold_obsolete": r.hold_obsolete, "hold_nx": r.hold_nx, "hold_aa": r.hold_aa,
+            "accepted_payload_size": r.accepted_payload_size,
+            "parse_resolv_conf": r.parse_resolv_conf,
+            "comment": r.comment, "extra_options": r.extra_options,
+            "nameservers": [
+                {"name": n.name, "address": n.address, "port": n.port, "sort_order": n.sort_order}
+                for n in ns
+            ],
+        })
+    snapshot["resolvers"] = resolvers_data
+
+    # ── Peers + entries ──
+    peers_raw = await list_peer_sections(session)
+    peers_data = []
+    for p in peers_raw:
+        entries = await list_peer_entries(session, p.id)
+        peers_data.append({
+            "name": p.name, "comment": p.comment, "extra_options": p.extra_options,
+            "default_bind": p.default_bind, "default_server_options": p.default_server_options,
+            "entries": [
+                {"name": e.name, "address": e.address, "port": e.port, "sort_order": e.sort_order}
+                for e in entries
+            ],
+        })
+    snapshot["peers"] = peers_data
+
+    # ── Mailers + entries ──
+    mailers_raw = await list_mailer_sections(session)
+    mailers_data = []
+    for m in mailers_raw:
+        entries = await list_mailer_entries(session, m.id)
+        mailers_data.append({
+            "name": m.name, "timeout_mail": m.timeout_mail,
+            "comment": m.comment, "extra_options": m.extra_options,
+            "entries": [
+                {
+                    "name": e.name, "address": e.address, "port": e.port,
+                    "smtp_auth": e.smtp_auth, "smtp_user": e.smtp_user,
+                    "smtp_password": e.smtp_password,
+                    "use_tls": e.use_tls, "use_starttls": e.use_starttls,
+                    "sort_order": e.sort_order,
+                }
+                for e in entries
+            ],
+        })
+    snapshot["mailers"] = mailers_data
+
+    # ── HTTP errors + entries ──
+    he_raw = await list_http_errors_sections(session)
+    http_errors_data = []
+    for he in he_raw:
+        entries = await list_http_error_entries(session, he.id)
+        http_errors_data.append({
+            "name": he.name, "comment": he.comment, "extra_options": he.extra_options,
+            "entries": [
+                {"status_code": e.status_code, "type": e.type, "value": e.value, "sort_order": e.sort_order}
+                for e in entries
+            ],
+        })
+    snapshot["http_errors"] = http_errors_data
+
+    # ── Caches ──
+    caches = await list_cache_sections(session)
+    snapshot["caches"] = [
+        {
+            "name": c.name, "total_max_size": c.total_max_size,
+            "max_object_size": c.max_object_size, "max_age": c.max_age,
+            "max_secondary_entries": c.max_secondary_entries, "process_vary": c.process_vary,
+            "comment": c.comment, "extra_options": c.extra_options,
+        }
+        for c in caches
+    ]
+
+    # ── SSL certificates ──
+    certs = await list_ssl_certificates(session)
+    snapshot["ssl_certificates"] = [
+        {
+            "domain": c.domain, "alt_domains": c.alt_domains, "email": c.email,
+            "provider": c.provider, "status": c.status,
+            "cert_path": c.cert_path, "key_path": c.key_path,
+            "fullchain_path": c.fullchain_path,
+            "issued_at": c.issued_at.isoformat() if c.issued_at else None,
+            "expires_at": c.expires_at.isoformat() if c.expires_at else None,
+            "auto_renew": c.auto_renew, "challenge_type": c.challenge_type,
+            "dns_plugin": c.dns_plugin,
+            "last_renewal_at": c.last_renewal_at.isoformat() if c.last_renewal_at else None,
+            "last_error": c.last_error, "comment": c.comment,
+        }
+        for c in certs
+    ]
+
+    return snapshot
+
+
+async def clear_all_entities(session: AsyncSession) -> None:
+    """Delete all configuration entities from the database."""
+
+    await delete_all_acl_rules(session)
+    await delete_all_frontends(session)
+    await delete_all_backends(session)
+    await delete_all_userlists(session)
+    await delete_all_listen_blocks(session)
+    await delete_all_global_settings(session)
+    await delete_all_default_settings(session)
+    await delete_all_resolvers(session)
+    await delete_all_peer_sections(session)
+    await delete_all_mailer_sections(session)
+    await delete_all_http_errors_sections(session)
+    await delete_all_cache_sections(session)
+    await delete_all_ssl_certificates(session)
+
+
+async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
+    """Restore the database to match a snapshot. Clears all existing data first."""
+
+    await clear_all_entities(session)
+
+    # ── Global settings ──
+    for s in snapshot_data.get("global_settings", []):
+        await create_global_setting(session, directive=s["directive"], value=s.get("value"), comment=s.get("comment"), sort_order=s.get("sort_order", 0))
+
+    # ── Default settings ──
+    for s in snapshot_data.get("default_settings", []):
+        await create_default_setting(session, directive=s["directive"], value=s.get("value"), comment=s.get("comment"), sort_order=s.get("sort_order", 0))
+
+    # ── Userlists ──
+    for ul in snapshot_data.get("userlists", []):
+        db_ul = await create_userlist(session, name=ul["name"])
+        for e in ul.get("entries", []):
+            await create_userlist_entry(
+                session, userlist_id=db_ul.id,
+                username=e["username"], password_hash=e.get("password_hash", ""),
+                sort_order=e.get("sort_order", 0),
+            )
+
+    # ── Listen blocks ──
+    for lb in snapshot_data.get("listen_blocks", []):
+        db_lb = await create_listen_block(
+            session, name=lb["name"], mode=lb.get("mode"), balance=lb.get("balance"),
+            maxconn=lb.get("maxconn"),
+            timeout_client=lb.get("timeout_client"), timeout_server=lb.get("timeout_server"),
+            timeout_connect=lb.get("timeout_connect"),
+            default_server_params=lb.get("default_server_params"),
+            option_forwardfor=lb.get("option_forwardfor", False),
+            option_httplog=lb.get("option_httplog", False), option_tcplog=lb.get("option_tcplog", False),
+            content=lb.get("content"), comment=lb.get("comment"),
+        )
+        for b in lb.get("binds", []):
+            await create_listen_block_bind(session, listen_block_id=db_lb.id, bind_line=b["bind_line"], sort_order=b.get("sort_order", 0))
+
+    # ── Frontends ──
+    fe_id_map: dict[str, int] = {}
+    for fe in snapshot_data.get("frontends", []):
+        db_fe = await create_frontend(
+            session, name=fe["name"], mode=fe.get("mode", "http"),
+            default_backend=fe.get("default_backend"), comment=fe.get("comment"),
+            timeout_client=fe.get("timeout_client"),
+            timeout_http_request=fe.get("timeout_http_request"),
+            timeout_http_keep_alive=fe.get("timeout_http_keep_alive"),
+            maxconn=fe.get("maxconn"),
+            option_httplog=fe.get("option_httplog", False),
+            option_tcplog=fe.get("option_tcplog", False),
+            option_forwardfor=fe.get("option_forwardfor", False),
+            compression_algo=fe.get("compression_algo"),
+            compression_type=fe.get("compression_type"),
+        )
+        fe_id_map[fe["name"]] = db_fe.id
+        for b in fe.get("binds", []):
+            await create_frontend_bind(session, frontend_id=db_fe.id, bind_line=b["bind_line"], sort_order=b.get("sort_order", 0))
+        for o in fe.get("options", []):
+            await create_frontend_option(
+                session, frontend_id=db_fe.id,
+                directive=o["directive"], value=o.get("value"), comment=o.get("comment"),
+                sort_order=o.get("sort_order", 0),
+            )
+
+    # ── ACL rules ──
+    for acl in snapshot_data.get("acl_rules", []):
+        fe_name = acl.get("frontend_name", "")
+        fe_id = fe_id_map.get(fe_name)
+        if fe_id is None:
+            continue
+        await create_acl_rule(
+            session, frontend_id=fe_id,
+            domain=acl["domain"], backend_name=acl.get("backend_name"),
+            acl_match_type=acl.get("acl_match_type", "hdr_dom"),
+            is_redirect=acl.get("is_redirect", False),
+            redirect_target=acl.get("redirect_target"),
+            redirect_code=acl.get("redirect_code", 308),
+            comment=acl.get("comment"), sort_order=acl.get("sort_order", 0),
+            enabled=acl.get("enabled", True),
+        )
+
+    # ── Backends ──
+    for be in snapshot_data.get("backends", []):
+        db_be = await create_backend(
+            session, name=be["name"], mode=be.get("mode"), balance=be.get("balance"),
+            option_forwardfor=be.get("option_forwardfor", False),
+            option_redispatch=be.get("option_redispatch", False),
+            retries=be.get("retries"), retry_on=be.get("retry_on"),
+            auth_userlist=be.get("auth_userlist"),
+            health_check_enabled=be.get("health_check_enabled", False),
+            health_check_method=be.get("health_check_method"),
+            health_check_uri=be.get("health_check_uri"),
+            errorfile=be.get("errorfile"), comment=be.get("comment"),
+            extra_options=be.get("extra_options"), cookie=be.get("cookie"),
+            timeout_server=be.get("timeout_server"), timeout_connect=be.get("timeout_connect"),
+            timeout_queue=be.get("timeout_queue"),
+            http_check_expect=be.get("http_check_expect"),
+            default_server_options=be.get("default_server_options"),
+            http_reuse=be.get("http_reuse"), hash_type=be.get("hash_type"),
+            option_httplog=be.get("option_httplog", False),
+            option_tcplog=be.get("option_tcplog", False),
+            compression_algo=be.get("compression_algo"),
+            compression_type=be.get("compression_type"),
+        )
+        for srv in be.get("servers", []):
+            await create_backend_server(
+                session, backend_id=db_be.id,
+                name=srv["name"], address=srv["address"], port=srv["port"],
+                check_enabled=srv.get("check_enabled", False),
+                maxconn=srv.get("maxconn"), maxqueue=srv.get("maxqueue"),
+                extra_params=srv.get("extra_params"), sort_order=srv.get("sort_order", 0),
+                weight=srv.get("weight"), ssl_enabled=srv.get("ssl_enabled", False),
+                ssl_verify=srv.get("ssl_verify"), backup=srv.get("backup", False),
+                inter=srv.get("inter"), fastinter=srv.get("fastinter"),
+                downinter=srv.get("downinter"), rise=srv.get("rise"), fall=srv.get("fall"),
+                cookie_value=srv.get("cookie_value"),
+                send_proxy=srv.get("send_proxy", False),
+                send_proxy_v2=srv.get("send_proxy_v2", False),
+                slowstart=srv.get("slowstart"), resolve_prefer=srv.get("resolve_prefer"),
+                resolvers_ref=srv.get("resolvers_ref"),
+                on_marked_down=srv.get("on_marked_down"),
+                disabled=srv.get("disabled", False),
+            )
+
+    # ── Resolvers ──
+    for r in snapshot_data.get("resolvers", []):
+        db_r = await create_resolver(
+            session, name=r["name"], resolve_retries=r.get("resolve_retries"),
+            timeout_resolve=r.get("timeout_resolve"), timeout_retry=r.get("timeout_retry"),
+            hold_valid=r.get("hold_valid"), hold_other=r.get("hold_other"),
+            hold_refused=r.get("hold_refused"), hold_timeout=r.get("hold_timeout"),
+            hold_obsolete=r.get("hold_obsolete"), hold_nx=r.get("hold_nx"),
+            hold_aa=r.get("hold_aa"),
+            accepted_payload_size=r.get("accepted_payload_size"),
+            parse_resolv_conf=r.get("parse_resolv_conf"),
+            comment=r.get("comment"), extra_options=r.get("extra_options"),
+        )
+        for ns in r.get("nameservers", []):
+            await create_resolver_nameserver(
+                session, resolver_id=db_r.id,
+                name=ns["name"], address=ns["address"], port=ns["port"],
+                sort_order=ns.get("sort_order", 0),
+            )
+
+    # ── Peers ──
+    for p in snapshot_data.get("peers", []):
+        db_p = await create_peer_section(
+            session, name=p["name"], comment=p.get("comment"),
+            extra_options=p.get("extra_options"),
+            default_bind=p.get("default_bind"),
+            default_server_options=p.get("default_server_options"),
+        )
+        for e in p.get("entries", []):
+            await create_peer_entry(
+                session, peer_section_id=db_p.id,
+                name=e["name"], address=e["address"], port=e["port"],
+                sort_order=e.get("sort_order", 0),
+            )
+
+    # ── Mailers ──
+    for m in snapshot_data.get("mailers", []):
+        db_m = await create_mailer_section(
+            session, name=m["name"], timeout_mail=m.get("timeout_mail"),
+            comment=m.get("comment"), extra_options=m.get("extra_options"),
+        )
+        for e in m.get("entries", []):
+            await create_mailer_entry(
+                session, mailer_section_id=db_m.id,
+                name=e["name"], address=e["address"], port=e["port"],
+                smtp_auth=e.get("smtp_auth", False),
+                smtp_user=e.get("smtp_user"), smtp_password=e.get("smtp_password"),
+                use_tls=e.get("use_tls", False), use_starttls=e.get("use_starttls", False),
+                sort_order=e.get("sort_order", 0),
+            )
+
+    # ── HTTP errors ──
+    for he in snapshot_data.get("http_errors", []):
+        db_he = await create_http_errors_section(
+            session, name=he["name"], comment=he.get("comment"),
+            extra_options=he.get("extra_options"),
+        )
+        for e in he.get("entries", []):
+            await create_http_error_entry(
+                session, section_id=db_he.id,
+                status_code=e["status_code"], type=e["type"], value=e["value"],
+                sort_order=e.get("sort_order", 0),
+            )
+
+    # ── Caches ──
+    for c in snapshot_data.get("caches", []):
+        await create_cache_section(
+            session, name=c["name"], total_max_size=c.get("total_max_size"),
+            max_object_size=c.get("max_object_size"), max_age=c.get("max_age"),
+            max_secondary_entries=c.get("max_secondary_entries"),
+            process_vary=c.get("process_vary"),
+            comment=c.get("comment"), extra_options=c.get("extra_options"),
+        )
+
+    # ── SSL certificates ──
+    for sc in snapshot_data.get("ssl_certificates", []):
+        await create_ssl_certificate(
+            session, domain=sc["domain"], alt_domains=sc.get("alt_domains"),
+            provider=sc.get("provider", "manual"), status=sc.get("status", "pending"),
+            cert_path=sc.get("cert_path"), key_path=sc.get("key_path"),
+            fullchain_path=sc.get("fullchain_path"),
+            auto_renew=sc.get("auto_renew", False),
+            challenge_type=sc.get("challenge_type", "http"),
+            comment=sc.get("comment"),
+        )
+
+
+def compute_diff(old_snapshot: dict, new_snapshot: dict) -> dict:
+    """Compute a detailed diff between two snapshots.
+
+    Returns a dict with per-section changes including created, deleted,
+    and updated entities with field-level change details.
+    """
+
+    diff: dict = {}
+
+    for section_key in SECTION_SIDEBAR_MAP:
+        old_items = old_snapshot.get(section_key, [])
+        new_items = new_snapshot.get(section_key, [])
+
+        # Determine the name/key field for this section
+        name_key = _section_name_key(section_key)
+        section_diff = _diff_entity_list(old_items, new_items, name_key)
+
+        if section_diff["total"] > 0:
+            diff[section_key] = section_diff
+
+    return diff
+
+
+def compute_pending_counts(old_snapshot: dict, new_snapshot: dict) -> dict[str, int]:
+    """Compute per-section change counts for sidebar badges."""
+
+    counts: dict[str, int] = {}
+    for section_key in SECTION_SIDEBAR_MAP:
+        old_items = old_snapshot.get(section_key, [])
+        new_items = new_snapshot.get(section_key, [])
+        name_key = _section_name_key(section_key)
+
+        old_json = json.dumps(old_items, sort_keys=True, default=str)
+        new_json = json.dumps(new_items, sort_keys=True, default=str)
+
+        if old_json != new_json:
+            diff = _diff_entity_list(old_items, new_items, name_key)
+            counts[section_key] = diff["total"]
+        else:
+            counts[section_key] = 0
+
+    return counts
+
+
+def _section_name_key(section_key: str) -> str:
+    """Return the field name used to identify entities in a section."""
+
+    if section_key in ("global_settings", "default_settings"):
+        return "_ordered"  # Use ordered list comparison
+    if section_key == "ssl_certificates":
+        return "domain"
+    if section_key == "acl_rules":
+        return "_composite"  # Use composite key
+    return "name"
+
+
+def _diff_entity_list(old_items: list[dict], new_items: list[dict], name_key: str) -> dict:
+    """Diff two lists of entity dicts."""
+
+    created: list[dict] = []
+    deleted: list[dict] = []
+    updated: list[dict] = []
+
+    if name_key == "_ordered":
+        # Settings: compare ordered lists element by element
+        max_len = max(len(old_items), len(new_items))
+        for i in range(max_len):
+            old = old_items[i] if i < len(old_items) else None
+            new = new_items[i] if i < len(new_items) else None
+            if old is None and new is not None:
+                created.append(new)
+            elif old is not None and new is None:
+                deleted.append(old)
+            elif old != new and old is not None and new is not None:
+                changes = _compute_field_changes(old, new)
+                updated.append({"entity": new.get("directive", f"#{i}"), "old": old, "new": new, "changes": changes})
+
+        return {"created": created, "deleted": deleted, "updated": updated, "total": len(created) + len(deleted) + len(updated)}
+
+    if name_key == "_composite":
+        # ACL rules: use (frontend_name, domain, sort_order) as composite key
+        def acl_key(item: dict) -> str:
+            return f"{item.get('frontend_name', '')}:{item.get('domain', '')}:{item.get('sort_order', 0)}"
+
+        old_map = {acl_key(item): item for item in old_items}
+        new_map = {acl_key(item): item for item in new_items}
+    else:
+        old_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(old_items)}
+        new_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(new_items)}
+
+    # Created: in new but not in old
+    for key in new_map:
+        if key not in old_map:
+            created.append(new_map[key])
+
+    # Deleted: in old but not in new
+    for key in old_map:
+        if key not in new_map:
+            deleted.append(old_map[key])
+
+    # Updated: in both but different
+    for key in old_map:
+        if key in new_map:
+            old_json = json.dumps(old_map[key], sort_keys=True, default=str)
+            new_json = json.dumps(new_map[key], sort_keys=True, default=str)
+            if old_json != new_json:
+                changes = _compute_field_changes(old_map[key], new_map[key])
+                updated.append({
+                    "entity": key,
+                    "old": old_map[key],
+                    "new": new_map[key],
+                    "changes": changes,
+                })
+
+    return {
+        "created": created,
+        "deleted": deleted,
+        "updated": updated,
+        "total": len(created) + len(deleted) + len(updated),
+    }
+
+
+def _compute_field_changes(old: dict, new: dict) -> list[dict]:
+    """Compute field-level changes between two entity dicts."""
+
+    changes: list[dict] = []
+    all_keys = sorted(set(list(old.keys()) + list(new.keys())))
+
+    for key in all_keys:
+        old_val = old.get(key)
+        new_val = new.get(key)
+        old_str = json.dumps(old_val, sort_keys=True, default=str)
+        new_str = json.dumps(new_val, sort_keys=True, default=str)
+        if old_str != new_str:
+            changes.append({"field": key, "old": old_val, "new": new_val})
+
+    return changes

@@ -19,6 +19,7 @@ import type {
     SslCertificate,
     UserProfile,
     Userlist,
+    VersionStatus,
 } from "./types";
 
 export const state = {
@@ -35,4 +36,5 @@ export const state = {
     allSslCertificates: [] as SslCertificate[],
     cachedUserlists: null as Userlist[] | null,
     currentUser: null as UserProfile | null,
+    versionStatus: null as VersionStatus | null,
 };

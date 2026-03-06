@@ -4904,3 +4904,423 @@ h3 {
         transform: scale(.9);
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Setup Overlay
+   ══════════════════════════════════════════════════════════════════════ */
+
+.setup-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.setup-container {
+    text-align: center;
+    max-width: 700px;
+    padding: 2rem;
+}
+
+.setup-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+}
+
+.setup-container h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+}
+
+.setup-subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+.setup-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.setup-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.setup-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow), var(--shadow);
+    transform: translateY(-2px);
+}
+
+.setup-card svg {
+    color: var(--accent);
+    margin-bottom: 1rem;
+}
+
+.setup-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: .5rem;
+}
+
+.setup-card p {
+    color: var(--text-muted);
+    font-size: .85rem;
+    line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+    .setup-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Sidebar Nav Badges & Actions
+   ══════════════════════════════════════════════════════════════════════ */
+
+.nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.sidebar.collapsed .nav-badge {
+    display: none;
+}
+
+.sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.sidebar-actions .btn {
+    margin-top: 0;
+}
+
+.sidebar.collapsed .sidebar-actions {
+    padding: .5rem .35rem;
+}
+
+.sidebar.collapsed .sidebar-actions .btn {
+    font-size: 0;
+    justify-content: center;
+    padding: .5rem;
+    gap: 0;
+}
+
+.sidebar.collapsed .sidebar-actions .btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Version History
+   ══════════════════════════════════════════════════════════════════════ */
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+.history-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.history-card:hover {
+    border-color: var(--border-hover);
+}
+
+.history-card.open {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.history-header:hover {
+    background: var(--bg-hover);
+}
+
+.history-meta {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.history-hash {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--accent);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.history-message {
+    font-size: .88rem;
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 350px;
+}
+
+.history-info {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font-size: .75rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.history-author,
+.history-date {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    white-space: nowrap;
+}
+
+.history-chevron {
+    display: inline-flex;
+    transition: transform .2s ease;
+}
+
+.history-card.open .history-chevron .chevron {
+    transform: rotate(180deg);
+    color: var(--accent);
+}
+
+.history-diff {
+    border-top: 1px solid var(--border);
+    padding: .75rem 1rem;
+    background: var(--bg);
+}
+
+.diff-loading,
+.diff-error,
+.diff-empty {
+    color: var(--text-muted);
+    font-size: .85rem;
+    padding: .5rem 0;
+    text-align: center;
+}
+
+.diff-error {
+    color: var(--danger);
+}
+
+.diff-section {
+    margin-bottom: .75rem;
+}
+
+.diff-section:last-child {
+    margin-bottom: 0;
+}
+
+.diff-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .4rem .6rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: .5rem;
+}
+
+.diff-section-label {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.diff-section-count {
+    font-size: .72rem;
+    color: var(--text-muted);
+}
+
+.diff-group {
+    margin-bottom: .5rem;
+    margin-left: .75rem;
+}
+
+.diff-group-header {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .75rem;
+    font-weight: 600;
+    margin-bottom: .3rem;
+    padding: .15rem .4rem;
+    border-radius: 4px;
+}
+
+.diff-created .diff-group-header {
+    color: var(--ok);
+    background: var(--ok-bg);
+}
+
+.diff-deleted .diff-group-header {
+    color: var(--danger);
+    background: var(--danger-bg);
+}
+
+.diff-updated .diff-group-header {
+    color: var(--warn);
+    background: var(--warn-bg);
+}
+
+.diff-item {
+    padding: .25rem .5rem;
+    font-size: .8rem;
+    border-left: 2px solid var(--border);
+    margin-left: .5rem;
+    margin-bottom: .2rem;
+}
+
+.diff-created .diff-item {
+    border-left-color: var(--ok);
+}
+
+.diff-deleted .diff-item {
+    border-left-color: var(--danger);
+}
+
+.diff-updated .diff-item,
+.diff-update-item {
+    border-left-color: var(--warn);
+}
+
+.diff-entity-name {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.diff-fields {
+    margin-top: .3rem;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+
+.diff-field {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .75rem;
+    flex-wrap: wrap;
+}
+
+.diff-field-name {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    min-width: 100px;
+}
+
+.diff-old {
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    text-decoration: line-through;
+    opacity: .7;
+}
+
+.diff-arrow {
+    color: var(--text-dim);
+    font-size: .72rem;
+}
+
+.diff-new {
+    color: var(--ok);
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Config Export (single panel)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.config-actions-single {
+    display: block;
+    max-width: 800px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   General empty/loading states
+   ══════════════════════════════════════════════════════════════════════ */
+
+.loading-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem;
+    font-size: .9rem;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 3rem 1rem;
+    font-size: .9rem;
+}
+
+.empty-state svg {
+    color: var(--text-dim);
+    margin-bottom: .5rem;
+}
+
+.required {
+    color: var(--danger);
+}
