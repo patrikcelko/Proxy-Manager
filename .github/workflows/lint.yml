@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   ruff:
-    name: Ruff
+    name: Python Ruff
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         run: ruff format --check .
 
   pyright:
-    name: Pyright
+    name: Python Pyright
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,3 +53,24 @@ jobs:
 
       - name: Pyright strict
         run: pyright
+
+  typescript:
+    name: TypeScript type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build bundle
+        run: npm run build

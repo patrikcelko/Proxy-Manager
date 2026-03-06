@@ -42,7 +42,6 @@ async def test_invalid_token_returns_401(client: AsyncClient) -> None:
 async def test_expired_token_returns_401(client: AsyncClient) -> None:
     """An expired JWT should be rejected."""
 
-
     token = jwt.encode(
         {"sub": "1", "exp": 0},
         os.environ.get("SECRET_KEY", "test-secret-key-for-pytest-do-not-use-in-production"),

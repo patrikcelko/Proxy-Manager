@@ -93,7 +93,6 @@ async def test_import_merge(client: AsyncClient) -> None:
     resp = await client.post("/api/config/import", json={"config_text": "global\n    log 127.0.0.1 local1\n", "merge": True})
     assert resp.status_code == 200
 
-
     # Global settings should have grown
     ov2 = await client.get("/api/overview")
     assert ov2.json()["global_settings"] > ov1.json()["global_settings"]
