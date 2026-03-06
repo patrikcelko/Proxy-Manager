@@ -28,3 +28,11 @@ Object.assign(navigator, {
 });
 
 window.confirm = vi.fn(() => true);
+
+// Polyfill methods not available in jsdom
+Element.prototype.scrollIntoView = vi.fn();
+if (typeof CSS === "undefined") {
+    (globalThis as any).CSS = { escape: (s: string) => s.replace(/([^\w-])/g, "\\$1") };
+} else if (!CSS.escape) {
+    CSS.escape = (s: string) => s.replace(/([^\w-])/g, "\\$1");
+}
