@@ -3,7 +3,9 @@ Mailer model
 ============
 """
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, delete, select
+import logging
+
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,6 +42,7 @@ class MailerEntry(Base):
     """A mailer entry within a mailers section."""
 
     __tablename__ = "mailer_entries"
+    __table_args__ = (UniqueConstraint("mailer_section_id", "name", name="uq_mailer_entry_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -121,6 +124,9 @@ async def update_mailer_section(session: AsyncSession, obj: MailerSection, **kwa
     """Update an existing mailer section with the given field values."""
 
     allowed = {c.name for c in MailerSection.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_mailer_section: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -174,7 +180,10 @@ async def create_mailer_entry(session: AsyncSession, **kwargs: object) -> Mailer
 async def update_mailer_entry(session: AsyncSession, obj: MailerEntry, **kwargs: object) -> MailerEntry:
     """Update an existing mailer entry."""
 
-    allowed = {c.name for c in MailerEntry.__table__.columns} - {"id"}
+    allowed = {c.name for c in MailerEntry.__table__.columns} - {"id", "mailer_section_id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_mailer_entry: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

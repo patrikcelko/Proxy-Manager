@@ -3,7 +3,7 @@ Userlist models
 ===============
 """
 
-from sqlalchemy import ForeignKey, Integer, String, delete, select
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,6 +31,7 @@ class UserlistEntry(Base):
     """A user entry within a HAProxy userlist."""
 
     __tablename__ = "userlist_entries"
+    __table_args__ = (UniqueConstraint("userlist_id", "username", name="uq_userlist_entry_username"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""

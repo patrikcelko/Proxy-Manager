@@ -3,6 +3,7 @@ SSL Certificate model
 =====================
 """
 
+import logging
 from datetime import datetime
 
 from sqlalchemy import DateTime, Integer, String, Text, delete, func, select
@@ -52,10 +53,10 @@ class SslCertificate(Base):
     fullchain_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     """Path to the full certificate chain."""
 
-    issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     """Certificate issuance timestamp."""
 
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     """Certificate expiry timestamp."""
 
     auto_renew: Mapped[bool] = mapped_column(default=True)
@@ -71,7 +72,7 @@ class SslCertificate(Base):
     dns_plugin: Mapped[str | None] = mapped_column(String(100), nullable=True)
     """DNS plugin for ACME challenge."""
 
-    last_renewal_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_renewal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     """Last renewal timestamp."""
 
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -81,19 +82,24 @@ class SslCertificate(Base):
     """Optional user comment."""
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
     """Record creation timestamp."""
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
     )
     """Last update timestamp."""
+
+    def __repr__(self) -> str:
+        """Return a developer-friendly string representation."""
+
+        return f"<SslCertificate(id={self.id}, domain={self.domain!r}, status={self.status!r})>"
 
 
 async def list_ssl_certificates(session: AsyncSession) -> list[SslCertificate]:
@@ -140,6 +146,10 @@ async def update_ssl_certificate(
     """Update an existing SSL certificate record."""
 
     allowed = {c.name for c in SslCertificate.__table__.columns} - {"id", "created_at"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_ssl_certificate: ignoring unknown fields: %s", unknown)
+
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

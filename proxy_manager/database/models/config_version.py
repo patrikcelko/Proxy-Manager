@@ -11,6 +11,7 @@ import datetime
 import hashlib
 import json
 import uuid
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +28,7 @@ class ConfigVersion(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     message: Mapped[str] = mapped_column(String(500), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     user_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     parent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -39,7 +40,7 @@ class ConfigVersion(Base):
         return f"<ConfigVersion(hash={self.hash[:8]!r}, message={self.message!r})>"
 
 
-def compute_snapshot_hash(snapshot_data: dict) -> str:
+def compute_snapshot_hash(snapshot_data: dict[str, Any]) -> str:
     """Compute SHA-256 hash of a snapshot dictionary."""
 
     canonical = json.dumps(snapshot_data, sort_keys=True, default=str)
@@ -49,7 +50,7 @@ def compute_snapshot_hash(snapshot_data: dict) -> str:
 async def create_version(
     session: AsyncSession,
     *,
-    snapshot_data: dict,
+    snapshot_data: dict[str, Any],
     message: str,
     user_id: int,
     user_name: str,
@@ -114,8 +115,6 @@ async def list_versions(session: AsyncSession, *, limit: int = 50, offset: int =
 async def count_versions(session: AsyncSession) -> int:
     """Count total number of versions."""
 
-    from sqlalchemy import func as sqlfunc
-
-    stmt = select(sqlfunc.count(ConfigVersion.id))
+    stmt = select(func.count(ConfigVersion.id))
     result = await session.execute(stmt)
     return result.scalar_one()

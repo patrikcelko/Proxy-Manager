@@ -72,3 +72,30 @@ async def create_user(session: AsyncSession, *, email: str, name: str, password_
     await session.refresh(user)
 
     return user
+
+
+async def list_users(session: AsyncSession) -> list[User]:
+    """Return all users ordered by creation date."""
+
+    stmt = select(User).order_by(User.created_at)
+    result = await session.execute(stmt)
+
+    return list(result.scalars().all())
+
+
+async def delete_user(session: AsyncSession, user: User) -> None:
+    """Delete a user from the database."""
+
+    await session.delete(user)
+    await session.commit()
+
+
+async def count_users(session: AsyncSession) -> int:
+    """Return the total number of registered users."""
+
+    from sqlalchemy import func as sa_func
+
+    stmt = select(sa_func.count()).select_from(User)
+    result = await session.execute(stmt)
+
+    return result.scalar_one()

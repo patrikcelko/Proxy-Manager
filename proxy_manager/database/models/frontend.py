@@ -30,7 +30,6 @@ class Frontend(Base):
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     """Optional user comment."""
 
-    # Tier-1 additions
     timeout_client: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
     """Client-side timeout."""
 
@@ -344,6 +343,7 @@ async def update_frontend_option(
     value: str | None = None,
     comment: str | None = None,
     sort_order: int | None = None,
+    fields_set: frozenset[str] | None = None,
 ) -> FrontendOption:
     """Update an existing frontend option."""
 
@@ -353,7 +353,7 @@ async def update_frontend_option(
     if value is not None:
         opt.value = value
 
-    if comment is not None:
+    if fields_set and "comment" in fields_set or comment is not None:
         opt.comment = comment
 
     if sort_order is not None:
@@ -372,9 +372,11 @@ async def get_frontend_option(session: AsyncSession, option_id: int) -> Frontend
 
 
 async def delete_all_frontends(session: AsyncSession) -> None:
-    """Delete all frontends, binds, and options."""
+    """Delete all frontends, binds, options, and associated ACL rules."""
 
-    for model in (FrontendOption, FrontendBind, Frontend):
+    from proxy_manager.database.models.acl_rule import AclRule
+
+    for model in (FrontendOption, FrontendBind, AclRule, Frontend):
         await session.execute(delete(model))
 
     await session.commit()

@@ -3,6 +3,8 @@ Listen block model
 ==================
 """
 
+import logging
+
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -161,6 +163,9 @@ async def update_listen_block(
     """Update an existing listen block with the given field values."""
 
     allowed = {c.name for c in ListenBlock.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_listen_block: ignoring unknown fields: %s", unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(block, key, val)

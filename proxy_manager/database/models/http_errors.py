@@ -3,6 +3,8 @@ HTTP Errors model
 =================
 """
 
+import logging
+
 from sqlalchemy import ForeignKey, Integer, String, Text, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -107,6 +109,9 @@ async def update_http_errors_section(
     """Update an existing http-errors section."""
 
     allowed = {c.name for c in HttpErrorsSection.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_http_errors_section: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -162,7 +167,10 @@ async def create_http_error_entry(session: AsyncSession, **kwargs: object) -> Ht
 async def update_http_error_entry(session: AsyncSession, obj: HttpErrorEntry, **kwargs: object) -> HttpErrorEntry:
     """Update an existing http-error entry."""
 
-    allowed = {c.name for c in HttpErrorEntry.__table__.columns} - {"id"}
+    allowed = {c.name for c in HttpErrorEntry.__table__.columns} - {"id", "section_id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_http_error_entry: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

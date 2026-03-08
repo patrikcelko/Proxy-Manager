@@ -4,6 +4,8 @@ Cache model
 HAProxy `cache` section - HTTP response caching.
 """
 
+import logging
+
 from sqlalchemy import Integer, String, Text, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -85,6 +87,9 @@ async def update_cache_section(session: AsyncSession, obj: CacheSection, **kwarg
     """Update an existing cache section."""
 
     allowed = {c.name for c in CacheSection.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_cache_section: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

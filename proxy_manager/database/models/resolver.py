@@ -3,7 +3,9 @@ Resolver model
 ==============
 """
 
-from sqlalchemy import ForeignKey, Integer, String, Text, delete, select
+import logging
+
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -73,6 +75,7 @@ class ResolverNameserver(Base):
     """A nameserver entry within a resolver."""
 
     __tablename__ = "resolver_nameservers"
+    __table_args__ = (UniqueConstraint("resolver_id", "name", name="uq_resolver_nameserver_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -139,6 +142,9 @@ async def update_resolver(session: AsyncSession, obj: Resolver, **kwargs: object
     """Update an existing resolver with the given field values."""
 
     allowed = {c.name for c in Resolver.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_resolver: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -197,7 +203,10 @@ async def update_resolver_nameserver(
 ) -> ResolverNameserver:
     """Update an existing resolver nameserver."""
 
-    allowed = {c.name for c in ResolverNameserver.__table__.columns} - {"id"}
+    allowed = {c.name for c in ResolverNameserver.__table__.columns} - {"id", "resolver_id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_resolver_nameserver: ignoring unknown fields: %s", unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

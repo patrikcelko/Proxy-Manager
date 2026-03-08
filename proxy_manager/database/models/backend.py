@@ -3,7 +3,9 @@ Backend models
 ==============
 """
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, delete, select
+import logging
+
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -107,6 +109,7 @@ class BackendServer(Base):
     """A server entry within a backend."""
 
     __tablename__ = "backend_servers"
+    __table_args__ = (UniqueConstraint("backend_id", "name", name="uq_backend_server_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -296,6 +299,9 @@ async def update_backend(
     """Update an existing backend with the given field values."""
 
     allowed = {c.name for c in Backend.__table__.columns} - {"id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_backend: ignoring unknown fields: %s", unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(be, key, val)
@@ -404,6 +410,9 @@ async def update_backend_server(
     """Update an existing backend server with the given field values."""
 
     allowed = {c.name for c in BackendServer.__table__.columns} - {"id", "backend_id"}
+    unknown = set(kwargs) - allowed
+    if unknown:
+        logging.getLogger(__name__).warning("update_backend_server: ignoring unknown fields: %s", unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(srv, key, val)

@@ -70,6 +70,7 @@ async def update_global_setting(
     value: str | None = None,
     comment: str | None = None,
     sort_order: int | None = None,
+    fields_set: frozenset[str] | None = None,
 ) -> GlobalSetting:
     """Update an existing global setting."""
 
@@ -79,7 +80,7 @@ async def update_global_setting(
     if value is not None:
         setting.value = value
 
-    if comment is not None:
+    if fields_set and "comment" in fields_set or comment is not None:
         setting.comment = comment
 
     if sort_order is not None:
