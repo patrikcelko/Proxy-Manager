@@ -6,9 +6,10 @@ Authentication routes
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from proxy_manager.api.dependencies import get_current_user
+from proxy_manager.api.dependencies import CurrentUser, get_current_user
 from proxy_manager.api.schemas.auth import (
     ProfileUpdateRequest,
     TokenResponse,
@@ -19,14 +20,26 @@ from proxy_manager.api.schemas.auth import (
 from proxy_manager.database.connection import get_session
 from proxy_manager.database.models.user import (
     User,
+    count_users,
     create_user,
+    delete_user,
     get_user_by_email,
+    get_user_by_id,
+    list_users,
     user_exists,
 )
 from proxy_manager.utilities.auth import create_access_token, hash_password, verify_password
 from proxy_manager.utilities.rate_limit import RATE_LIMIT_AUTH, limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/setup-required")
+async def setup_required(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, bool]:
+    """Check whether the application needs first-time user setup (no users exist)."""
+
+    total = await count_users(session)
+    return {"setup_required": total == 0}
 
 
 @router.post("/register", response_model=TokenResponse)
@@ -36,7 +49,36 @@ async def register(
     session: Annotated[AsyncSession, Depends(get_session)],
     request: Request,
 ) -> TokenResponse:
-    """Register a new user and return a JWT token."""
+    """Register a new user and return a JWT token.
+
+    When no users exist (first-run), anyone can register.
+    Otherwise, only authenticated users can create new accounts.
+    """
+
+    total = await count_users(session)
+    if total > 0:
+        # Require authentication for subsequent registrations
+        from proxy_manager.utilities.auth import decode_access_token
+
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only authenticated users can create new accounts",
+            )
+        token = auth_header.removeprefix("Bearer ").strip()
+        user_id = decode_access_token(token)
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+        caller = await get_user_by_id(session, user_id)
+        if not caller:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
 
     if await user_exists(session, user_data.email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
@@ -102,3 +144,63 @@ async def get_current_user_info(user: Annotated[User, Depends(get_current_user)]
     """Return the authenticated user's profile."""
 
     return UserResponse.model_validate(user)
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_all_users(
+    _user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[UserResponse]:
+    """Return all registered users (authenticated only)."""
+
+    users = await list_users(session)
+    return [UserResponse.model_validate(u) for u in users]
+
+
+@router.delete("/users/{user_id}", response_model=dict[str, str])
+async def delete_user_by_id(
+    user_id: int,
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, str]:
+    """Delete a user by ID (authenticated only, cannot delete yourself)."""
+
+    if current_user.id == user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
+
+    target = await get_user_by_id(session, user_id)
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    await delete_user(session, target)
+    return {"detail": "User deleted"}
+
+
+class AdminPasswordResetRequest(BaseModel):
+    """Payload for an admin resetting another user's password."""
+
+    new_password: str = Field(..., min_length=6)
+
+
+@router.patch("/users/{user_id}/password", response_model=dict[str, str])
+async def admin_reset_password(
+    user_id: int,
+    body: AdminPasswordResetRequest,
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, str]:
+    """Reset another user's password (admin action, cannot reset own)."""
+
+    if current_user.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use the profile endpoint to change your own password",
+        )
+
+    target = await get_user_by_id(session, user_id)
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    target.password_hash = hash_password(body.new_password)
+    await session.commit()
+    return {"detail": "Password updated"}

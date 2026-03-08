@@ -5,7 +5,7 @@ Mailer schemas
 Request/response schemas for mailer sections and their entries.
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class MailerEntryCreate(BaseModel):
@@ -48,7 +48,7 @@ class MailerEntryUpdate(BaseModel):
     address: str | None = None
     """Server IP address or hostname."""
 
-    port: int | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
     """Server port number."""
 
     smtp_auth: bool | None = None
@@ -95,8 +95,8 @@ class MailerEntryResponse(BaseModel):
     smtp_user: str | None
     """SMTP authentication username."""
 
-    smtp_password: str | None
-    """SMTP authentication password."""
+    has_smtp_password: bool = False
+    """Whether an SMTP password is configured (password itself is never exposed)."""
 
     use_tls: bool
     """Enable TLS for SMTP connections."""
@@ -106,6 +106,19 @@ class MailerEntryResponse(BaseModel):
 
     sort_order: int
     """Display ordering index."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _hide_smtp_password(cls, data: object) -> object:
+        """Replace smtp_password with a boolean flag to avoid credential leaks."""
+
+        if isinstance(data, dict):
+            data["has_smtp_password"] = bool(data.get("smtp_password"))
+            data.pop("smtp_password", None)
+        else:
+            pw = getattr(data, "smtp_password", None)
+            object.__setattr__(data, "has_smtp_password", bool(pw))
+        return data
 
 
 class MailerSectionCreate(BaseModel):

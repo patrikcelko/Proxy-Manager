@@ -60,7 +60,7 @@ class FrontendUpdate(BaseModel):
     default_backend: str | None = None
     """Default backend when no ACL matches."""
 
-    mode: str | None = None
+    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
     """Proxy mode (`http` or `tcp`)."""
 
     comment: str | None = None

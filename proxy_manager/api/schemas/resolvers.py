@@ -33,7 +33,7 @@ class ResolverNameserverUpdate(BaseModel):
     address: str | None = None
     """Server IP address or hostname."""
 
-    port: int | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
     """Server port number."""
 
     sort_order: int | None = None

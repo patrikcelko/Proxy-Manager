@@ -68,11 +68,11 @@ class SslCertificateUpdate(BaseModel):
     email: str | None = None
     """Unique email address."""
 
-    provider: str | None = None
+    provider: str | None = Field(default=None, pattern=r"^(certbot|manual|self-signed)$")
     """Certificate provider (`certbot`, `manual`, `self-signed`)."""
 
-    status: str | None = None
-    """Certificate status (`pending`, `active`, `expired`, etc.)."""
+    status: str | None = Field(default=None, pattern=r"^(pending|active|expired|revoked|error)$")
+    """Certificate status (`pending`, `active`, `expired`, etc`)."""
 
     cert_path: str | None = None
     """Path to the certificate file."""
@@ -92,7 +92,7 @@ class SslCertificateUpdate(BaseModel):
     auto_renew: bool | None = None
     """Enable automatic renewal."""
 
-    challenge_type: str | None = None
+    challenge_type: str | None = Field(default=None, pattern=r"^(http-01|dns-01|standalone)$")
     """ACME challenge type (`http-01`, `dns-01`)."""
 
     dns_plugin: str | None = None

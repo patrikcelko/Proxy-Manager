@@ -136,6 +136,11 @@ async def api_update_frontend(frontend_id: int, body: FrontendUpdate, session: D
     if not fe:
         raise HTTPException(status_code=404, detail="Frontend not found")
 
+    if body.name is not None and body.name != fe.name:
+        existing = await get_frontend_by_name(session, body.name)
+        if existing:
+            raise HTTPException(status_code=409, detail=f"Frontend '{body.name}' already exists")
+
     updated = await update_frontend(
         session,
         fe,

@@ -62,6 +62,7 @@ async def api_update_global_setting(setting_id: int, body: SettingUpdate, sessio
         value=body.value,
         comment=body.comment,
         sort_order=body.sort_order,
+        fields_set=frozenset(body.model_fields_set),
     )
     return SettingResponse.model_validate(updated)
 
@@ -109,6 +110,7 @@ async def api_update_default_setting(setting_id: int, body: SettingUpdate, sessi
         value=body.value,
         comment=body.comment,
         sort_order=body.sort_order,
+        fields_set=frozenset(body.model_fields_set),
     )
     return SettingResponse.model_validate(updated)
 

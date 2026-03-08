@@ -7,10 +7,11 @@ save/discard, history, rollback, and pending change tracking.
 """
 
 import json
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from proxy_manager.api.dependencies import DBSession, get_current_user
+from proxy_manager.api.dependencies import CurrentUser, DBSession
 from proxy_manager.api.schemas.common import MessageResponse
 from proxy_manager.api.schemas.versions import (
     PendingChangesResponse,
@@ -25,14 +26,12 @@ from proxy_manager.api.schemas.versions import (
 from proxy_manager.config_parser.parser import parse_config
 from proxy_manager.config_parser.snapshot import (
     SECTION_SIDEBAR_MAP,
-    clear_all_entities,
     compute_diff,
     compute_pending_counts,
     restore_snapshot,
     take_snapshot,
 )
 from proxy_manager.database.models.config_version import (
-    ConfigVersion,
     count_versions,
     create_version,
     get_latest_version,
@@ -62,11 +61,14 @@ async def api_version_status(session: DBSession) -> VersionStatusResponse:
         has_pending=has_pending,
         pending_counts=counts,
         current_hash=latest.hash,
+        current_message=latest.message,
+        current_user_name=latest.user_name,
+        current_created_at=latest.created_at.isoformat() if latest.created_at else None,
     )
 
 
 @router.post("/api/versions/init/empty", response_model=MessageResponse)
-async def api_init_empty(session: DBSession, user=Depends(get_current_user)) -> MessageResponse:
+async def api_init_empty(session: DBSession, user: CurrentUser) -> MessageResponse:
     """Initialize with an empty configuration (first-time setup)."""
 
     existing = await get_latest_version(session)
@@ -89,7 +91,7 @@ async def api_init_empty(session: DBSession, user=Depends(get_current_user)) -> 
 async def api_init_import(
     body: VersionInitImportRequest,
     session: DBSession,
-    user=Depends(get_current_user),
+    user: CurrentUser,
 ) -> MessageResponse:
     """Initialize by importing an HAProxy configuration (first-time setup)."""
 
@@ -98,7 +100,7 @@ async def api_init_import(
         raise HTTPException(status_code=409, detail="Already initialized")
 
     try:
-        parsed = parse_config(body.config_text)
+        parse_config(body.config_text)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Parse error: {e}") from e
 
@@ -147,7 +149,7 @@ async def api_pending_changes(session: DBSession) -> PendingChangesResponse:
 async def api_save_version(
     body: VersionSaveRequest,
     session: DBSession,
-    user=Depends(get_current_user),
+    user: CurrentUser,
 ) -> VersionSummary:
     """Commit current state as a new version."""
 
@@ -177,7 +179,7 @@ async def api_save_version(
 
 
 @router.post("/api/versions/discard", response_model=MessageResponse)
-async def api_discard_changes(session: DBSession) -> MessageResponse:
+async def api_discard_changes(session: DBSession, _user: CurrentUser) -> MessageResponse:
     """Discard all pending changes by restoring the last committed version."""
 
     latest = await get_latest_version(session)
@@ -223,7 +225,7 @@ async def api_version_detail(version_hash: str, session: DBSession) -> VersionDe
     version_snapshot = json.loads(version.snapshot)
 
     # Compute diff from parent
-    diff: dict = {}
+    diff: dict[str, Any] = {}
     if version.parent_hash:
         parent = await get_version_by_hash(session, version.parent_hash)
         if parent:
@@ -231,7 +233,7 @@ async def api_version_detail(version_hash: str, session: DBSession) -> VersionDe
             diff = compute_diff(parent_snapshot, version_snapshot)
     else:
         # First version: diff against empty snapshot
-        empty: dict = {k: [] for k in SECTION_SIDEBAR_MAP}
+        empty: dict[str, list[Any]] = {k: [] for k in SECTION_SIDEBAR_MAP}
         diff = compute_diff(empty, version_snapshot)
 
     return VersionDetail(
@@ -248,7 +250,7 @@ async def api_version_detail(version_hash: str, session: DBSession) -> VersionDe
 async def api_rollback_version(
     version_hash: str,
     session: DBSession,
-    user=Depends(get_current_user),
+    user: CurrentUser,
 ) -> VersionSummary:
     """Rollback to a specific version by restoring its snapshot and creating a new version."""
 
@@ -283,7 +285,7 @@ async def api_rollback_version(
 
 
 @router.post("/api/versions/revert-section", response_model=MessageResponse)
-async def api_revert_section(body: SectionRevertRequest, session: DBSession) -> MessageResponse:
+async def api_revert_section(body: SectionRevertRequest, session: DBSession, _user: CurrentUser) -> MessageResponse:
     """Revert a specific section to its last committed state."""
 
     if body.section not in SECTION_SIDEBAR_MAP:

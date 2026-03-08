@@ -91,6 +91,11 @@ async def api_update_peer(peer_id: int, body: PeerSectionUpdate, session: DBSess
     if not p:
         raise HTTPException(status_code=404, detail="Peer section not found")
 
+    if body.name is not None and body.name != p.name:
+        conflict = await get_peer_section_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Peer section '{body.name}' already exists")
+
     p = await update_peer_section(session, p, **body.model_dump(exclude_unset=True))
     return await _build_detail(session, p)
 

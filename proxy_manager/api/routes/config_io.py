@@ -546,3 +546,15 @@ async def api_export_config(session: DBSession) -> ConfigExportResponse:
         caches=caches_data,
     )
     return ConfigExportResponse(config_text=config_text)
+
+
+@router.post("/api/config/validate")
+async def api_validate_config(body: ConfigImportRequest) -> dict[str, bool | str]:
+    """Validate HAProxy configuration text without importing it."""
+
+    try:
+        parse_config(body.config_text)
+    except Exception as e:
+        return {"valid": False, "error": f"Parse error: {e}"}
+
+    return {"valid": True, "error": ""}

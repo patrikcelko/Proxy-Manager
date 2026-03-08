@@ -67,6 +67,11 @@ async def api_update_cache(cache_id: int, body: CacheSectionUpdate, session: DBS
     if not c:
         raise HTTPException(status_code=404, detail="Cache section not found")
 
+    if body.name is not None and body.name != c.name:
+        conflict = await get_cache_section_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Cache section '{body.name}' already exists")
+
     c = await update_cache_section(session, c, **body.model_dump(exclude_unset=True))
     return CacheSectionResponse.model_validate(c)
 

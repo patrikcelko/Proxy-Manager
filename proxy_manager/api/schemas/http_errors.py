@@ -27,11 +27,11 @@ class HttpErrorEntryCreate(BaseModel):
 class HttpErrorEntryUpdate(BaseModel):
     """Payload for updating an HTTP error entry."""
 
-    status_code: int | None = None
+    status_code: int | None = Field(default=None, ge=100, le=599)
     """HTTP status code."""
 
-    type: str | None = None
-    """Error response type (`errorfile`, `errorloc`, etc.)."""
+    type: str | None = Field(default=None, pattern=r"^(errorfile|errorloc|errorloc302|errorloc303)$")
+    """Error response type (`errorfile`, `errorloc`, etc`)."""
 
     value: str | None = None
     """Directive value."""

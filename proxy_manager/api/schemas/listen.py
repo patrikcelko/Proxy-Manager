@@ -60,7 +60,7 @@ class ListenBlockUpdate(BaseModel):
     name: str | None = None
     """Unique name identifier."""
 
-    mode: str | None = None
+    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
     """Proxy mode (`http` or `tcp`)."""
 
     balance: str | None = None

@@ -96,7 +96,7 @@ class BackendUpdate(BaseModel):
     name: str | None = None
     """Unique name identifier."""
 
-    mode: str | None = None
+    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
     """Proxy mode (`http` or `tcp`)."""
 
     balance: str | None = None
@@ -260,7 +260,7 @@ class BackendServerUpdate(BaseModel):
     address: str | None = None
     """Server IP address or hostname."""
 
-    port: int | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
     """Server port number."""
 
     check_enabled: bool | None = None

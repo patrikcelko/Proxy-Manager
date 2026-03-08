@@ -100,6 +100,11 @@ async def api_update_resolver(resolver_id: int, body: ResolverUpdate, session: D
     if not r:
         raise HTTPException(status_code=404, detail="Resolver not found")
 
+    if body.name is not None and body.name != r.name:
+        conflict = await get_resolver_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Resolver '{body.name}' already exists")
+
     r = await update_resolver(session, r, **body.model_dump(exclude_unset=True))
     return await _build_detail(session, r)
 

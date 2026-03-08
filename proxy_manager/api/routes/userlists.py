@@ -100,6 +100,11 @@ async def api_update_userlist(userlist_id: int, body: UserlistUpdate, session: D
     if not ul:
         raise HTTPException(status_code=404, detail="Userlist not found")
 
+    if body.name is not None and body.name != ul.name:
+        conflict = await get_userlist_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Userlist '{body.name}' already exists")
+
     updated = await update_userlist(session, ul, name=body.name)
     return await _build_detail(session, updated)
 

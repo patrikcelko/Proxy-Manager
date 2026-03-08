@@ -5,6 +5,8 @@ Version management schemas
 Request/response schemas for configuration version control.
 """
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -18,10 +20,19 @@ class VersionStatusResponse(BaseModel):
     """Whether there are uncommitted changes."""
 
     pending_counts: dict[str, int] = Field(default_factory=dict)
-    """Per-section count of pending changes (section_key → count)."""
+    """Per-section count of pending changes (section_key -> count)."""
 
     current_hash: str | None = None
     """Hash of the latest committed version, if any."""
+
+    current_message: str | None = None
+    """Commit message of the latest committed version."""
+
+    current_user_name: str | None = None
+    """Author of the latest committed version."""
+
+    current_created_at: str | None = None
+    """Timestamp of the latest committed version."""
 
 
 class VersionSaveRequest(BaseModel):
@@ -56,7 +67,7 @@ class VersionDetail(BaseModel):
     user_name: str
     created_at: str
     parent_hash: str | None = None
-    diff: dict = Field(default_factory=dict)
+    diff: dict[str, Any] = Field(default_factory=dict)
     """Diff from parent version (or empty if first version)."""
 
 
@@ -72,8 +83,8 @@ class PendingChangesResponse(BaseModel):
 
     has_pending: bool
     pending_counts: dict[str, int] = Field(default_factory=dict)
-    sections: dict = Field(default_factory=dict)
-    """Per-section detailed diffs (section_key → {created, deleted, updated, total})."""
+    sections: dict[str, Any] = Field(default_factory=dict)
+    """Per-section detailed diffs (section_key -> {created, deleted, updated, total})."""
 
 
 class SectionRevertRequest(BaseModel):

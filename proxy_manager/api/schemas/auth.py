@@ -14,7 +14,7 @@ class UserLoginRequest(BaseModel):
     email: str = Field(..., examples=["admin@example.com"])
     """Unique email address."""
 
-    password: str = Field(..., min_length=4)
+    password: str = Field(...)
     """Plaintext password."""
 
 
@@ -68,11 +68,11 @@ class ProfileUpdateRequest(BaseModel):
     email: str | None = None
     """Unique email address."""
 
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1)
     """Unique name identifier."""
 
     current_password: str | None = None
     """Current password for verification."""
 
-    new_password: str | None = None
+    new_password: str | None = Field(default=None, min_length=6)
     """New password to set."""

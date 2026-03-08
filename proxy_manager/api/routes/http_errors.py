@@ -93,6 +93,11 @@ async def api_update_http_errors(
     if not s:
         raise HTTPException(status_code=404, detail="HTTP errors section not found")
 
+    if body.name is not None and body.name != s.name:
+        conflict = await get_http_errors_section_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"HTTP errors section '{body.name}' already exists")
+
     s = await update_http_errors_section(session, s, **body.model_dump(exclude_unset=True))
     return await _build_detail(session, s)
 

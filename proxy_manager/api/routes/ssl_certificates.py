@@ -186,6 +186,14 @@ async def api_update_ssl_certificate(
     if not c:
         raise HTTPException(status_code=404, detail="SSL certificate not found")
 
+    if body.domain is not None and body.domain != c.domain:
+        conflict = await get_ssl_certificate_by_domain(session, body.domain)
+        if conflict:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SSL certificate for domain '{body.domain}' already exists",
+            )
+
     data = body.model_dump(exclude_unset=True)
     for dt_field in ("issued_at", "expires_at", "last_renewal_at"):
         if dt_field in data:

@@ -104,6 +104,11 @@ async def api_update_listen_block(
     if not row:
         raise HTTPException(status_code=404, detail="Listen block not found")
 
+    if body.name is not None and body.name != row.name:
+        conflict = await get_listen_block_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Listen block '{body.name}' already exists")
+
     data = {k: v for k, v in body.model_dump().items() if v is not None or k in body.model_fields_set}
     updated = await update_listen_block(session, row, **data)
     return await _build_detail(session, updated)

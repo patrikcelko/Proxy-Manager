@@ -94,6 +94,11 @@ async def api_update_mailer(
     if not m:
         raise HTTPException(status_code=404, detail="Mailer section not found")
 
+    if body.name is not None and body.name != m.name:
+        conflict = await get_mailer_section_by_name(session, body.name)
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Mailer section '{body.name}' already exists")
+
     m = await update_mailer_section(session, m, **body.model_dump(exclude_unset=True))
     return await _build_detail(session, m)
 

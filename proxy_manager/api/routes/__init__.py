@@ -11,6 +11,7 @@ from proxy_manager.api.routes.backends import router as backends_router
 from proxy_manager.api.routes.caches import router as caches_router
 from proxy_manager.api.routes.config_io import router as config_io_router
 from proxy_manager.api.routes.frontends import router as frontends_router
+from proxy_manager.api.routes.health import router as health_router
 from proxy_manager.api.routes.http_errors import router as http_errors_router
 from proxy_manager.api.routes.listen import router as listen_router
 from proxy_manager.api.routes.mailers import router as mailers_router
@@ -25,6 +26,7 @@ router = APIRouter()
 
 router.include_router(admin_router)
 router.include_router(auth_router)
+router.include_router(health_router)
 router.include_router(settings_router)
 router.include_router(userlists_router)
 router.include_router(frontends_router)

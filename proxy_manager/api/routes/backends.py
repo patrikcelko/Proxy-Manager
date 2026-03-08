@@ -112,6 +112,11 @@ async def api_update_backend(backend_id: int, body: BackendUpdate, session: DBSe
     if not be:
         raise HTTPException(status_code=404, detail="Backend not found")
 
+    if body.name is not None and body.name != be.name:
+        existing = await get_backend_by_name(session, body.name)
+        if existing:
+            raise HTTPException(status_code=409, detail=f"Backend '{body.name}' already exists")
+
     data = {k: v for k, v in body.model_dump().items() if v is not None or k in body.model_fields_set}
     updated = await update_backend(session, be, **data)
 
