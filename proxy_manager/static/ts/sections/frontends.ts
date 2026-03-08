@@ -30,7 +30,7 @@ export const FE_OPT_CATS: Record<string, CategoryDef> = {
 
 /** Classifies a frontend option directive into its category using regex patterns. */
 export function categorizeFrontendOpt(dir: string): string {
-    const d = (dir || "").toLowerCase().trim();
+    const d: string = (dir || "").toLowerCase().trim();
     if (/^option\s+(httplog|dontlognull|logasap|log-|tcplog)|^log\b/.test(d)) return "logging";
     if (/^(option\s+(forwardfor|http-server-close|http-keep-alive|httpclose|http-use-htx|prefer-last-server))|^http-request|^http-response|^compression|^http-after-response/.test(d)) return "http";
     if (/^(rate-limit|stick-table|http-request\s+(deny|tarpit|reject|track|sc-)|filter|tcp-request\s+(connection\s+reject|content\s+reject))/.test(d)) return "security";
@@ -66,7 +66,7 @@ export function renderBindChips(bindLine: string): string {
 /** Fetches all frontends from the API and renders the cards grid. */
 export async function loadFrontends(): Promise<void> {
     try {
-        const d = await api("/api/frontends");
+        const d: { items: Frontend[] } = await api("/api/frontends");
         state.allFrontends = d.items || d;
         renderFrontends(state.allFrontends);
     } catch (err: any) {
@@ -219,7 +219,7 @@ export function renderFrontends(list: Frontend[]): void {
             if (f.maxconn) details.push({ l: "Max Connections", v: String(f.maxconn) });
             if (f.compression_algo) details.push({ l: "Compression", v: `${f.compression_algo}${f.compression_type ? " (" + f.compression_type + ")" : ""}` });
 
-            return `<div class="entity-card">
+            return `<div class="entity-card" data-entity-name="${escHtml(f.name)}">
             <div class="entity-header" onclick="toggleEntityCard(this)">
                 <span class="entity-title">${escHtml(f.name)}</span>
                 <div class="entity-badges">

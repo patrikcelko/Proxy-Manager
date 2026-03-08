@@ -7,9 +7,9 @@
                 <p class="auth-subtitle">HAProxy Configuration Management</p>
             </div>
         </div>
-        <div class="auth-tabs">
+        <div class="auth-tabs" id="auth-tabs">
             <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
-            <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+            <button class="auth-tab" id="auth-tab-register" onclick="switchAuthTab('register')" style="display:none">Create Account</button>
         </div>
         <div class="auth-tab-content active" id="auth-login">
             <form onsubmit="handleLogin(event)">
@@ -28,7 +28,7 @@
                 <input type="email" id="register-email" required placeholder="admin@example.com">
                 <label>Password</label>
                 <input type="password" id="register-password" required minlength="6" placeholder="Min 6 characters">
-                <button type="submit" class="btn btn-primary btn-full">Register</button>
+                <button type="submit" class="btn btn-primary btn-full">Create Account</button>
             </form>
         </div>
     </div>

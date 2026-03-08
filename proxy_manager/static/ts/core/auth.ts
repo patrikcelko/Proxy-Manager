@@ -11,6 +11,7 @@ import { openModal, closeModal } from "./ui";
 import { loadOverview } from "../sections/overview";
 import { escHtml } from "./utils";
 import { state } from "../state";
+import { log } from "console";
 
 /** Switches between the Login and Register tabs on the auth overlay. */
 export function switchAuthTab(tab: string): void {
@@ -19,6 +20,21 @@ export function switchAuthTab(tab: string): void {
     });
     document.getElementById("auth-login")?.classList.toggle("active", tab === "login");
     document.getElementById("auth-register")?.classList.toggle("active", tab === "register");
+}
+
+/** Checks if first-time setup is required (no users exist) and shows the register tab. */
+export async function checkFirstRun(): Promise<void> {
+    try {
+        const data = await fetch("/auth/setup-required").then((r) => r.json());
+        if (data.setup_required) {
+            // Show register tab for first-time setup
+            const registerTab = document.getElementById("auth-tab-register");
+            if (registerTab) registerTab.style.display = "";
+            switchAuthTab("register");
+        }
+    } catch {
+        log("Failed to check setup status");
+    }
 }
 
 /** Handles the login form submission, stores JWT token on success. */
@@ -32,7 +48,7 @@ export async function handleLogin(e: Event): Promise<void> {
                 password: (document.getElementById("login-password") as HTMLInputElement).value,
             }),
         });
-        setToken(data.access_token);
+        setToken((data as any).access_token);
         localStorage.setItem("pm_token", TOKEN!);
         showApp();
         toast("Logged in successfully");
@@ -41,11 +57,11 @@ export async function handleLogin(e: Event): Promise<void> {
     }
 }
 
-/** Handles the registration form submission, switches to login tab on success. */
+/** Handles the registration form submission, auto-logs in on success. */
 export async function handleRegister(e: Event): Promise<void> {
     e.preventDefault();
     try {
-        await api("/auth/register", {
+        const data = await api("/auth/register", {
             method: "POST",
             body: JSON.stringify({
                 name: (document.getElementById("register-name") as HTMLInputElement).value,
@@ -53,8 +69,11 @@ export async function handleRegister(e: Event): Promise<void> {
                 password: (document.getElementById("register-password") as HTMLInputElement).value,
             }),
         });
-        toast("Account created! You can now log in.");
-        switchAuthTab("login");
+        // Auto-login with returned token
+        setToken((data as any).access_token);
+        localStorage.setItem("pm_token", TOKEN!);
+        toast("Account created successfully");
+        showApp();
     } catch (err) {
         toast((err as Error).message, "error");
     }

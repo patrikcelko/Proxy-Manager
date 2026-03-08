@@ -20,7 +20,7 @@ let backendFilter = "";
 /** Fetches all backends from the API and renders the card grid. */
 export async function loadBackends(): Promise<void> {
     try {
-        const d = await api("/api/backends");
+        const d: { items: Backend[] } = await api("/api/backends");
         state.allBackends = d.items || d;
         renderBackends(state.allBackends);
     } catch (err: any) {
@@ -140,7 +140,7 @@ export function renderBackends(list: Backend[]): void {
         </div>`
                 : "";
 
-            return `<div class="item-card be-card">
+            return `<div class="item-card be-card" data-entity-name="${escHtml(b.name)}">
             <div class="item-header"><h3>${escHtml(b.name)}</h3>
                 <div><button class="btn-icon" onclick='openBackendModal(${escJsonAttr(b)})'>${SVG.edit}</button>
                 <button class="btn-icon danger" onclick="deleteBackend(${b.id})">${SVG.del}</button></div>
@@ -167,7 +167,7 @@ export function openBackendModal(existing: Partial<Backend> | null = null): void
         .join("");
     if (!state.cachedUserlists) {
         api("/api/userlists")
-            .then((d) => {
+            .then((d: any) => {
                 state.cachedUserlists = d.items || d;
                 const sel = document.getElementById("m-auth-userlist") as HTMLSelectElement | null;
                 if (sel) {
@@ -180,7 +180,7 @@ export function openBackendModal(existing: Partial<Backend> | null = null): void
                     sel.innerHTML = '<option value="">None (no auth)</option>' + opts;
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }
 
     const SEC = {
@@ -245,10 +245,10 @@ export function openBackendModal(existing: Partial<Backend> | null = null): void
                 <div class="form-row"><div>
                     <label>Auth User List</label>
                     <select id="m-auth-userlist"><option value="">None (no auth)</option>${ulOpts}</select>
-                    <div class="form-help">Reference a User List for HTTP Basic Auth on this backend</div>
+                    <div class="form-help">Reference an Auth List for HTTP Basic Auth on this backend</div>
                 </div><div>
                     <label>&nbsp;</label>
-                    <div class="form-help" style="margin-top:.5rem">Create user lists in the <em>User Lists</em> section, then select here to protect this backend.</div>
+                    <div class="form-help" style="margin-top:.5rem">Create auth lists in the <em>Auth Lists</em> section, then select here to protect this backend.</div>
                 </div></div>
             </div>
         </div>

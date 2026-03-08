@@ -26,7 +26,7 @@ export function headers(json: boolean = true): Record<string, string> {
 }
 
 /** Performs an authenticated API request and handles 401 auto-logout. */
-export async function api(path: string, opts: RequestInit & { json?: boolean } = {}): Promise<any> {
+export async function api<T = unknown>(path: string, opts: RequestInit & { json?: boolean } = {}): Promise<T> {
     const { json: jsonFlag, ...fetchOpts } = opts;
     const res = await fetch(API + path, { headers: headers(jsonFlag !== false), ...fetchOpts });
     if (res.status === 401) {
@@ -36,8 +36,15 @@ export async function api(path: string, opts: RequestInit & { json?: boolean } =
         throw new Error("Unauthorized");
     }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as any).detail || `Error ${res.status}`);
-    return data;
+    if (!res.ok) throw new Error((data as Record<string, unknown>).detail as string || `Error ${res.status}`);
+
+    // Auto-refresh version badges after any data mutation
+    const method = (fetchOpts.method || "GET").toUpperCase();
+    if (method !== "GET" && !path.startsWith("/api/versions/") && !path.startsWith("/auth")) {
+        import("../sections/versions").then((m) => m.refreshPendingBadges()).catch(() => { });
+    }
+
+    return data as T;
 }
 
 /** Shows a temporary toast notification at the bottom of the screen. */

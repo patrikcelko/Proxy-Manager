@@ -19,8 +19,9 @@ let userlistFilter = "";
 /** Fetches all userlists from the API and renders the card grid. */
 export async function loadUserlists(): Promise<void> {
     try {
-        const d = await api("/api/userlists");
+        const d: { items: Userlist[] } = await api("/api/userlists");
         state.allUserlists = d.items || d;
+        state.cachedUserlists = null; // Invalidate cache used by backend auth dropdown
         renderUserlists(state.allUserlists);
     } catch (err: any) {
         toast(err.message, "error");
@@ -90,7 +91,7 @@ export function renderUserlists(list: Userlist[]): void {
             features.push(`<span class="ul-feat ul-feat-shield">${IC.shield} Auth List</span>`);
             features.push(`<span class="ul-feat ul-feat-users">${IC.user} ${ec} user${ec !== 1 ? "s" : ""}</span>`);
 
-            return `<div class="item-card ul-card">
+            return `<div class="item-card ul-card" data-entity-name="${escHtml(u.name)}">
             <div class="item-header"><h3>${escHtml(u.name)}</h3>
                 <div><button class="btn-icon" onclick='openUserlistModal(${escJsonAttr(u)})'>${SVG.edit}</button>
                 <button class="btn-icon danger" onclick="deleteUserlist(${u.id})">${SVG.del}</button></div>
@@ -110,7 +111,7 @@ export function renderUserlists(list: Userlist[]): void {
 export function openUserlistModal(existing: Partial<Userlist> | null = null): void {
     const u = existing || {};
     openModal(`
-        <h3>${u.id ? "Edit" : "New"} User List</h3>
+        <h3>${u.id ? "Edit" : "New"} Auth List</h3>
         <div class="form-section">
             <div class="form-section-title">General</div>
             <div class="form-row">
@@ -325,7 +326,7 @@ export async function saveUserlist(id: number | null): Promise<void> {
         if (id) await api(`/api/userlists/${id}`, { method: "PUT", body: JSON.stringify(body) });
         else await api("/api/userlists", { method: "POST", body: JSON.stringify(body) });
         closeModal();
-        toast(id ? "User list updated" : "User list created");
+        toast(id ? "Auth list updated" : "Auth list created");
         loadUserlists();
     } catch (err: any) {
         toast(err.message, "error");
@@ -334,5 +335,5 @@ export async function saveUserlist(id: number | null): Promise<void> {
 
 /** Deletes a userlist and all its entries after confirmation. */
 export async function deleteUserlist(id: number): Promise<void> {
-    await crudDelete(`/api/userlists/${id}`, "Delete this user list and all its entries?", loadUserlists);
+    await crudDelete(`/api/userlists/${id}`, "Delete this auth list and all its entries?", loadUserlists);
 }

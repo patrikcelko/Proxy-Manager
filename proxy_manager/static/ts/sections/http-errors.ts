@@ -61,7 +61,7 @@ function renderHttpErrorsGrid(items: HttpErrorGroup[]): void {
                 })
                 .join("");
 
-            return `<div class="item-card he-card">
+            return `<div class="item-card he-card" data-entity-name="${escHtml(s.name)}">
                 <div class="item-header"><h3>${escHtml(s.name)}</h3>
                     <div><button class="btn-icon" onclick='openHttpErrorsModal(${escJsonAttr(s)})'>${SVG.edit}</button>
                     <button class="btn-icon danger" onclick="deleteHttpErrors(${s.id})">${SVG.del}</button></div>
@@ -82,7 +82,7 @@ function renderHttpErrorsGrid(items: HttpErrorGroup[]): void {
 /** Fetches all HTTP error groups from the API and renders cards. */
 export async function loadHttpErrors(): Promise<void> {
     try {
-        const d = await api("/api/http-errors");
+        const d: { items: HttpErrorGroup[] } = await api("/api/http-errors");
         state.allHttpErrors = d.items || d;
         renderHttpErrorsGrid(state.allHttpErrors);
     } catch (err: any) {

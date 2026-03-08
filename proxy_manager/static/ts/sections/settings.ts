@@ -13,7 +13,7 @@ import { openModal, closeModal } from "../core/ui";
 import { escHtml, escJsonAttr, filterPresetGrid, searchPresetGrid } from "../core/utils";
 import type { Setting, SettingPreset, CategoryDef } from "../types";
 
-/*  Category definitions  */
+/* Category definitions  */
 
 /** Category tabs for the global settings section. */
 export const GLOBAL_CATS: Record<string, CategoryDef> = {
@@ -188,11 +188,17 @@ export const DEFAULTS_PRESETS: SettingPreset[] = [
 /** Currently active settings tab (`"global"` or `"defaults"`). */
 let settTab: string = "global";
 
+/** Returns the correct API base path for the active (or given) settings tab. */
+function settingsApiBase(tab?: string): string {
+    const t = tab || settTab;
+    return t === "global" ? "/api/global-settings" : "/api/default-settings";
+}
+
 /** Fetches settings from the API and renders the table for the given tab. */
 export async function loadSettings(tab?: string): Promise<void> {
     if (tab) settTab = tab;
     try {
-        const d = await api(`/api/settings?t=${settTab}`);
+        const d: { items: Setting[] } = await api(settingsApiBase());
         const items: Setting[] = d.items || d;
         renderSettingsTable(items);
         switchSettingsTab(settTab);
@@ -206,9 +212,9 @@ export function renderSettingsTable(items: Setting[]): void {
     const cats = settTab === "global" ? GLOBAL_CATS : DEFAULTS_CATS;
     const catFn = settTab === "global" ? categorizeGlobal : categorizeDefaults;
 
-    const tbody = document.querySelector("#settings-table tbody") as HTMLTableSectionElement | null;
-    const empty = document.getElementById("settings-empty");
-    const wrap = document.querySelector("#settings-table")?.parentElement as HTMLElement | null;
+    const tbody = document.querySelector(`#${settTab}-table tbody`) as HTMLTableSectionElement | null;
+    const empty = document.getElementById(`${settTab}-empty`);
+    const wrap = document.querySelector(`#${settTab}-table`)?.parentElement as HTMLElement | null;
     if (!items.length) {
         if (wrap) wrap.style.display = "none";
         if (empty) empty.style.display = "block";
@@ -227,14 +233,15 @@ export function renderSettingsTable(items: Setting[]): void {
         })
         .join("");
 
-    document.getElementById("settings-cat-tabs")!.innerHTML = catTabs;
+    const tabsEl = document.getElementById(`${settTab}-tabs`);
+    if (tabsEl) tabsEl.innerHTML = catTabs;
 
-    tbody!.innerHTML = items
+    if (tbody) tbody.innerHTML = items
         .map((s, idx) => {
             const isFirst = idx === 0;
             const isLast = idx === items.length - 1;
             const cat = catFn(s.directive);
-            return `<tr data-sett-cat="${cat}">
+            return `<tr data-sett-cat="${cat}" data-entity-name="${s.id}">
             <td class="sett-directive">${escHtml(s.directive)}</td>
             <td class="mono sett-value">${escHtml(s.value)}</td>
             <td class="sett-order-cell">
@@ -254,7 +261,7 @@ export function renderSettingsTable(items: Setting[]): void {
 
 /** Swaps the sort order of a setting with its neighbour in the given direction. */
 export function reorderSetting(id: number, direction: string): void {
-    const rows = [...document.querySelectorAll("#settings-table tbody tr")] as HTMLTableRowElement[];
+    const rows = [...document.querySelectorAll(`#${settTab}-table tbody tr`)] as HTMLTableRowElement[];
     const ids = rows.map((r) => {
         const btn = r.querySelector(".reorder-btn:not(.disabled)") as HTMLButtonElement | null;
         const onclick = btn?.getAttribute("onclick") || "";
@@ -288,8 +295,8 @@ export function reorderSetting(id: number, direction: string): void {
     if (swapId == null) return;
 
     Promise.all([
-        api(`/api/settings/${curId}`, { method: "PUT", body: JSON.stringify({ sort_order: newCurOrder }) }),
-        api(`/api/settings/${swapId}`, { method: "PUT", body: JSON.stringify({ sort_order: newSwapOrder }) }),
+        api(`${settingsApiBase()}/${curId}`, { method: "PUT", body: JSON.stringify({ sort_order: newCurOrder }) }),
+        api(`${settingsApiBase()}/${swapId}`, { method: "PUT", body: JSON.stringify({ sort_order: newSwapOrder }) }),
     ])
         .then(() => {
             loadSettings();
@@ -308,15 +315,25 @@ export function switchSettingsTab(tab: string): void {
 
 /** Filters the settings table rows to show only the selected category. */
 export function filterSettingsCat(cat: string): void {
-    const tabs = document.getElementById("settings-cat-tabs");
+    const tabs = document.getElementById(`${settTab}-tabs`);
     if (tabs)
         tabs.querySelectorAll(".stab").forEach((t) => {
             const text = t.textContent?.trim().split(" ")[0];
             const catLabel = cat === "all" ? "All" : (settTab === "global" ? GLOBAL_CATS : DEFAULTS_CATS)[cat]?.label;
             t.classList.toggle("active", text === catLabel);
         });
-    document.querySelectorAll<HTMLElement>("#settings-table tbody tr[data-sett-cat]").forEach((r) => {
+    document.querySelectorAll<HTMLElement>(`#${settTab}-table tbody tr[data-sett-cat]`).forEach((r) => {
         r.style.display = cat === "all" || r.dataset.settCat === cat ? "" : "none";
+    });
+}
+
+/** Filters settings table rows by free-text search input. */
+export function filterSettings(tab: string): void {
+    const input = document.getElementById(`${tab}-search`) as HTMLInputElement | null;
+    const q = (input?.value || "").toLowerCase();
+    document.querySelectorAll<HTMLElement>(`#${tab}-table tbody tr`).forEach((r) => {
+        const text = r.textContent?.toLowerCase() || "";
+        r.style.display = !q || text.includes(q) ? "" : "none";
     });
 }
 
@@ -336,34 +353,55 @@ export function openSettingsAddModal(type: string): void {
     const cats = [...new Set(presets.map((p) => p.c))];
     const gridId = "settAddGrid";
 
-    const IC = { templates: icon("grid", 15) };
+    const IC = { templates: icon("grid", 15), directive: icon("code", 15), opts: icon("settings", 15) };
 
     openModal(
         `
-        <h3>Quick Add ${type === "global" ? "Global" : "Defaults"} Setting</h3>
-        <p class="modal-subtitle">Choose a preset to quickly add a common HAProxy directive.</p>
+        <h3>Add ${type === "global" ? "Global" : "Defaults"} Setting</h3>
+        <p class="modal-subtitle">Choose a template to auto-fill the form, or configure manually below.</p>
 
-        <div class="form-section-title">${IC.templates} Templates <span class="stab-count">${presets.length}</span></div>
-        <div class="stabs" style="margin-bottom:.5rem">
-            <button class="stab active" onclick="filterSettingsPresets('all')">All</button>
-            ${cats.map((c) => `<button class="stab" onclick="filterSettingsPresets('${c}')">${c}</button>`).join("")}
+        <div class="form-collapsible" style="margin-bottom:1rem">
+            <div class="form-collapsible-head open" onclick="toggleCollapsible(this)">${IC.templates} Templates <span class="stab-count">${presets.length}</span> ${SVG.chevron}</div>
+            <div class="form-collapsible-body open">
+                <div class="stabs" style="margin-bottom:.5rem">
+                    <button class="stab active" onclick="filterSettingsPresets('all')">All</button>
+                    ${cats.map((c) => `<button class="stab" onclick="filterSettingsPresets('${c}')">${c}</button>`).join("")}
+                </div>
+                <div class="preset-search-wrap" style="margin-bottom:.75rem">
+                    ${icon("search")}
+                    <input id="sett-preset-filter" placeholder="Search presets..." oninput="searchSettPresets()">
+                </div>
+                <div class="dir-grid" id="${gridId}">${presets
+                    .map(
+                        (p, i) =>
+                            `<div class="dir-card" data-pcat="${escHtml(p.c)}" data-search-text="${escHtml((p.d + " " + p.v + " " + p.h).toLowerCase())}"
+                     onclick="applySettingPreset('${type}',${i})">
+                    <div class="dir-card-name">${escHtml(p.d)}</div>
+                    ${p.v ? `<div class="dir-card-val">${escHtml(p.v)}</div>` : ""}
+                    <div class="dir-card-desc">${escHtml(p.h)}</div>
+                </div>`,
+                    )
+                    .join("")}
+                </div>
+            </div>
         </div>
-        <div class="preset-search-wrap" style="margin-bottom:.75rem">
-            ${icon("search")}
-            <input id="sett-preset-filter" placeholder="Search presets..." oninput="searchSettPresets()">
+
+        <hr class="form-divider">
+        <div class="form-section-title">${IC.directive} Directive</div>
+        <div class="form-row"><div><label>Directive <span class="required">*</span></label><input id="m-directive" value="" placeholder="e.g. maxconn, timeout connect">
+            <div class="form-help">HAProxy directive name</div></div>
+        <div><label>Value</label><input id="m-value" value="" placeholder="e.g. 10000, 30s">
+            <div class="form-help">Directive value or parameters</div></div></div>
+        <hr class="form-divider">
+        <div class="form-collapsible-head" onclick="toggleCollapsible(this)">${IC.opts} Options ${SVG.chevron}</div>
+        <div class="form-collapsible-body">
+            <div class="form-row"><div><label>Sort Order</label><input type="number" id="m-sort" value="0">
+                <div class="form-help">Lower numbers appear first in config output</div></div>
+            <div><label>Comment</label><input id="m-comment" value="" placeholder="Optional description">
+                <div class="form-help">Internal note for documentation</div></div></div>
         </div>
-        <div class="dir-grid" id="${gridId}">${presets
-            .map(
-                (p, i) =>
-                    `<div class="dir-card" data-pcat="${escHtml(p.c)}" data-search-text="${escHtml((p.d + " " + p.v + " " + p.h).toLowerCase())}"
-                 onclick="applySettingPreset('${type}',${i})">
-                <div class="dir-card-name">${escHtml(p.d)}</div>
-                ${p.v ? `<div class="dir-card-val">${escHtml(p.v)}</div>` : ""}
-                <div class="dir-card-desc">${escHtml(p.h)}</div>
-            </div>`,
-            )
-            .join("")}
-        </div>
+        <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn" onclick="saveSetting(null)">Create Setting</button></div>
     `,
         { wide: true },
     );
@@ -379,19 +417,24 @@ export function searchSettPresets(): void {
     searchPresetGrid("settAddGrid", "sett-preset-filter", "pcat");
 }
 
-/** Applies a preset directive by creating a new setting via the API. */
+/** Applies a preset directive by filling the form fields in the modal. */
 export async function applySettingPreset(type: string, idx: number): Promise<void> {
     const presets = type === "global" ? GLOBAL_PRESETS : DEFAULTS_PRESETS;
     const p = presets[idx];
     if (!p) return;
-    try {
-        await api("/api/settings", { method: "POST", body: JSON.stringify({ directive: p.d, value: p.v, type: type, sort_order: 0 }) });
-        closeModal();
-        toast("Added");
-        loadSettings(type);
-    } catch (err) {
-        toast((err as Error).message, "error");
-    }
+
+    const dirEl = document.getElementById("m-directive") as HTMLInputElement | null;
+    const valEl = document.getElementById("m-value") as HTMLInputElement | null;
+    const commentEl = document.getElementById("m-comment") as HTMLInputElement | null;
+
+    if (dirEl) dirEl.value = p.d;
+    if (valEl) valEl.value = p.v;
+    if (commentEl) commentEl.value = p.h;
+
+    // Scroll to the directive field so the user sees the filled form
+    dirEl?.focus();
+    dirEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Template applied - review and save", "info");
 }
 
 /** Opens the setting edit/create modal, optionally pre-filled with existing data. */
@@ -425,13 +468,12 @@ export async function saveSetting(id: number | null): Promise<void> {
     const body = {
         directive: (document.getElementById("m-directive") as HTMLInputElement).value,
         value: (document.getElementById("m-value") as HTMLInputElement).value,
-        type: settTab,
         sort_order: parseInt((document.getElementById("m-sort") as HTMLInputElement).value) || 0,
         comment: (document.getElementById("m-comment") as HTMLInputElement).value || null,
     };
     try {
-        if (id) await api(`/api/settings/${id}`, { method: "PUT", body: JSON.stringify(body) });
-        else await api("/api/settings", { method: "POST", body: JSON.stringify(body) });
+        if (id) await api(`${settingsApiBase()}/${id}`, { method: "PUT", body: JSON.stringify(body) });
+        else await api(settingsApiBase(), { method: "POST", body: JSON.stringify(body) });
         closeModal();
         toast(id ? "Updated" : "Created");
         loadSettings();
@@ -444,7 +486,7 @@ export async function saveSetting(id: number | null): Promise<void> {
 export async function deleteSetting(id: number): Promise<void> {
     if (!confirm("Delete this setting?")) return;
     try {
-        await api(`/api/settings/${id}`, { method: "DELETE" });
+        await api(`${settingsApiBase()}/${id}`, { method: "DELETE" });
         toast("Deleted");
         loadSettings();
     } catch (err) {

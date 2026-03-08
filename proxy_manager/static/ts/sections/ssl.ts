@@ -52,7 +52,7 @@ function _daysUntilExpiry(iso: string | null | undefined): number | null {
 /** Fetches all SSL certificates from the API and renders the card grid. */
 export async function loadSslCertificates(): Promise<void> {
     try {
-        const d = await api("/api/ssl-certificates");
+        const d: { items: SslCertificate[] } = await api("/api/ssl-certificates");
         state.allSslCertificates = d.items || d;
         renderSslCertificates(state.allSslCertificates);
     } catch (err: any) {
@@ -150,7 +150,7 @@ export function renderSslCertificates(list: SslCertificate[]): void {
 
             const commentHtml = c.comment ? `<div class="sc-comment"><span class="sc-comment-label">Note:</span>${escHtml(c.comment)}</div>` : "";
 
-            return `<div class="item-card sc-card">
+            return `<div class="item-card sc-card" data-entity-name="${escHtml(c.domain)}">
             <div class="sc-status-strip ${c.status}"></div>
             <div class="item-header">
                 <h3>${SVG.lock} ${escHtml(c.domain)}</h3>
@@ -388,8 +388,9 @@ export function showAltDomainAclPicker(): void {
     }
     const list = document.getElementById("sc-alt-domains-list") as HTMLElement;
     api("/api/ssl-certificates/acl-domains")
-        .then((domains: string[]) => {
-            if (!domains.length) {
+        .then((domains: unknown) => {
+            const domainList = domains as string[];
+            if (!domainList.length) {
                 toast("No ACL domains found");
                 return;
             }
@@ -397,7 +398,7 @@ export function showAltDomainAclPicker(): void {
             picker.id = "sc-alt-acl-picker";
             picker.className = "sc-acl-domain-grid";
             picker.style.marginTop = ".35rem";
-            picker.innerHTML = domains.map((d) => `<div class="sc-acl-domain-item" onclick="pickAltAclDomain(this, '${escHtml(d)}')">${SC_IC.globe} ${escHtml(d)}</div>`).join("");
+            picker.innerHTML = domainList.map((d) => `<div class="sc-acl-domain-item" onclick="pickAltAclDomain(this, '${escHtml(d)}')">${SC_IC.globe} ${escHtml(d)}</div>`).join("");
             list.parentElement?.appendChild(picker);
         })
         .catch(() => toast("Failed to load ACL domains", "error"));
@@ -491,7 +492,7 @@ export async function deleteSslCertificate(id: number): Promise<void> {
 /** Shows a modal with certbot obtain, renew, and revoke commands for a certificate. */
 export async function showCertbotCommand(certId: number): Promise<void> {
     try {
-        const [obtain, renew, revoke] = await Promise.all([
+        const [obtain, renew, revoke]: any[] = await Promise.all([
             api(`/api/ssl-certificates/${certId}/certbot-command`),
             api(`/api/ssl-certificates/${certId}/renew-command`),
             api(`/api/ssl-certificates/${certId}/revoke-command`),

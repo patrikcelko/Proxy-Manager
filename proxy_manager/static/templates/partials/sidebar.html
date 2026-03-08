@@ -55,11 +55,11 @@
         </li>
         <div class="nav-separator"></div>
         <div class="nav-label">Security</div>
-        <li class="nav-item" data-section="userlists" data-label="User Lists" onclick="switchSection('userlists')">
+        <li class="nav-item" data-section="userlists" data-label="Auth Lists" onclick="switchSection('userlists')">
             <svg width="16" height="16" stroke-width="2">
                 <use href="#i-users" />
             </svg>
-            User Lists
+            Auth Lists
         </li>
         <li class="nav-item" data-section="ssl-certificates" data-label="SSL / TLS" onclick="switchSection('ssl-certificates')">
             <svg width="16" height="16" stroke-width="2">
@@ -99,13 +99,19 @@
             </svg>
             Cache
         </li>
-        <div class="nav-separator"></div>
-        <div class="nav-label">Tools</div>
-        <li class="nav-item" data-section="config" data-label="Config Export" onclick="switchSection('config')">
+        <li class="nav-item" data-section="config" data-label="Manual Edit" onclick="switchSection('config')">
             <svg width="16" height="16" stroke-width="2">
-                <use href="#i-file-text-header" />
+                <use href="#i-terminal" />
             </svg>
-            Config Export
+            Manual Edit
+        </li>
+        <div class="nav-separator"></div>
+        <div class="nav-label">Management</div>
+        <li class="nav-item" data-section="users" data-label="Users" onclick="switchSection('users')">
+            <svg width="16" height="16" stroke-width="2">
+                <use href="#i-user" />
+            </svg>
+            Users
         </li>
         <li class="nav-item" data-section="history" data-label="History" onclick="switchSection('history')">
             <svg width="16" height="16" stroke-width="2">
@@ -114,10 +120,11 @@
             History
         </li>
     </ul>
+    <div class="sidebar-version-info" id="sidebar-version-info" style="display:none"></div>
     <div class="sidebar-actions" id="sidebar-actions" style="display:none">
         <button class="btn btn-full sidebar-save-btn" id="sidebar-save-btn" onclick="openSaveVersionModal()">
             <svg width="14" height="14" stroke-width="2">
-                <use href="#i-check" />
+                <use href="#i-save" />
             </svg>
             Save Version
         </button>

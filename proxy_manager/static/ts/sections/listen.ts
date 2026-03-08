@@ -2,7 +2,7 @@
  * Listen Blocks section
  * =====================
  *
- * Manages HAProxy listen blocks — combined frontend+backend
+ * Manages HAProxy listen blocks - combined frontend+backend
  * definitions for stats dashboards, TCP proxying, database
  * load balancing, and direct services.
  */
@@ -31,7 +31,7 @@ const LISTEN_PRESETS: ListenPreset[] = [
 /** Fetches all listen blocks from the API and renders the card grid. */
 export async function loadListenBlocks(): Promise<void> {
     try {
-        const d = await api("/api/listen-blocks");
+        const d: { items: ListenBlock[] } = await api("/api/listen-blocks");
         state.allListenBlocks = d.items || d;
         renderListenBlocks(state.allListenBlocks);
     } catch (err: any) {
@@ -150,7 +150,7 @@ export function renderListenBlocks(list: ListenBlock[]): void {
 
             const commentHtml = l.comment ? `<div class="ln-custom-opts"><span class="ln-custom-label">Comment</span>${escHtml(l.comment)}</div>` : "";
 
-            return `<div class="item-card ln-card">
+            return `<div class="item-card ln-card" data-entity-name="${escHtml(l.name)}">
             <div class="item-header"><h3>${escHtml(l.name)}</h3>
                 <div><button class="btn-icon" onclick='openListenModal(${escJsonAttr(l)})'>${SVG.edit}</button>
                 <button class="btn-icon danger" onclick="deleteListenBlock(${l.id})">${SVG.del}</button></div>

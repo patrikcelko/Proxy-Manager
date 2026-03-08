@@ -9,9 +9,37 @@
 import { api, toast } from "../core/api";
 import { icon, SVG } from "../core/icons";
 import { openModal, closeModal } from "../core/ui";
-import { escHtml, escJsonAttr, crudDelete } from "../core/utils";
+import { escHtml, escJsonAttr, crudDelete, filterPresetGrid, searchPresetGrid } from "../core/utils";
 import { state } from "../state";
 import type { Resolver, Nameserver } from "../types";
+
+/** Resolver quick-add preset definition. */
+interface ResolverPreset {
+    name: string;
+    comment: string;
+    nameservers: { name: string; address: string; port: number }[];
+    resolve_retries?: number;
+    timeout_resolve?: string;
+    timeout_retry?: string;
+    hold_valid?: string;
+    cat: string;
+}
+
+/** Quick-add presets for common DNS resolver configurations. */
+const RESOLVER_PRESETS: ResolverPreset[] = [
+    { name: "google-dns", comment: "Google Public DNS", nameservers: [{ name: "google1", address: "8.8.8.8", port: 53 }, { name: "google2", address: "8.8.4.4", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "google-dns-v6", comment: "Google Public DNS (IPv6)", nameservers: [{ name: "google1-v6", address: "2001:4860:4860::8888", port: 53 }, { name: "google2-v6", address: "2001:4860:4860::8844", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "cloudflare-dns", comment: "Cloudflare 1.1.1.1 DNS", nameservers: [{ name: "cf-primary", address: "1.1.1.1", port: 53 }, { name: "cf-secondary", address: "1.0.0.1", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "cloudflare-dns-v6", comment: "Cloudflare DNS (IPv6)", nameservers: [{ name: "cf-primary-v6", address: "2606:4700:4700::1111", port: 53 }, { name: "cf-secondary-v6", address: "2606:4700:4700::1001", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "quad9-dns", comment: "Quad9 DNS with security filtering", nameservers: [{ name: "quad9-primary", address: "9.9.9.9", port: 53 }, { name: "quad9-secondary", address: "149.112.112.112", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "opendns", comment: "Cisco OpenDNS", nameservers: [{ name: "opendns1", address: "208.67.222.222", port: 53 }, { name: "opendns2", address: "208.67.220.220", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "public" },
+    { name: "docker-dns", comment: "Docker embedded DNS for container discovery", nameservers: [{ name: "docker-embedded", address: "127.0.0.11", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "internal" },
+    { name: "k8s-coredns", comment: "Kubernetes CoreDNS for service discovery", nameservers: [{ name: "kube-dns", address: "10.96.0.10", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "internal" },
+    { name: "consul-dns", comment: "HashiCorp Consul DNS interface", nameservers: [{ name: "consul", address: "127.0.0.1", port: 8600 }], resolve_retries: 3, timeout_resolve: "2s", timeout_retry: "1s", hold_valid: "5s", cat: "internal" },
+    { name: "local-dns", comment: "Local network DNS server", nameservers: [{ name: "local-ns", address: "192.168.1.1", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "30s", cat: "internal" },
+    { name: "aggressive-resolver", comment: "Aggressive resolution with short hold times", nameservers: [{ name: "cf1", address: "1.1.1.1", port: 53 }, { name: "goog1", address: "8.8.8.8", port: 53 }], resolve_retries: 5, timeout_resolve: "500ms", timeout_retry: "500ms", hold_valid: "5s", cat: "advanced" },
+    { name: "failover-resolver", comment: "Multi-provider DNS failover", nameservers: [{ name: "primary-cf", address: "1.1.1.1", port: 53 }, { name: "secondary-google", address: "8.8.8.8", port: 53 }, { name: "tertiary-quad9", address: "9.9.9.9", port: 53 }], resolve_retries: 3, timeout_resolve: "1s", timeout_retry: "1s", hold_valid: "10s", cat: "advanced" },
+];
 
 /** Renders resolver cards with nameserver entries, feature badges, and detail grids. */
 function renderResolversGrid(items: Resolver[]): void {
@@ -96,7 +124,7 @@ function renderResolversGrid(items: Resolver[]): void {
 
             const extraHtml = r.extra_options ? `<div class="rs-custom-opts"><span class="rs-custom-label">Extra:</span>${escHtml(r.extra_options).replace(/\n/g, "; ")}</div>` : "";
 
-            return `<div class="item-card rs-card">
+            return `<div class="item-card rs-card" data-entity-name="${escHtml(r.name)}">
                 <div class="item-header"><h3>${escHtml(r.name)}</h3>
                     <div><button class="btn-icon" onclick='openResolverModal(${escJsonAttr(r)})'>${SVG.edit}</button>
                     <button class="btn-icon danger" onclick="deleteResolver(${r.id})">${SVG.del}</button></div>
@@ -118,7 +146,7 @@ function renderResolversGrid(items: Resolver[]): void {
 /** Fetches all resolvers from the API and renders cards. */
 export async function loadResolvers(): Promise<void> {
     try {
-        const d = await api("/api/resolvers");
+        const d: { items: Resolver[] } = await api("/api/resolvers");
         state.allResolvers = d.items || d;
         renderResolversGrid(state.allResolvers);
     } catch (err: any) {
@@ -143,20 +171,97 @@ export function filterResolvers(): void {
     );
 }
 
-/** Opens the resolver create/edit modal with identification, resolution settings, hold timers, and advanced options. */
+/** Opens the resolver quick-add modal with preset resolver templates.
+ * @deprecated Use openResolverModal() which now includes templates for new resolvers.
+ */
+export function openResolverQuickAdd(): void {
+    openResolverModal();
+}
+
+/** Filters the resolver preset grid by category. */
+export function filterResolverPresets(cat: string): void {
+    filterPresetGrid("resolverAddGrid", "resolver-preset-filter", "pcat", cat);
+}
+
+/** Filters the resolver preset grid by free-text search. */
+export function searchResolverPresets(): void {
+    searchPresetGrid("resolverAddGrid", "resolver-preset-filter", "pcat");
+}
+
+/** Applies a resolver preset: fills the form fields with the preset values. */
+export async function applyResolverPreset(idx: number): Promise<void> {
+    const p = RESOLVER_PRESETS[idx];
+    if (!p) return;
+
+    const setVal = (id: string, val: string | number | null | undefined) => {
+        const el = document.getElementById(id) as HTMLInputElement | null;
+        if (el && val != null) el.value = String(val);
+    };
+
+    setVal("m-name", p.name);
+    setVal("m-comment", p.comment);
+    setVal("m-resolve-retries", p.resolve_retries);
+    setVal("m-timeout-resolve", p.timeout_resolve);
+    setVal("m-timeout-retry", p.timeout_retry);
+    setVal("m-hold-valid", p.hold_valid);
+
+    // Focus on the name field so the user sees the filled form
+    const nameEl = document.getElementById("m-name") as HTMLInputElement | null;
+    nameEl?.focus();
+    nameEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast(`Template "${p.name}" applied - review, save, then add nameservers`, "info");
+}
+
+/** Opens the resolver create/edit modal with identification, resolution settings, hold timers, and advanced options.
+ * When creating new, includes a preset template picker at the top for quick setup. */
 export function openResolverModal(existing: Partial<Resolver> | null = null): void {
     const r = existing || {};
+    const isNew = !r.id;
     const SEC = {
         core: icon("globe", 15),
         timeout: icon("clock", 15),
         hold: icon("shield", 15),
         advanced: icon("edit-pen", 15),
+        templates: icon("grid", 15),
     };
+
+    // Build template picker for new resolvers
+    let templateSection = "";
+    if (isNew) {
+        const cats = [...new Set(RESOLVER_PRESETS.map((p) => p.cat))];
+        const gridId = "resolverAddGrid";
+        templateSection = `
+            <div class="form-section-title">${SEC.templates} Templates <span class="stab-count">${RESOLVER_PRESETS.length}</span></div>
+            <div class="form-help" style="margin-bottom:.5rem">Choose a preset to auto-fill the form, or configure manually below.</div>
+            <div class="stabs" style="margin-bottom:.5rem">
+                <button class="stab active" onclick="filterResolverPresets('all')">All</button>
+                ${cats.map((c) => `<button class="stab" onclick="filterResolverPresets('${c}')">${c.charAt(0).toUpperCase() + c.slice(1)}</button>`).join("")}
+            </div>
+            <div class="preset-search-wrap" style="margin-bottom:.75rem">
+                ${icon("search")}
+                <input id="resolver-preset-filter" placeholder="Search presets..." oninput="searchResolverPresets()">
+            </div>
+            <div class="dir-grid" id="${gridId}">${RESOLVER_PRESETS.map(
+            (p, i) =>
+                `<div class="dir-card" data-pcat="${escHtml(p.cat)}" data-search-text="${escHtml((p.name + " " + p.comment + " " + p.nameservers.map((n) => n.address).join(" ")).toLowerCase())}"
+                     onclick="applyResolverPreset(${i})">
+                    <div class="dir-card-name">${escHtml(p.name)}</div>
+                    <div class="dir-card-val">${p.nameservers.map((n) => n.address + ":" + n.port).join(", ")}</div>
+                    <div class="dir-card-desc">${escHtml(p.comment)}</div>
+                </div>`,
+        ).join("")}
+            </div>
+            <hr class="form-divider" style="margin:1rem 0">
+            <p class="form-help" style="margin-bottom:.75rem;font-weight:500;color:var(--text-muted)">Or configure manually:</p>
+        `;
+    }
 
     openModal(
         `
         <h3>${r.id ? "Edit" : "New"} DNS Resolver</h3>
         <p class="modal-subtitle">Configure a DNS resolver section for dynamic server name resolution and service discovery.</p>
+
+        ${templateSection}
 
         <div class="form-section-title">${SEC.core} Identification</div>
         <div class="form-row"><div>

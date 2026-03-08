@@ -12,7 +12,7 @@
 import { api, toast, TOKEN } from "./core/api";
 import { state } from "./state";
 
-/*  Core  */
+/* Core  */
 import { switchSection, openModal, closeModal, initModalListeners, toggleCollapsible, toggleEntityCard } from "./core/ui";
 import {
     switchAuthTab,
@@ -20,6 +20,7 @@ import {
     handleRegister,
     logout,
     showApp,
+    checkFirstRun,
     toggleSidebar,
     toggleSidebarCollapse,
     initSidebarListeners,
@@ -30,7 +31,7 @@ import {
     saveUserSettings,
 } from "./core/auth";
 
-/*  Sections  */
+/* Sections  */
 import { loadOverview, renderFlowCanvas, drawFlowConnections } from "./sections/overview";
 import {
     loadSettings,
@@ -38,6 +39,7 @@ import {
     reorderSetting,
     switchSettingsTab,
     filterSettingsCat,
+    filterSettings,
     openGlobalQuickAdd,
     openDefaultsQuickAdd,
     openSettingsAddModal,
@@ -99,7 +101,7 @@ import {
     saveUserlist,
     deleteUserlist,
 } from "./sections/userlists";
-import { loadResolvers, filterResolvers, openResolverModal, openNameserverModal, saveResolver, deleteResolver, saveNameserver, deleteNameserver } from "./sections/resolvers";
+import { loadResolvers, filterResolvers, openResolverModal, openResolverQuickAdd, filterResolverPresets, searchResolverPresets, applyResolverPreset, openNameserverModal, saveResolver, deleteResolver, saveNameserver, deleteNameserver } from "./sections/resolvers";
 import { loadPeers, filterPeers, openPeerModal, openPeerEntryModal, savePeer, deletePeer, savePeerEntry, deletePeerEntry } from "./sections/peers";
 import { loadMailers, filterMailers, openMailerModal, openMailerEntryModal, saveMailer, deleteMailer, saveMailerEntry, deleteMailerEntry } from "./sections/mailers";
 import {
@@ -131,12 +133,13 @@ import {
     deleteSslCertificate,
     showCertbotCommand,
 } from "./sections/ssl";
-import { exportConfig, copyExport } from "./sections/config";
+import { exportConfig, copyExport, loadManualEdit, saveManualEdit, discardManualEdit } from "./sections/config";
 import { initEmpty, initImport, showSetup } from "./sections/setup";
-import { loadHistory, toggleHistoryDiff, rollbackVersion } from "./sections/history";
-import { checkVersionStatus, refreshPendingBadges, openSaveVersionModal, saveVersion, discardChanges } from "./sections/versions";
+import { loadHistory, toggleHistoryDiff, rollbackVersion, switchDiffTab } from "./sections/history";
+import { loadUsers, filterUsers, openAddUserModal, saveNewUser, deleteUserById, openUserPasswordModal, saveUserPassword } from "./sections/users";
+import { checkVersionStatus, refreshPendingBadges, openSaveVersionModal, saveVersion, discardChanges, revertSection, viewSectionChanges } from "./sections/versions";
 
-/*  Expose onclick handlers on window  */
+/* Expose onclick handlers on window  */
 Object.assign(window, {
     /* core / ui */
     switchSection,
@@ -169,6 +172,7 @@ Object.assign(window, {
     reorderSetting,
     switchSettingsTab,
     filterSettingsCat,
+    filterSettings,
     openGlobalQuickAdd,
     openDefaultsQuickAdd,
     openSettingsAddModal,
@@ -253,6 +257,10 @@ Object.assign(window, {
     loadResolvers,
     filterResolvers,
     openResolverModal,
+    openResolverQuickAdd,
+    filterResolverPresets,
+    searchResolverPresets,
+    applyResolverPreset,
     openNameserverModal,
     saveResolver,
     deleteResolver,
@@ -317,6 +325,9 @@ Object.assign(window, {
     /* config */
     exportConfig,
     copyExport,
+    loadManualEdit,
+    saveManualEdit,
+    discardManualEdit,
 
     /* setup */
     initEmpty,
@@ -327,6 +338,16 @@ Object.assign(window, {
     loadHistory,
     toggleHistoryDiff,
     rollbackVersion,
+    switchDiffTab,
+
+    /* users */
+    loadUsers,
+    filterUsers,
+    openAddUserModal,
+    saveNewUser,
+    deleteUserById,
+    openUserPasswordModal,
+    saveUserPassword,
 
     /* versions */
     checkVersionStatus,
@@ -334,20 +355,24 @@ Object.assign(window, {
     openSaveVersionModal,
     saveVersion,
     discardChanges,
+    revertSection,
+    viewSectionChanges,
 });
 
-/*  Init event listeners  */
+/* Init event listeners  */
 initModalListeners();
 initSidebarListeners();
 initUserMenuListeners();
 
-/*  Auth form handlers  */
+/* Auth form handlers  */
 document.getElementById("form-login")?.addEventListener("submit", handleLogin);
 document.getElementById("form-register")?.addEventListener("submit", handleRegister);
 
-/*  Bootstrap  */
+/* Bootstrap  */
 (async function init(): Promise<void> {
     if (!TOKEN) {
+        // Check if first-run (no users exist) - show register tab
+        await checkFirstRun();
         logout();
         return;
     }
@@ -363,7 +388,7 @@ document.getElementById("form-register")?.addEventListener("submit", handleRegis
         state.allAclRules = (acl as any).items || acl;
         state.cachedUserlists = (ul as any).items || ul;
 
-        // Check version status — show setup if not initialized
+        // Check version status - show setup if not initialized
         const initialized = await checkVersionStatus();
         if (!initialized) {
             // Show auth overlay first, then setup

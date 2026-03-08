@@ -1,34 +1,13 @@
 /**
  * Version History
  * ===============
- *
- * Displays the configuration version history with diffs,
- * and provides rollback functionality.
  */
 
 import { api, toast } from "../core/api";
-import { openModal, closeModal } from "../core/ui";
 import { icon } from "../core/icons";
-import { escHtml } from "../core/utils";
+import { escHtml, SECTION_LABELS } from "../core/utils";
 import { refreshPendingBadges } from "./versions";
-import type { VersionSummary, VersionDetail, SectionDiff, FieldChange } from "../types";
-
-/** Human-readable section labels. */
-const SECTION_LABELS: Record<string, string> = {
-    global_settings: "Global Settings",
-    default_settings: "Defaults",
-    frontends: "Frontends",
-    acl_rules: "ACL Routing",
-    backends: "Backends",
-    listen_blocks: "Listen Blocks",
-    userlists: "User Lists",
-    resolvers: "DNS Resolvers",
-    peers: "Peers",
-    mailers: "Mailers",
-    http_errors: "HTTP Errors",
-    caches: "Cache",
-    ssl_certificates: "SSL Certificates",
-};
+import type { VersionListResponse, VersionSummary, VersionDetail, SectionDiff, FieldChange, EntityUpdate } from "../types";
 
 /** Load and render the version history list. */
 export async function loadHistory(): Promise<void> {
@@ -38,7 +17,7 @@ export async function loadHistory(): Promise<void> {
     container.innerHTML = `<div class="loading-placeholder">Loading history…</div>`;
 
     try {
-        const data = await api("/api/versions?limit=100");
+        const data = await api<VersionListResponse>("/api/versions?limit=100");
         const versions: VersionSummary[] = data.items || [];
 
         if (versions.length === 0) {
@@ -51,6 +30,57 @@ export async function loadHistory(): Promise<void> {
         container.innerHTML = `<div class="empty-state error">${icon("alert-triangle", 32, 1.5)} <p>${escHtml(err.message)}</p></div>`;
     }
 }
+
+/** Toggle diff panel for a version card. */
+export async function toggleHistoryDiff(hash: string): Promise<void> {
+    const diffEl = document.getElementById(`diff-${hash}`);
+    const card = diffEl?.closest(".history-card");
+    if (!diffEl || !card) return;
+
+    const isOpen = card.classList.toggle("open");
+    diffEl.style.display = isOpen ? "block" : "none";
+
+    if (isOpen && diffEl.querySelector(".diff-loading")) {
+        try {
+            const detail: VersionDetail = await api(`/api/versions/${hash}`);
+            diffEl.innerHTML = _renderDiffTabs(detail.diff, `ht-${hash}`);
+        } catch (err: any) {
+            diffEl.innerHTML = `<div class="diff-error">${escHtml(err.message)}</div>`;
+        }
+    }
+}
+
+/** Switch between Changes / Diff tabs inside a diff panel. */
+export function switchDiffTab(tabId: string, tab: string): void {
+    const wrap = document.getElementById(tabId);
+    if (!wrap) return;
+    wrap.querySelectorAll<HTMLElement>(".dtab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+    wrap.querySelectorAll<HTMLElement>(".dtab-pane").forEach((p) => (p.style.display = p.dataset.tab === tab ? "block" : "none"));
+}
+
+/** Rollback to a specific version. */
+export async function rollbackVersion(hash: string): Promise<void> {
+    if (!confirm(`Rollback to version ${hash.substring(0, 8)}? This will restore the configuration to that state and create a new version.`)) return;
+
+    try {
+        await api(`/api/versions/${hash}/rollback`, { method: "POST" });
+        toast("Rollback successful");
+        loadHistory();
+        refreshPendingBadges();
+    } catch (err: any) {
+        toast(err.message, "error");
+    }
+}
+
+/**
+ * Render a diff-content block (with tabs) for a given diff payload.
+ * Reused by the "View Changes" modal in versions.ts.
+ */
+export function renderDiffContent(diff: Record<string, SectionDiff>, idPrefix: string): string {
+    return _renderDiffTabs(diff, idPrefix);
+}
+
+/* Card / Tabs rendering */
 
 function _renderVersionCard(v: VersionSummary, isLatest: boolean): string {
     const shortHash = v.hash.substring(0, 8);
@@ -82,48 +112,50 @@ function _renderVersionCard(v: VersionSummary, isLatest: boolean): string {
     </div>`;
 }
 
-/** Toggle diff panel for a version card. */
-export async function toggleHistoryDiff(hash: string): Promise<void> {
-    const diffEl = document.getElementById(`diff-${hash}`);
-    const card = diffEl?.closest(".history-card");
-    if (!diffEl || !card) return;
-
-    const isOpen = card.classList.toggle("open");
-    diffEl.style.display = isOpen ? "block" : "none";
-
-    if (isOpen && diffEl.querySelector(".diff-loading")) {
-        try {
-            const detail: VersionDetail = await api(`/api/versions/${hash}`);
-            diffEl.innerHTML = _renderDiff(detail.diff);
-        } catch (err: any) {
-            diffEl.innerHTML = `<div class="diff-error">${escHtml(err.message)}</div>`;
-        }
-    }
-}
-
-/** Rollback to a specific version. */
-export async function rollbackVersion(hash: string): Promise<void> {
-    if (!confirm(`Rollback to version ${hash.substring(0, 8)}? This will restore the configuration to that state and create a new version.`)) return;
-
-    try {
-        await api(`/api/versions/${hash}/rollback`, { method: "POST" });
-        toast("Rollback successful");
-        loadHistory();
-        refreshPendingBadges();
-    } catch (err: any) {
-        toast(err.message, "error");
-    }
-}
-
-function _renderDiff(diff: Record<string, SectionDiff>): string {
+/** Render the tabbed container (Changes + Diff). */
+function _renderDiffTabs(diff: Record<string, SectionDiff>, id: string): string {
     const sections = Object.keys(diff);
-    if (sections.length === 0) {
-        return `<div class="diff-empty">No changes in this version</div>`;
+    if (sections.length === 0) return `<div class="diff-empty">No changes in this version</div>`;
+
+    // Summary counts
+    let totalAdded = 0, totalModified = 0, totalDeleted = 0;
+    for (const s of Object.values(diff)) {
+        totalAdded += s.created.length;
+        totalModified += s.updated.length;
+        totalDeleted += s.deleted.length;
     }
 
-    return sections
-        .map((key) => {
-            const s = diff[key];
+    const summaryParts: string[] = [];
+    if (totalAdded > 0) summaryParts.push(`<span class="dtab-stat dtab-s-add">+${totalAdded}</span>`);
+    if (totalModified > 0) summaryParts.push(`<span class="dtab-stat dtab-s-mod">~${totalModified}</span>`);
+    if (totalDeleted > 0) summaryParts.push(`<span class="dtab-stat dtab-s-del">-${totalDeleted}</span>`);
+    const summary = summaryParts.length ? `<span class="dtab-summary">${summaryParts.join("")}</span>` : "";
+
+    return `
+    <div class="dtab-wrap" id="${escHtml(id)}">
+        <div class="dtab-bar">
+            <button class="dtab-btn active" data-tab="changes" onclick="switchDiffTab('${escHtml(id)}','changes')">
+                ${icon("layers", 13)} Changes
+            </button>
+            <button class="dtab-btn" data-tab="diff" onclick="switchDiffTab('${escHtml(id)}','diff')">
+                ${icon("code", 13)} Diff
+            </button>
+            ${summary}
+        </div>
+        <div class="dtab-pane" data-tab="changes" style="display:block">
+            ${_renderStructuredDiff(diff)}
+        </div>
+        <div class="dtab-pane" data-tab="diff" style="display:none">
+            ${_renderUnifiedDiff(diff)}
+        </div>
+    </div>`;
+}
+
+/*  Structured Changes view   */
+
+function _renderStructuredDiff(diff: Record<string, SectionDiff>): string {
+    return Object.entries(diff)
+        .map(([key, s]) => {
             const label = SECTION_LABELS[key] || key;
             const parts: string[] = [];
 
@@ -131,7 +163,7 @@ function _renderDiff(diff: Record<string, SectionDiff>): string {
                 parts.push(
                     `<div class="diff-group diff-created">
                         <div class="diff-group-header">${icon("plus", 12)} Added (${s.created.length})</div>
-                        ${s.created.map((item) => `<div class="diff-item">${_renderEntity(item)}</div>`).join("")}
+                        ${s.created.map((item) => `<div class="diff-item"><span class="diff-entity-name">${escHtml(_entityName(item))}</span>${_renderEntityFields(item)}</div>`).join("")}
                     </div>`
                 );
             }
@@ -140,7 +172,7 @@ function _renderDiff(diff: Record<string, SectionDiff>): string {
                 parts.push(
                     `<div class="diff-group diff-deleted">
                         <div class="diff-group-header">${icon("trash", 12)} Removed (${s.deleted.length})</div>
-                        ${s.deleted.map((item) => `<div class="diff-item">${_renderEntity(item)}</div>`).join("")}
+                        ${s.deleted.map((item) => `<div class="diff-item"><span class="diff-entity-name">${escHtml(_entityName(item))}</span></div>`).join("")}
                     </div>`
                 );
             }
@@ -166,33 +198,142 @@ function _renderDiff(diff: Record<string, SectionDiff>): string {
         .join("");
 }
 
-function _renderEntity(item: Record<string, unknown>): string {
-    const name = (item.name || item.directive || item.domain || item.frontend_name || "") as string;
-    return `<span class="diff-entity-name">${escHtml(name)}</span>`;
+/** Render a newly-created entity with all its key fields. */
+function _renderEntityFields(item: Record<string, unknown>): string {
+    const skip = new Set(["id", "binds", "options", "servers", "entries", "nameservers"]);
+    const fields = Object.entries(item).filter(([k, v]) => !skip.has(k) && v !== null && v !== undefined && v !== "");
+    if (fields.length <= 1) return "";
+    return `<div class="diff-fields">${fields
+        .map(([k, v]) => `<div class="diff-field"><span class="diff-field-name">${escHtml(k)}</span><span class="diff-new">${escHtml(_fmtVal(v))}</span></div>`)
+        .join("")}</div>`;
 }
 
-function _renderUpdate(u: { entity: string; changes: FieldChange[] }): string {
+function _renderUpdate(u: EntityUpdate): string {
     const changes = (u.changes || [])
-        .filter((c) => c.field !== "binds" && c.field !== "options" && c.field !== "servers" && c.field !== "entries" && c.field !== "nameservers")
+        .filter((c) => !_isNestedField(c.field))
         .map((c) => {
-            const oldVal = _formatValue(c.old);
-            const newVal = _formatValue(c.new);
+            const oldVal = _fmtVal(c.old);
+            const newVal = _fmtVal(c.new);
             return `<div class="diff-field">
                 <span class="diff-field-name">${escHtml(c.field)}</span>
                 <span class="diff-old">${escHtml(oldVal)}</span>
-                <span class="diff-arrow">→</span>
+                <span class="diff-arrow">${icon("arrow-right-narrow", 12, 2)}</span>
                 <span class="diff-new">${escHtml(newVal)}</span>
             </div>`;
         })
         .join("");
 
+    // Nested sub-entity changes (binds, options, servers, etc.)
+    const nested = (u.changes || []).filter((c) => _isNestedField(c.field));
+    const nestedHtml = nested.length > 0 ? _renderNestedChanges(nested) : "";
+
     return `<div class="diff-item diff-update-item">
         <span class="diff-entity-name">${escHtml(u.entity)}</span>
         ${changes ? `<div class="diff-fields">${changes}</div>` : ""}
+        ${nestedHtml}
     </div>`;
 }
 
-function _formatValue(val: unknown): string {
+/** Check if a field represents a nested sub-entity list. */
+function _isNestedField(field: string): boolean {
+    return ["binds", "options", "servers", "entries", "nameservers"].includes(field);
+}
+
+/** Render nested sub-entity changes (e.g. frontend options). */
+function _renderNestedChanges(changes: FieldChange[]): string {
+    return changes.map((c) => {
+        const oldArr = Array.isArray(c.old) ? c.old : [];
+        const newArr = Array.isArray(c.new) ? c.new : [];
+        const added = newArr.length - oldArr.length;
+        const label = c.field;
+        const badge = added > 0 ? `<span class="dtab-stat dtab-s-add">+${added}</span>` : added < 0 ? `<span class="dtab-stat dtab-s-del">${added}</span>` : `<span class="dtab-stat dtab-s-mod">~</span>`;
+        return `<div class="diff-nested-note">${icon("layers", 11)} <span>${escHtml(label)}</span> ${badge} <span class="diff-nested-count">(${newArr.length} total)</span></div>`;
+    }).join("");
+}
+
+/*  Unified Diff view   */
+
+function _renderUnifiedDiff(diff: Record<string, SectionDiff>): string {
+    const blocks: string[] = [];
+
+    for (const [key, s] of Object.entries(diff)) {
+        const label = SECTION_LABELS[key] || key;
+        const lines: string[] = [];
+
+        // Created entities
+        for (const item of s.created) {
+            const name = _entityName(item);
+            lines.push(_udLine("+", `+ ${name}`, "add"));
+            _entityToLines(item).forEach((l) => lines.push(_udLine("+", `+   ${l}`, "add")));
+            lines.push(_udSpacer());
+        }
+
+        // Deleted entities
+        for (const item of s.deleted) {
+            const name = _entityName(item);
+            lines.push(_udLine("-", `- ${name}`, "del"));
+            _entityToLines(item).forEach((l) => lines.push(_udLine("-", `-   ${l}`, "del")));
+            lines.push(_udSpacer());
+        }
+
+        // Updated entities
+        for (const u of s.updated) {
+            lines.push(_udLine("~", `  ${u.entity}`, "ctx"));
+            for (const c of u.changes) {
+                if (_isNestedField(c.field)) {
+                    const oldLen = Array.isArray(c.old) ? c.old.length : 0;
+                    const newLen = Array.isArray(c.new) ? c.new.length : 0;
+                    lines.push(_udLine("~", `    ${c.field}: ${oldLen} \u2192 ${newLen} items`, "mod"));
+                    continue;
+                }
+                lines.push(_udLine("-", `-   ${c.field}: ${_fmtVal(c.old)}`, "del"));
+                lines.push(_udLine("+", `+   ${c.field}: ${_fmtVal(c.new)}`, "add"));
+            }
+            lines.push(_udSpacer());
+        }
+
+        if (lines.length > 0) {
+            // Remove trailing spacer
+            if (lines[lines.length - 1].includes("ud-spacer")) lines.pop();
+            blocks.push(`
+            <div class="ud-section">
+                <div class="ud-file-header">${icon("file-text", 13)} ${escHtml(label)}
+                    <span class="ud-file-stats">
+                        <span class="ud-fs-add">+${s.created.length + s.updated.length}</span>
+                        <span class="ud-fs-del">-${s.deleted.length}</span>
+                    </span>
+                </div>
+                <div class="ud-block">${lines.join("")}</div>
+            </div>`);
+        }
+    }
+
+    return blocks.length > 0 ? blocks.join("") : `<div class="diff-empty">No field-level changes</div>`;
+}
+
+function _udLine(gutter: string, text: string, type: string): string {
+    return `<div class="ud-line ud-${type}"><span class="ud-gutter">${escHtml(gutter)}</span><span class="ud-text">${escHtml(text)}</span></div>`;
+}
+
+function _udSpacer(): string {
+    return `<div class="ud-line ud-spacer"><span class="ud-gutter"> </span><span class="ud-text"> </span></div>`;
+}
+
+/** Convert an entity dict to key: value lines for the diff view. */
+function _entityToLines(item: Record<string, unknown>): string[] {
+    const skip = new Set(["id", "binds", "options", "servers", "entries", "nameservers"]);
+    return Object.entries(item)
+        .filter(([k, v]) => !skip.has(k) && v !== null && v !== undefined)
+        .map(([k, v]) => `${k}: ${_fmtVal(v)}`);
+}
+
+/* Utilities */
+
+function _entityName(item: Record<string, unknown>): string {
+    return String(item.name || item.directive || item.domain || item.frontend_name || "");
+}
+
+function _fmtVal(val: unknown): string {
     if (val === null || val === undefined) return "–";
     if (typeof val === "boolean") return val ? "yes" : "no";
     if (typeof val === "object") return JSON.stringify(val);
@@ -200,16 +341,12 @@ function _formatValue(val: unknown): string {
 }
 
 function _formatDate(iso: string): string {
-    const d = new Date(iso);
-    return d.toLocaleString();
+    return new Date(iso).toLocaleString();
 }
 
 function _relativeDate(iso: string): string {
     const d = new Date(iso);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const secs = Math.floor(diff / 1000);
-
+    const secs = Math.floor((Date.now() - d.getTime()) / 1000);
     if (secs < 60) return "just now";
     const mins = Math.floor(secs / 60);
     if (mins < 60) return `${mins}m ago`;

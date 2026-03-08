@@ -60,7 +60,7 @@ function renderPeersGrid(items: Peer[]): void {
                 )
                 .join("");
 
-            return `<div class="item-card pe-card">
+            return `<div class="item-card pe-card" data-entity-name="${escHtml(p.name)}">
                 <div class="item-header"><h3>${escHtml(p.name)}</h3>
                     <div><button class="btn-icon" onclick='openPeerModal(${escJsonAttr(p)})'>${SVG.edit}</button>
                     <button class="btn-icon danger" onclick="deletePeer(${p.id})">${SVG.del}</button></div>
@@ -83,7 +83,7 @@ function renderPeersGrid(items: Peer[]): void {
 /** Fetches all peer sections from the API and renders cards. */
 export async function loadPeers(): Promise<void> {
     try {
-        const d = await api("/api/peers");
+        const d: { items: Peer[] } = await api("/api/peers");
         state.allPeers = d.items || d;
         renderPeersGrid(state.allPeers);
     } catch (err: any) {

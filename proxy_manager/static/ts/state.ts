@@ -15,6 +15,7 @@ import type {
     ListenBlock,
     Mailer,
     Peer,
+    PendingChanges,
     Resolver,
     SslCertificate,
     UserProfile,
@@ -37,4 +38,5 @@ export const state = {
     cachedUserlists: null as Userlist[] | null,
     currentUser: null as UserProfile | null,
     versionStatus: null as VersionStatus | null,
+    pendingDiff: null as PendingChanges | null,
 };

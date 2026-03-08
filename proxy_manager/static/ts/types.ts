@@ -3,7 +3,7 @@
  * =======================
  */
 
-/*  Frontends  */
+/* Frontends  */
 
 export interface FrontendBind {
     id: number;
@@ -41,7 +41,7 @@ export interface Frontend {
     options?: FrontendOption[];
 }
 
-/*  Backends  */
+/* Backends  */
 
 export interface BackendServer {
     id: number;
@@ -104,7 +104,7 @@ export interface Backend {
     servers?: BackendServer[];
 }
 
-/*  ACL Rules  */
+/* ACL Rules  */
 
 export interface AclRule {
     id: number;
@@ -120,7 +120,7 @@ export interface AclRule {
     comment?: string | null;
 }
 
-/*  Listen Blocks  */
+/* Listen Blocks  */
 
 export interface ListenBlockBind {
     id: number;
@@ -146,7 +146,7 @@ export interface ListenBlock {
     binds?: ListenBlockBind[];
 }
 
-/*  Userlists  */
+/* Userlists  */
 
 export interface UserlistEntry {
     id: number;
@@ -165,7 +165,7 @@ export interface Userlist {
     entries?: UserlistEntry[];
 }
 
-/*  Resolvers  */
+/* Resolvers  */
 
 export interface Nameserver {
     id: number;
@@ -195,7 +195,7 @@ export interface Resolver {
     nameservers?: Nameserver[];
 }
 
-/*  Peers  */
+/* Peers  */
 
 export interface PeerEntry {
     id: number;
@@ -215,7 +215,7 @@ export interface Peer {
     entries?: PeerEntry[];
 }
 
-/*  Mailers  */
+/* Mailers  */
 
 export interface MailerEntry {
     id: number;
@@ -225,7 +225,7 @@ export interface MailerEntry {
     sort_order?: number;
     smtp_auth?: boolean;
     smtp_user?: string | null;
-    smtp_password?: string | null;
+    has_smtp_password?: boolean;
     use_tls?: boolean;
     use_starttls?: boolean;
 }
@@ -239,7 +239,7 @@ export interface Mailer {
     entries?: MailerEntry[];
 }
 
-/*  HTTP Errors  */
+/* HTTP Errors  */
 
 export interface HttpErrorEntry {
     id: number;
@@ -257,7 +257,7 @@ export interface HttpErrorGroup {
     entries?: HttpErrorEntry[];
 }
 
-/*  Caches  */
+/* Caches  */
 
 export interface Cache {
     id: number;
@@ -271,7 +271,7 @@ export interface Cache {
     extra_options?: string | null;
 }
 
-/*  SSL Certificates  */
+/* SSL Certificates  */
 
 export interface SslCertificate {
     id: number;
@@ -293,7 +293,7 @@ export interface SslCertificate {
     comment?: string | null;
 }
 
-/*  Settings  */
+/* Settings  */
 
 export interface Setting {
     id: number;
@@ -305,7 +305,7 @@ export interface Setting {
     category?: string;
 }
 
-/*  Overview Stats  */
+/* Overview Stats  */
 
 export interface OverviewStats {
     global_settings: number;
@@ -325,15 +325,16 @@ export interface OverviewStats {
     [key: string]: number;
 }
 
-/*  User Profile  */
+/* User Profile  */
 
 export interface UserProfile {
     id: number;
     name: string;
     email: string;
+    created_at?: string;
 }
 
-/*  Preset Types  */
+/* Preset Types  */
 
 export interface BindPreset {
     cat: string;
@@ -371,41 +372,45 @@ export interface SettingPreset {
     c: string;
 }
 
-/*  API Response Wrapper  */
+/* API Response Wrapper  */
 
 export interface ApiListResponse<T> {
     items: T[];
 }
 
-/*  Category Map  */
+/* Category Map  */
 
 export interface CategoryDef {
     label: string;
 }
 
-/*  Overview Stat Card  */
+/* Overview Stat Card  */
 
 export interface StatCardItem {
     key: string;
     label: string;
     section: string;
     color: string;
+    icon: string;
 }
 
-/*  Flow Diagram Types  */
+/* Flow Diagram Types  */
 
 export interface FlowPoint {
     x: number;
     y: number;
 }
 
-/*  Version Control Types  */
+/* Version Control Types  */
 
 export interface VersionStatus {
     initialized: boolean;
     has_pending: boolean;
     pending_counts: Record<string, number>;
     current_hash: string | null;
+    current_message: string | null;
+    current_user_name: string | null;
+    current_created_at: string | null;
 }
 
 export interface VersionSummary {
@@ -424,6 +429,7 @@ export interface FieldChange {
 
 export interface EntityUpdate {
     entity: string;
+    entity_id?: string;
     old: Record<string, unknown>;
     new: Record<string, unknown>;
     changes: FieldChange[];

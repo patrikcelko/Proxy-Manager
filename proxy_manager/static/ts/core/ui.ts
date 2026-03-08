@@ -20,7 +20,9 @@ import { loadMailers } from "../sections/mailers";
 import { loadHttpErrors } from "../sections/http-errors";
 import { loadCaches } from "../sections/caches";
 import { loadSslCertificates } from "../sections/ssl";
+import { loadManualEdit } from "../sections/config";
 import { loadHistory } from "../sections/history";
+import { loadUsers } from "../sections/users";
 
 /** Human-readable titles displayed in the top bar for each section. */
 const _sectionTitles: Record<string, string> = {
@@ -31,14 +33,15 @@ const _sectionTitles: Record<string, string> = {
     backends: "Backends",
     acl: "ACL Routing",
     listen: "Listen / Stats",
-    userlists: "User Lists",
+    userlists: "Auth Lists",
     "ssl-certificates": "SSL / TLS Certificates",
     resolvers: "DNS Resolvers",
     peers: "Peers",
     mailers: "Mailers",
     "http-errors": "HTTP Errors",
     caches: "Cache",
-    config: "Config Export",
+    config: "Manual Edit",
+    users: "Users",
     history: "Version History",
 };
 
@@ -48,6 +51,7 @@ export function switchSection(name: string): void {
     document.querySelectorAll(".section").forEach((s) => s.classList.toggle("active", s.id === `sec-${name}`));
     const titleEl = document.getElementById("top-bar-page-title");
     if (titleEl) titleEl.textContent = _sectionTitles[name] || name;
+
     // Close sidebar on mobile after navigation
     document.getElementById("sidebar")?.classList.remove("open");
     document.getElementById("sidebar-backdrop")?.classList.remove("open");
@@ -66,9 +70,16 @@ export function switchSection(name: string): void {
         "http-errors": loadHttpErrors,
         caches: loadCaches,
         "ssl-certificates": loadSslCertificates,
+        config: loadManualEdit,
         history: loadHistory,
+        users: loadUsers,
     };
     if (loaders[name]) loaders[name]();
+
+    // Apply change markers after a brief delay to let the section render
+    setTimeout(() => {
+        import("../sections/versions").then((m) => m.applySectionChangeMarkers()).catch(() => { });
+    }, 120);
 }
 
 /** Opens a centered modal dialog with the given HTML content. */

@@ -56,7 +56,7 @@ function renderCachesGrid(items: Cache[]): void {
                 .map((d) => `<div class="ca-detail-item"><span class="ca-detail-icon">${d.icon}</span><span class="ca-detail-label">${d.label}</span><span class="ca-detail-value">${d.value}</span></div>`)
                 .join("");
 
-            return `<div class="item-card ca-card">
+            return `<div class="item-card ca-card" data-entity-name="${escHtml(c.name)}">
                 <div class="item-header"><h3>${escHtml(c.name)}</h3>
                     <div><button class="btn-icon" onclick='openCacheModal(${escJsonAttr(c)})'>${SVG.edit}</button>
                     <button class="btn-icon danger" onclick="deleteCache(${c.id})">${SVG.del}</button></div>
@@ -75,7 +75,7 @@ function renderCachesGrid(items: Cache[]): void {
 /** Fetches all cache sections from the API and renders cards. */
 export async function loadCaches(): Promise<void> {
     try {
-        const d = await api("/api/caches");
+        const d: { items: Cache[] } = await api("/api/caches");
         state.allCaches = d.items || d;
         renderCachesGrid(state.allCaches);
     } catch (err: any) {

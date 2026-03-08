@@ -7,12 +7,11 @@
 
 import { api, toast } from "./api";
 import { closeModal } from "./ui";
-import { refreshPendingBadges } from "../sections/versions";
 
 /** Escapes HTML special characters to prevent XSS in rendered templates. */
 export function escHtml(s: unknown): string {
     if (s == null) return "";
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 /** Encodes a JS object as an HTML-safe JSON string for use in onclick attributes. */
@@ -26,15 +25,31 @@ export function safeInt(val: string | number | null | undefined, fallback: numbe
     return isNaN(n) ? fallback : n;
 }
 
+/** Human-readable section labels shared across version control and history modules. */
+export const SECTION_LABELS: Record<string, string> = {
+    global_settings: "Global Settings",
+    default_settings: "Defaults",
+    frontends: "Frontends",
+    acl_rules: "ACL Routing",
+    backends: "Backends",
+    listen_blocks: "Listen Blocks",
+    userlists: "Auth Lists",
+    resolvers: "DNS Resolvers",
+    peers: "Peers",
+    mailers: "Mailers",
+    http_errors: "HTTP Errors",
+    caches: "Cache",
+    ssl_certificates: "SSL Certificates",
+};
+
 /** Generic CRUD save: creates or updates an entity and reloads on success. */
 export async function crudSave(baseUrl: string, body: unknown, entityId: number | null, reloadFn: () => void): Promise<void> {
     try {
-        if (entityId) await api(`${baseUrl}/${entityId}`, { method: "PUT", body: JSON.stringify(body) });
+        if (entityId != null) await api(`${baseUrl}/${entityId}`, { method: "PUT", body: JSON.stringify(body) });
         else await api(baseUrl, { method: "POST", body: JSON.stringify(body) });
         toast("Saved");
         closeModal();
         reloadFn();
-        refreshPendingBadges();
     } catch (err) {
         toast((err as Error).message, "error");
     }
@@ -47,7 +62,6 @@ export async function crudDelete(url: string, confirmMsg: string, reloadFn: () =
         await api(url, { method: "DELETE" });
         toast("Deleted");
         reloadFn();
-        refreshPendingBadges();
     } catch (err) {
         toast((err as Error).message, "error");
     }

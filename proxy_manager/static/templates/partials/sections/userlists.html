@@ -5,7 +5,7 @@
                 <use href="#i-info" />
             </svg>
             <div class="info-card-content">
-                <strong>User Lists</strong>
+                <strong>Auth Lists</strong>
                 <span>
                     HTTP Basic Authentication user lists referenced by backends for access control. Passwords are
                     securely hashed with bcrypt - plain text is never stored.
@@ -16,7 +16,7 @@
             <svg width="14" height="14" stroke-width="2">
                 <use href="#i-plus" />
             </svg>
-            Add User List
+            Add Auth List
         </button>
     </div>
     <div class="section-toolbar">
@@ -24,7 +24,7 @@
             <svg width="16" height="16" stroke-width="2">
                 <use href="#i-search" />
             </svg>
-            <input type="text" id="userlist-search" placeholder="Search user lists by name or username..."
+            <input type="text" id="userlist-search" placeholder="Search auth lists by name or username..."
                 oninput="filterUserlists()">
         </div>
     </div>
@@ -33,9 +33,9 @@
         <svg width="48" height="48" stroke-width="1.5">
             <use href="#i-users" />
         </svg>
-        <p>No user lists configured yet.</p>
+        <p>No auth lists configured yet.</p>
         <p style="font-size:.8rem;color:var(--text-dim)">
-            Create a user list to enable HTTP Basic Auth on your backends.
+            Create an auth list to enable HTTP Basic Auth on your backends.
         </p>
     </div>
 </section>

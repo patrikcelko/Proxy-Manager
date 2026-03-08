@@ -4,26 +4,31 @@
             <svg class="info-card-icon" width="18" height="18" stroke-width="2">
                 <use href="#i-info" />
             </svg>
-            <span>Export the current HAProxy configuration as a complete config file ready for deployment.</span>
+            <span>Edit the raw HAProxy configuration directly. Changes are validated before saving and will be reflected as pending modifications across all sections.</span>
         </div>
     </div>
-    <div class="config-actions config-actions-single">
-        <div class="config-panel">
-            <h3>Export HAProxy Config</h3>
-            <p class="config-desc">
-                Generate the complete HAProxy configuration file from all database entries. Use this
-                to deploy to your HAProxy server.
-            </p>
-            <textarea id="config-export-text" rows="18" readonly placeholder="Click Export to generate..."></textarea>
-            <div class="config-btn-row">
-                <button class="btn" onclick="exportConfig()">
-                    <svg width="14" height="14" stroke-width="2">
-                        <use href="#i-download" />
-                    </svg>
-                    Export
-                </button>
-                <button class="btn btn-secondary" onclick="copyExport()">Copy to Clipboard</button>
-            </div>
+    <div id="manual-edit-version-bar" class="manual-edit-version-bar" style="display:none">
+        <div class="mev-left">
+            <svg width="15" height="15" stroke-width="2"><use href="#i-edit-document" /></svg>
+            <span id="mev-label">Editing configuration</span>
         </div>
+        <div class="mev-right">
+            <button class="btn btn-sm" id="mev-save-btn" onclick="saveManualEdit()">
+                <svg width="13" height="13" stroke-width="2"><use href="#i-check" /></svg>
+                Save Changes
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="copyExport()">
+                <svg width="13" height="13" stroke-width="2"><use href="#i-copy" /></svg>
+                Copy
+            </button>
+            <button class="btn btn-sm btn-secondary" id="mev-discard-btn" onclick="discardManualEdit()">
+                <svg width="13" height="13" stroke-width="2"><use href="#i-x-circle" /></svg>
+                Discard
+            </button>
+        </div>
+    </div>
+    <div class="config-editor-fullpage">
+        <textarea id="config-export-text" class="config-editor-textarea" placeholder="Loading configuration…" spellcheck="false"></textarea>
+        <div id="config-validation-msg" class="config-validation-msg" style="display:none"></div>
     </div>
 </section>

@@ -62,7 +62,7 @@ function renderMailersGrid(items: Mailer[]): void {
                 })
                 .join("");
 
-            return `<div class="item-card ma-card">
+            return `<div class="item-card ma-card" data-entity-name="${escHtml(m.name)}">
                 <div class="item-header"><h3>${escHtml(m.name)}</h3>
                     <div><button class="btn-icon" onclick='openMailerModal(${escJsonAttr(m)})'>${SVG.edit}</button>
                     <button class="btn-icon danger" onclick="deleteMailer(${m.id})">${SVG.del}</button></div>
@@ -83,7 +83,7 @@ function renderMailersGrid(items: Mailer[]): void {
 /** Fetches all mailer sections from the API and renders cards. */
 export async function loadMailers(): Promise<void> {
     try {
-        const d = await api("/api/mailers");
+        const d: { items: Mailer[] } = await api("/api/mailers");
         state.allMailers = d.items || d;
         renderMailersGrid(state.allMailers);
     } catch (err: any) {
@@ -199,7 +199,7 @@ export function openMailerEntryModal(mailerId: number, existing: Partial<MailerE
                 <label>Username</label><input id="m-smtp-user" value="${escHtml(e.smtp_user || "")}" placeholder="user@example.com" autocomplete="off">
                 <div class="form-help">SMTP login username</div>
             </div><div>
-                <label>Password</label><input type="password" id="m-smtp-password" value="${escHtml(e.smtp_password || "")}" placeholder="••••••••" autocomplete="new-password">
+                <label>Password</label><input type="password" id="m-smtp-password" value="" placeholder="${e.has_smtp_password ? "••• (leave empty to keep)" : "Enter password"}" autocomplete="new-password">
                 <div class="form-help">SMTP login password (stored encrypted)</div>
             </div></div>
         </div>
@@ -248,17 +248,19 @@ export async function deleteMailer(id: number): Promise<void> {
 /** Saves a new or updated mailer entry with SMTP auth, TLS, and STARTTLS settings. */
 export async function saveMailerEntry(mailerId: number, entryId: number | null): Promise<void> {
     const smtpAuth = (document.getElementById("m-smtp-auth") as HTMLInputElement).checked;
-    const body = {
+    const smtpPassword = smtpAuth ? (document.getElementById("m-smtp-password") as HTMLInputElement).value || null : null;
+    const body: Record<string, unknown> = {
         name: (document.getElementById("m-name") as HTMLInputElement).value,
         address: (document.getElementById("m-address") as HTMLInputElement).value,
         port: parseInt((document.getElementById("m-port") as HTMLInputElement).value) || 25,
         sort_order: parseInt((document.getElementById("m-sort") as HTMLInputElement).value) || 0,
         smtp_auth: smtpAuth,
         smtp_user: smtpAuth ? (document.getElementById("m-smtp-user") as HTMLInputElement).value || null : null,
-        smtp_password: smtpAuth ? (document.getElementById("m-smtp-password") as HTMLInputElement).value || null : null,
         use_tls: (document.getElementById("m-use-tls") as HTMLInputElement).checked,
         use_starttls: (document.getElementById("m-use-starttls") as HTMLInputElement).checked,
     };
+    // Only include smtp_password when provided to avoid clearing existing passwords on update
+    if (smtpPassword) body.smtp_password = smtpPassword;
     try {
         if (entryId) await api(`/api/mailers/${mailerId}/entries/${entryId}`, { method: "PUT", body: JSON.stringify(body) });
         else await api(`/api/mailers/${mailerId}/entries`, { method: "POST", body: JSON.stringify(body) });

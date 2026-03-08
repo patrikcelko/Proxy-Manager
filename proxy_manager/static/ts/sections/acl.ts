@@ -20,7 +20,7 @@ let aclFilter = "";
 /** Fetches all ACL rules from the API and renders the table. */
 export async function loadAclRules(): Promise<void> {
     try {
-        const d = await api("/api/acl-rules");
+        const d: { items: AclRule[] } = await api("/api/acl-rules");
         state.allAclRules = d.items || d;
         renderAclTable(state.allAclRules);
     } catch (err: any) {
@@ -91,7 +91,7 @@ export function renderAclTable(list: AclRule[]): void {
             const matchCat = matchIcons[matchType] || "header";
             const matchBadgeClass = matchCat === "domain" ? "badge-info" : matchCat === "path" ? "badge-warn" : "badge-muted";
 
-            return `<tr class="acl-row" data-id="${a.id}">
+            return `<tr class="acl-row" data-id="${a.id}" data-entity-name="${escHtml(feLabel)}:${escHtml(a.domain)}:${a.sort_order}">
             <td class="acl-domain-cell">${domainDisplay}</td>
             <td>${actionDisplay}</td>
             <td><span class="badge ${matchBadgeClass}">${escHtml(matchType)}</span></td>
