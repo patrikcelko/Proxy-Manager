@@ -14,9 +14,23 @@ from pathlib import Path
 from fastapi import FastAPI
 from sqlalchemy import select
 
+from proxy_manager.config_parser.generator import generate_config
 from proxy_manager.database import Base, engine
 from proxy_manager.database.connection import async_session_factory
+from proxy_manager.database.models.acl_rule import list_acl_rules
+from proxy_manager.database.models.backend import list_backend_servers, list_backends
+from proxy_manager.database.models.cache import list_cache_sections
+from proxy_manager.database.models.config_version import get_latest_version
+from proxy_manager.database.models.default_setting import list_default_settings
+from proxy_manager.database.models.frontend import list_frontend_binds, list_frontend_options, list_frontends
+from proxy_manager.database.models.global_setting import list_global_settings
+from proxy_manager.database.models.http_errors import list_http_error_entries, list_http_errors_sections
+from proxy_manager.database.models.listen_block import list_listen_block_binds, list_listen_blocks
+from proxy_manager.database.models.mailer import list_mailer_entries, list_mailer_sections
+from proxy_manager.database.models.peer import list_peer_entries, list_peer_sections
+from proxy_manager.database.models.resolver import list_resolver_nameservers, list_resolvers
 from proxy_manager.database.models.ssl_certificate import SslCertificate
+from proxy_manager.database.models.userlist import list_userlist_entries, list_userlists
 
 logger = logging.getLogger(__name__)
 
@@ -142,27 +156,11 @@ async def _config_mount_watcher() -> None:
             await asyncio.sleep(MOUNT_CHECK_INTERVAL)
 
             async with async_session_factory() as session:
-                from proxy_manager.database.models.config_version import get_latest_version
-
                 latest = await get_latest_version(session)
                 if latest is None or latest.hash == last_hash:
                     continue
 
-                # New version detected — regenerate config
-                from proxy_manager.config_parser.generator import generate_config
-                from proxy_manager.database.models.backend import list_backend_servers, list_backends
-                from proxy_manager.database.models.cache import list_cache_sections
-                from proxy_manager.database.models.default_setting import list_default_settings
-                from proxy_manager.database.models.frontend import list_frontend_binds, list_frontend_options, list_frontends
-                from proxy_manager.database.models.global_setting import list_global_settings
-                from proxy_manager.database.models.http_errors import list_http_error_entries, list_http_errors_sections
-                from proxy_manager.database.models.listen_block import list_listen_block_binds, list_listen_blocks
-                from proxy_manager.database.models.mailer import list_mailer_entries, list_mailer_sections
-                from proxy_manager.database.models.peer import list_peer_entries, list_peer_sections
-                from proxy_manager.database.models.resolver import list_resolver_nameservers, list_resolvers
-                from proxy_manager.database.models.userlist import list_userlist_entries, list_userlists
-                from proxy_manager.database.models.acl_rule import list_acl_rules
-
+                # New version detected - regenerate config
                 gs = await list_global_settings(session)
                 ds = await list_default_settings(session)
 
@@ -232,9 +230,9 @@ async def _config_mount_watcher() -> None:
                     caches=caches_data,
                 )
 
-                mount_dir.mkdir(parents=True, exist_ok=True)
+                await asyncio.to_thread(mount_dir.mkdir, parents=True, exist_ok=True)
                 config_path = mount_dir / "haproxy.cfg"
-                config_path.write_text(config_text)
+                await asyncio.to_thread(config_path.write_text, config_text)
                 last_hash = latest.hash
                 logger.info("Config regenerated to %s (version %s)", config_path, latest.hash[:8])
 
