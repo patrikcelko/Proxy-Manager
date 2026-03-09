@@ -5,13 +5,13 @@ Proxy Manager
 HAProxy configuration management service with web UI.
 """
 
+import os
 from pathlib import Path
 
-__version__: str = "1.4.0"
+__version__: str = "1.5.0"
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from proxy_manager.api import router
@@ -27,13 +27,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.state.limiter = limiter
+
+_cors_origins_raw = os.environ.get("PM_CORS_ORIGINS", "*")
+_cors_origins: list[str] = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials="*" not in _cors_origins,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )

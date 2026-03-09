@@ -69,7 +69,8 @@ def generate_config(
         for b in lb_binds:
             parts.append(f"{_INDENT}bind {b.bind_line}")
 
-        parts.append(f"{_INDENT}mode {lb.mode}")
+        if lb.mode:
+            parts.append(f"{_INDENT}mode {lb.mode}")
 
         if lb.balance:
             parts.append(f"{_INDENT}balance {lb.balance}")
@@ -117,7 +118,8 @@ def generate_config(
         for b in binds:
             parts.append(f"{_INDENT}bind {b.bind_line}")
 
-        parts.append(f"{_INDENT}mode {fe.mode}")
+        if fe.mode:
+            parts.append(f"{_INDENT}mode {fe.mode}")
 
         if fe.maxconn is not None:
             parts.append(f"{_INDENT}maxconn {fe.maxconn}")
@@ -206,8 +208,8 @@ def generate_config(
             if be.health_check_method and be.health_check_uri:
                 parts.append(f"{_INDENT}http-check send meth {be.health_check_method} uri {be.health_check_uri}")
 
-        if be.http_check_expect:
-            parts.append(f"{_INDENT}http-check expect {be.http_check_expect}")
+            if be.http_check_expect:
+                parts.append(f"{_INDENT}http-check expect {be.http_check_expect}")
 
         if be.option_forwardfor:
             parts.append(f"{_INDENT}option forwardfor")

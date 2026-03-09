@@ -329,11 +329,14 @@ _COMMENT_BLOCK_RE = re.compile(r"^\s*#\s*(.*)")
 def _strip_inline_comment(line: str) -> tuple[str, str | None]:
     """Split a line into content and inline comment."""
 
-    in_quote = False
+    quote_char: str | None = None
     for i, ch in enumerate(line):
-        if ch in ('"', "'"):
-            in_quote = not in_quote
-        elif ch == "#" and not in_quote and i > 0:
+        if quote_char:
+            if ch == quote_char:
+                quote_char = None
+        elif ch in ('"', "'"):
+            quote_char = ch
+        elif ch == "#" and i > 0:
             return line[:i].rstrip(), line[i + 1 :].strip()
 
     return line, None
@@ -1005,7 +1008,7 @@ def _parse_listen(result: ParsedConfig, name: str, lines: list[str]) -> None:
         if not line:
             continue
         if line.startswith("#"):
-            content_lines.append(line)
+            comment_buf.append(line[1:].strip())
             continue
 
         content, _ = _strip_inline_comment(line)
