@@ -18,9 +18,7 @@ services:
       retries: 10
 
   proxy-manager:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: harbor.celko.cz/proxy-manager/proxy-manager:${ENV_NAME}
     container_name: proxy-manager
     restart: unless-stopped
     depends_on:
@@ -33,7 +31,7 @@ services:
     ports:
       - "${PM_PORT}:8222"
     volumes:
-      - ../.mount:/app/.mount
+      - mount_data:/app/.mount
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8222/api/health || exit 1"]
       interval: 15s
@@ -43,3 +41,4 @@ services:
 
 volumes:
   pgdata:
+  mount_data:

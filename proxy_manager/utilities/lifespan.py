@@ -151,13 +151,19 @@ async def _config_mount_watcher() -> None:
     last_hash: str | None = None
     mount_dir = Path(os.environ.get("PM_MOUNT_DIR", ".mount"))
 
+    # Write config immediately on startup, then poll
+    first_run = True
     while True:
         try:
-            await asyncio.sleep(MOUNT_CHECK_INTERVAL)
+            if not first_run:
+                await asyncio.sleep(MOUNT_CHECK_INTERVAL)
+            first_run = False
 
             async with async_session_factory() as session:
                 latest = await get_latest_version(session)
-                if latest is None or latest.hash == last_hash:
+                if latest is None:
+                    continue
+                if latest.hash == last_hash:
                     continue
 
                 # New version detected - regenerate config

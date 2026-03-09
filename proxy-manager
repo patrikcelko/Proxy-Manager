@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")"
+
+SCRIPT_DIR=$(pwd)
+COMMAND="$1"
+
+source ./control/helpers.sh
+source ./control/enter.sh
+source ./control/docker.sh
+source ./control/deploy.sh
+source ./control/build.sh
+
+if [[ -z "$COMMAND" ]]; then
+    error "No sub-command provided."
+    print_help
+    exit 1
+fi
+
+if [[ "$COMMAND" == "deploy" ]]; then
+    shift
+    deploy_proxy_manager "$@"
+
+    EXITCODE=$?
+    exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "build" ]]; then
+    shift
+    if ! build_proxy_manager "$@"; then
+        error "Build failed."
+        exit 1
+    fi
+
+    if ! push_to_registry; then
+        error "Push to registry failed."
+        exit 1
+    fi
+
+    success "Build and push completed successfully."
+    EXITCODE=$?
+    exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "start-docker" ]]; then
+    start_docker_container_proxy_manager "$2"
+
+    EXITCODE=$?
+	exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "rebuild-docker" ]]; then
+    rebuild_docker_containers_proxy_manager "$2"
+
+    EXITCODE=$?
+	exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "kill-docker" ]]; then
+    docker kill $(docker ps -q)
+    success "Successfully killed all docker containers."
+
+    EXITCODE=$?
+	exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "enter" ]]; then
+    enter $2;
+
+    EXITCODE=$?
+	exit $EXITCODE
+fi
+
+if [[ "$COMMAND" == "help" ]] || [[ "$COMMAND" == "--help" ]] || [[ "$COMMAND" == "-h" ]]; then
+    print_help
+    exit 0
+fi
+
+print_help
+echo
+error "Unknown sub-command '$COMMAND'."
+exit 1
