@@ -4,10 +4,11 @@ Proxy Manager
 
 HAProxy configuration management service with web UI.
 """
-
 import logging
 import os
 from pathlib import Path
+
+__version__: str = "1.5.3"
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +17,6 @@ from fastapi.staticfiles import StaticFiles
 from proxy_manager.api import router
 from proxy_manager.utilities.lifespan import lifespan
 from proxy_manager.utilities.rate_limit import limiter
-
-__version__: str = "1.5.3"
-"""Current version of the application."""
 
 _BASE_DIR = Path(__file__).parent
 
