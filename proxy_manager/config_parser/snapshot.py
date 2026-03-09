@@ -8,6 +8,8 @@ state of all HAProxy configuration entities in the database.
 """
 
 import json
+from datetime import datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,26 +107,26 @@ SECTION_SIDEBAR_MAP: dict[str, str] = {
 }
 
 
-async def take_snapshot(session: AsyncSession) -> dict:
+async def take_snapshot(session: AsyncSession) -> dict[str, Any]:
     """Take a full JSON-serializable snapshot of all config entities."""
 
-    snapshot: dict = {}
+    snapshot: dict[str, Any] = {}
 
-    # ── Global settings ──
+    # Global settings
     gs = await list_global_settings(session)
     snapshot["global_settings"] = [
-        {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
+        {"id": s.id, "directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
         for s in gs
     ]
 
-    # ── Default settings ──
+    # Default settings
     ds = await list_default_settings(session)
     snapshot["default_settings"] = [
-        {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
+        {"id": s.id, "directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.sort_order}
         for s in ds
     ]
 
-    # ── Userlists ──
+    # Userlists
     uls = await list_userlists(session)
     userlists_data = []
     for ul in uls:
@@ -138,7 +140,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["userlists"] = userlists_data
 
-    # ── Frontends (binds + options, ACL rules tracked separately) ──
+    # Frontends (binds + options, ACL rules tracked separately)
     fes = await list_frontends(session)
     frontends_data = []
     fe_name_map: dict[int, str] = {}
@@ -162,11 +164,11 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["frontends"] = frontends_data
 
-    # ── ACL rules (stored separately with frontend_name for portability) ──
+    # ACL rules (stored separately with frontend_name for portability)
     all_acls = await list_all_acl_rules(session)
     snapshot["acl_rules"] = [
         {
-            "frontend_name": fe_name_map.get(acl.frontend_id, ""),
+            "frontend_name": fe_name_map.get(acl.frontend_id, "") if acl.frontend_id is not None else "",
             "domain": acl.domain, "backend_name": acl.backend_name,
             "acl_match_type": acl.acl_match_type, "is_redirect": acl.is_redirect,
             "redirect_target": acl.redirect_target, "redirect_code": acl.redirect_code,
@@ -175,7 +177,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         for acl in all_acls
     ]
 
-    # ── Backends + servers ──
+    # Backends + servers
     bes = await list_backends(session)
     backends_data = []
     for be in bes:
@@ -217,7 +219,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["backends"] = backends_data
 
-    # ── Listen blocks + binds ──
+    # Listen blocks + binds
     lbs = await list_listen_blocks(session)
     listen_data = []
     for lb in lbs:
@@ -234,7 +236,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["listen_blocks"] = listen_data
 
-    # ── Resolvers + nameservers ──
+    # Resolvers + nameservers
     res = await list_resolvers(session)
     resolvers_data = []
     for r in res:
@@ -255,7 +257,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["resolvers"] = resolvers_data
 
-    # ── Peers + entries ──
+    # Peers + entries
     peers_raw = await list_peer_sections(session)
     peers_data = []
     for p in peers_raw:
@@ -270,7 +272,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["peers"] = peers_data
 
-    # ── Mailers + entries ──
+    # Mailers + entries
     mailers_raw = await list_mailer_sections(session)
     mailers_data = []
     for m in mailers_raw:
@@ -291,7 +293,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["mailers"] = mailers_data
 
-    # ── HTTP errors + entries ──
+    # HTTP errors + entries
     he_raw = await list_http_errors_sections(session)
     http_errors_data = []
     for he in he_raw:
@@ -305,7 +307,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         })
     snapshot["http_errors"] = http_errors_data
 
-    # ── Caches ──
+    # Caches
     caches = await list_cache_sections(session)
     snapshot["caches"] = [
         {
@@ -317,7 +319,7 @@ async def take_snapshot(session: AsyncSession) -> dict:
         for c in caches
     ]
 
-    # ── SSL certificates ──
+    # SSL certificates
     certs = await list_ssl_certificates(session)
     snapshot["ssl_certificates"] = [
         {
@@ -356,22 +358,23 @@ async def clear_all_entities(session: AsyncSession) -> None:
     await delete_all_ssl_certificates(session)
 
 
-async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
+async def restore_snapshot(session: AsyncSession, snapshot_data: dict[str, Any]) -> None:
     """Restore the database to match a snapshot. Clears all existing data first."""
 
     await clear_all_entities(session)
 
-    # ── Global settings ──
+    # Global settings
     for s in snapshot_data.get("global_settings", []):
         await create_global_setting(session, directive=s["directive"], value=s.get("value"), comment=s.get("comment"), sort_order=s.get("sort_order", 0))
 
-    # ── Default settings ──
+    # Default settings
     for s in snapshot_data.get("default_settings", []):
         await create_default_setting(session, directive=s["directive"], value=s.get("value"), comment=s.get("comment"), sort_order=s.get("sort_order", 0))
 
-    # ── Userlists ──
+    # Userlists
     for ul in snapshot_data.get("userlists", []):
         db_ul = await create_userlist(session, name=ul["name"])
+
         for e in ul.get("entries", []):
             await create_userlist_entry(
                 session, userlist_id=db_ul.id,
@@ -379,7 +382,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=e.get("sort_order", 0),
             )
 
-    # ── Listen blocks ──
+    # Listen blocks
     for lb in snapshot_data.get("listen_blocks", []):
         db_lb = await create_listen_block(
             session, name=lb["name"], mode=lb.get("mode"), balance=lb.get("balance"),
@@ -390,11 +393,13 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             option_forwardfor=lb.get("option_forwardfor", False),
             option_httplog=lb.get("option_httplog", False), option_tcplog=lb.get("option_tcplog", False),
             content=lb.get("content"), comment=lb.get("comment"),
+            sort_order=lb.get("sort_order", 0),
         )
+
         for b in lb.get("binds", []):
             await create_listen_block_bind(session, listen_block_id=db_lb.id, bind_line=b["bind_line"], sort_order=b.get("sort_order", 0))
 
-    # ── Frontends ──
+    # Frontends
     fe_id_map: dict[str, int] = {}
     for fe in snapshot_data.get("frontends", []):
         db_fe = await create_frontend(
@@ -411,8 +416,10 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             compression_type=fe.get("compression_type"),
         )
         fe_id_map[fe["name"]] = db_fe.id
+
         for b in fe.get("binds", []):
             await create_frontend_bind(session, frontend_id=db_fe.id, bind_line=b["bind_line"], sort_order=b.get("sort_order", 0))
+
         for o in fe.get("options", []):
             await create_frontend_option(
                 session, frontend_id=db_fe.id,
@@ -420,10 +427,11 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=o.get("sort_order", 0),
             )
 
-    # ── ACL rules ──
+    # ACL rules
     for acl in snapshot_data.get("acl_rules", []):
         fe_name = acl.get("frontend_name", "")
         fe_id = fe_id_map.get(fe_name)
+
         if fe_id is None:
             continue
         await create_acl_rule(
@@ -437,7 +445,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             enabled=acl.get("enabled", True),
         )
 
-    # ── Backends ──
+    # Backends
     for be in snapshot_data.get("backends", []):
         db_be = await create_backend(
             session, name=be["name"], mode=be.get("mode"), balance=be.get("balance"),
@@ -460,6 +468,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             compression_algo=be.get("compression_algo"),
             compression_type=be.get("compression_type"),
         )
+
         for srv in be.get("servers", []):
             await create_backend_server(
                 session, backend_id=db_be.id,
@@ -480,7 +489,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 disabled=srv.get("disabled", False),
             )
 
-    # ── Resolvers ──
+    # Resolvers
     for r in snapshot_data.get("resolvers", []):
         db_r = await create_resolver(
             session, name=r["name"], resolve_retries=r.get("resolve_retries"),
@@ -493,6 +502,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             parse_resolv_conf=r.get("parse_resolv_conf"),
             comment=r.get("comment"), extra_options=r.get("extra_options"),
         )
+
         for ns in r.get("nameservers", []):
             await create_resolver_nameserver(
                 session, resolver_id=db_r.id,
@@ -500,7 +510,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=ns.get("sort_order", 0),
             )
 
-    # ── Peers ──
+    # Peers
     for p in snapshot_data.get("peers", []):
         db_p = await create_peer_section(
             session, name=p["name"], comment=p.get("comment"),
@@ -508,6 +518,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             default_bind=p.get("default_bind"),
             default_server_options=p.get("default_server_options"),
         )
+
         for e in p.get("entries", []):
             await create_peer_entry(
                 session, peer_section_id=db_p.id,
@@ -515,12 +526,13 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=e.get("sort_order", 0),
             )
 
-    # ── Mailers ──
+    # Mailers
     for m in snapshot_data.get("mailers", []):
         db_m = await create_mailer_section(
             session, name=m["name"], timeout_mail=m.get("timeout_mail"),
             comment=m.get("comment"), extra_options=m.get("extra_options"),
         )
+
         for e in m.get("entries", []):
             await create_mailer_entry(
                 session, mailer_section_id=db_m.id,
@@ -531,12 +543,13 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=e.get("sort_order", 0),
             )
 
-    # ── HTTP errors ──
+    # HTTP errors
     for he in snapshot_data.get("http_errors", []):
         db_he = await create_http_errors_section(
             session, name=he["name"], comment=he.get("comment"),
             extra_options=he.get("extra_options"),
         )
+
         for e in he.get("entries", []):
             await create_http_error_entry(
                 session, section_id=db_he.id,
@@ -544,7 +557,7 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
                 sort_order=e.get("sort_order", 0),
             )
 
-    # ── Caches ──
+    # Caches
     for c in snapshot_data.get("caches", []):
         await create_cache_section(
             session, name=c["name"], total_max_size=c.get("total_max_size"),
@@ -554,34 +567,48 @@ async def restore_snapshot(session: AsyncSession, snapshot_data: dict) -> None:
             comment=c.get("comment"), extra_options=c.get("extra_options"),
         )
 
-    # ── SSL certificates ──
+    # SSL certificates
     for sc in snapshot_data.get("ssl_certificates", []):
         await create_ssl_certificate(
             session, domain=sc["domain"], alt_domains=sc.get("alt_domains"),
+            email=sc.get("email"),
             provider=sc.get("provider", "manual"), status=sc.get("status", "pending"),
             cert_path=sc.get("cert_path"), key_path=sc.get("key_path"),
             fullchain_path=sc.get("fullchain_path"),
+            issued_at=_parse_iso_datetime(sc.get("issued_at")),
+            expires_at=_parse_iso_datetime(sc.get("expires_at")),
             auto_renew=sc.get("auto_renew", False),
             challenge_type=sc.get("challenge_type", "http"),
+            dns_plugin=sc.get("dns_plugin"),
+            last_renewal_at=_parse_iso_datetime(sc.get("last_renewal_at")),
+            last_error=sc.get("last_error"),
             comment=sc.get("comment"),
         )
 
 
-def compute_diff(old_snapshot: dict, new_snapshot: dict) -> dict:
+def _parse_iso_datetime(value: str | None) -> datetime | None:
+    """Parse an ISO-8601 datetime string, returning *None* for falsy input."""
+
+    if not value:
+        return None
+    return datetime.fromisoformat(value)
+
+
+def compute_diff(old_snapshot: dict[str, Any], new_snapshot: dict[str, Any]) -> dict[str, Any]:
     """Compute a detailed diff between two snapshots.
 
     Returns a dict with per-section changes including created, deleted,
     and updated entities with field-level change details.
     """
 
-    diff: dict = {}
+    diff: dict[str, Any] = {}
 
     for section_key in SECTION_SIDEBAR_MAP:
         old_items = old_snapshot.get(section_key, [])
         new_items = new_snapshot.get(section_key, [])
 
         # Determine the name/key field for this section
-        name_key = _section_name_key(section_key)
+        name_key = _section_name_key(section_key, old_items or new_items)
         section_diff = _diff_entity_list(old_items, new_items, name_key)
 
         if section_diff["total"] > 0:
@@ -590,14 +617,14 @@ def compute_diff(old_snapshot: dict, new_snapshot: dict) -> dict:
     return diff
 
 
-def compute_pending_counts(old_snapshot: dict, new_snapshot: dict) -> dict[str, int]:
+def compute_pending_counts(old_snapshot: dict[str, Any], new_snapshot: dict[str, Any]) -> dict[str, int]:
     """Compute per-section change counts for sidebar badges."""
 
     counts: dict[str, int] = {}
     for section_key in SECTION_SIDEBAR_MAP:
         old_items = old_snapshot.get(section_key, [])
         new_items = new_snapshot.get(section_key, [])
-        name_key = _section_name_key(section_key)
+        name_key = _section_name_key(section_key, old_items or new_items)
 
         old_json = json.dumps(old_items, sort_keys=True, default=str)
         new_json = json.dumps(new_items, sort_keys=True, default=str)
@@ -611,44 +638,147 @@ def compute_pending_counts(old_snapshot: dict, new_snapshot: dict) -> dict[str, 
     return counts
 
 
-def _section_name_key(section_key: str) -> str:
-    """Return the field name used to identify entities in a section."""
+def _section_name_key(section_key: str, items: list[dict[str, Any]] | None = None) -> str:
+    """Return the field name used to identify entities in a section.
+
+    Settings always use `"_ordered"` (positional comparison with
+    `id` stripped) so that the diff stays correct even after a
+    full re-import via Manual Edit, which deletes and re-creates
+    all rows with new database IDs.
+    """
 
     if section_key in ("global_settings", "default_settings"):
-        return "_ordered"  # Use ordered list comparison
+        return "_ordered"
+
     if section_key == "ssl_certificates":
         return "domain"
+
     if section_key == "acl_rules":
         return "_composite"  # Use composite key
+
     return "name"
 
 
-def _diff_entity_list(old_items: list[dict], new_items: list[dict], name_key: str) -> dict:
+def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str, Any]], name_key: str) -> dict[str, Any]:
     """Diff two lists of entity dicts."""
 
-    created: list[dict] = []
-    deleted: list[dict] = []
-    updated: list[dict] = []
+    created: list[dict[str, Any]] = []
+    deleted: list[dict[str, Any]] = []
+    updated: list[dict[str, Any]] = []
 
     if name_key == "_ordered":
-        # Settings: compare ordered lists element by element
-        max_len = max(len(old_items), len(new_items))
-        for i in range(max_len):
-            old = old_items[i] if i < len(old_items) else None
-            new = new_items[i] if i < len(new_items) else None
-            if old is None and new is not None:
-                created.append(new)
-            elif old is not None and new is None:
-                deleted.append(old)
-            elif old != new and old is not None and new is not None:
-                changes = _compute_field_changes(old, new)
-                updated.append({"entity": new.get("directive", f"#{i}"), "old": old, "new": new, "changes": changes})
+        # Settings: multi-phase matching that correctly handles
+        # insertions, deletions, modifications, and directive
+        # renames regardless of position or database IDs.
+        _STRIP_KEYS = {"id", "sort_order"}  # noqa
+
+        def _strip_meta(d: dict[str, Any]) -> dict[str, Any]:
+            return {k: v for k, v in d.items() if k not in _STRIP_KEYS}
+
+        def _content_key(d: dict[str, Any]) -> tuple[Any, Any, Any]:
+            return (d.get("directive", ""), d.get("value", ""), d.get("comment"))
+
+        def _emit_updated(old_i: int, new_j: int) -> None:
+            old_stripped = _strip_meta(old_items[old_i])
+            new_stripped = _strip_meta(new_items[new_j])
+            if old_stripped == new_stripped:
+                return  # identical after stripping meta — no change
+
+            changes = _compute_field_changes(old_stripped, new_stripped)
+            new_d = new_items[new_j].get("directive", "")
+            entry: dict[str, Any] = {
+                "entity": new_d,
+                "old": old_stripped,
+                "new": new_stripped,
+                "changes": changes,
+            }
+
+            new_id = new_items[new_j].get("id")
+            if new_id is not None:
+                entry["entity_id"] = str(new_id)
+            updated.append(entry)
+
+        old_matched: set[int] = set()
+        new_matched: set[int] = set()
+
+        # Phase 0 Match by database ID (handles normal UI
+        # operations including directive renames; IDs stay stable
+        # between edits until a Manual-Edit re-import).
+        old_by_id: dict[Any, int] = {}
+        for i, item in enumerate(old_items):
+            eid = item.get("id")
+
+            if eid is not None:
+                old_by_id[eid] = i
+
+        for j, item in enumerate(new_items):
+            eid = item.get("id")
+
+            if eid is not None and eid in old_by_id:
+                old_i = old_by_id.pop(eid)
+                old_matched.add(old_i)
+                new_matched.add(j)
+                _emit_updated(old_i, j)
+
+        # Phase 1 Exact content matches for remaining
+        # (unchanged entries with different IDs, e.g. after
+        # Manual-Edit re-import).
+        old_remaining = [i for i in range(len(old_items)) if i not in old_matched]
+
+        old_by_content: dict[tuple[Any, Any, Any], list[int]] = {}
+        for i in old_remaining:
+            key = _content_key(old_items[i])
+            old_by_content.setdefault(key, []).append(i)
+
+        for j in range(len(new_items)):
+            if j in new_matched:
+                continue
+
+            key = _content_key(new_items[j])
+            if key in old_by_content and old_by_content[key]:
+                old_i = old_by_content[key].pop(0)
+                old_matched.add(old_i)
+                new_matched.add(j)
+
+        # Phase 2 Match remaining by directive name
+        # (modified entries after Manual-Edit re-import).
+        old_remaining = [i for i in range(len(old_items)) if i not in old_matched]
+        new_remaining = [j for j in range(len(new_items)) if j not in new_matched]
+
+        old_by_directive: dict[str, list[int]] = {}
+        for i in old_remaining:
+            d = old_items[i].get("directive", "")
+            old_by_directive.setdefault(d, []).append(i)
+
+        still_new: list[int] = []
+        for j in new_remaining:
+            d = new_items[j].get("directive", "")
+
+            if d in old_by_directive and old_by_directive[d]:
+                old_i = old_by_directive[d].pop(0)
+                _emit_updated(old_i, j)
+            else:
+                still_new.append(j)
+
+        # Phase 3  Remaining unmatched -> created / deleted
+        for d_indices in old_by_directive.values():
+            for old_i in d_indices:
+                entry = _strip_meta(old_items[old_i])
+                deleted.append(entry)
+
+        for j in still_new:
+            entry = _strip_meta(new_items[j])
+            new_id = new_items[j].get("id")
+
+            if new_id is not None:
+                entry["entity_id"] = str(new_id)
+            created.append(entry)
 
         return {"created": created, "deleted": deleted, "updated": updated, "total": len(created) + len(deleted) + len(updated)}
 
     if name_key == "_composite":
         # ACL rules: use (frontend_name, domain, sort_order) as composite key
-        def acl_key(item: dict) -> str:
+        def acl_key(item: dict[str, Any]) -> str:
             return f"{item.get('frontend_name', '')}:{item.get('domain', '')}:{item.get('sort_order', 0)}"
 
         old_map = {acl_key(item): item for item in old_items}
@@ -672,14 +802,47 @@ def _diff_entity_list(old_items: list[dict], new_items: list[dict], name_key: st
         if key in new_map:
             old_json = json.dumps(old_map[key], sort_keys=True, default=str)
             new_json = json.dumps(new_map[key], sort_keys=True, default=str)
+
             if old_json != new_json:
                 changes = _compute_field_changes(old_map[key], new_map[key])
-                updated.append({
-                    "entity": key,
-                    "old": old_map[key],
-                    "new": new_map[key],
-                    "changes": changes,
-                })
+
+                # For id-based matching (settings), show directive as
+                # entity display name and carry the id separately.
+                if name_key == "id":
+                    display = new_map[key].get("directive", str(key))
+                    updated.append({
+                        "entity": display,
+                        "entity_id": str(key),
+                        "old": old_map[key],
+                        "new": new_map[key],
+                        "changes": changes,
+                    })
+                else:
+                    updated.append({
+                        "entity": key,
+                        "old": old_map[key],
+                        "new": new_map[key],
+                        "changes": changes,
+                    })
+
+    # Rename detection
+    # If an entity's name changed, the initial pass sees it as deleted +
+    # created. Detect such pairs by field similarity and convert them
+    # to "updated" entries so the UI shows "Modified" instead of
+    # "Deleted" + "New".
+    if deleted and created and name_key not in ("_ordered", "_composite"):
+        matched = _match_renamed_entities(deleted, created, name_key)
+
+        for old_entity, new_entity in matched:
+            deleted.remove(old_entity)
+            created.remove(new_entity)
+            changes = _compute_field_changes(old_entity, new_entity)
+            updated.append({
+                "entity": new_entity.get(name_key, ""),
+                "old": old_entity,
+                "new": new_entity,
+                "changes": changes,
+            })
 
     return {
         "created": created,
@@ -689,10 +852,58 @@ def _diff_entity_list(old_items: list[dict], new_items: list[dict], name_key: st
     }
 
 
-def _compute_field_changes(old: dict, new: dict) -> list[dict]:
+def _match_renamed_entities(
+    deleted: list[dict[str, Any]], created: list[dict[str, Any]], name_key: str
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Match deleted+created entity pairs that look like renames.
+
+    When an entity's name changes (e.g. `stats` -> `statsc`), the
+    initial key-based matching classifies it as one deletion and one
+    creation.  This helper detects such pairs by comparing all fields
+    *except* the name key. Pairs where ≥ 50 % of the remaining fields
+    are identical are treated as the same entity that was renamed.
+
+    Returns a list of *(old_entity, new_entity)* tuples that should be
+    reclassified as "updated".
+    """
+
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    used_created: set[int] = set()
+
+    for old_entity in deleted:
+        best_score = 0.0
+        best_idx = -1
+
+        old_fields = {k: json.dumps(v, sort_keys=True, default=str) for k, v in old_entity.items() if k != name_key}
+        all_keys_old = set(old_fields.keys())
+
+        for j, new_entity in enumerate(created):
+            if j in used_created:
+                continue
+
+            new_fields = {k: json.dumps(v, sort_keys=True, default=str) for k, v in new_entity.items() if k != name_key}
+            all_keys = all_keys_old | set(new_fields.keys())
+            if not all_keys:
+                continue
+
+            matching = sum(1 for k in all_keys if old_fields.get(k) == new_fields.get(k))
+            score = matching / len(all_keys)
+
+            if score > best_score:
+                best_score = score
+                best_idx = j
+
+        if best_idx >= 0 and best_score >= 0.5:
+            pairs.append((old_entity, created[best_idx]))
+            used_created.add(best_idx)
+
+    return pairs
+
+
+def _compute_field_changes(old: dict[str, Any], new: dict[str, Any]) -> list[dict[str, Any]]:
     """Compute field-level changes between two entity dicts."""
 
-    changes: list[dict] = []
+    changes: list[dict[str, Any]] = []
     all_keys = sorted(set(list(old.keys()) + list(new.keys())))
 
     for key in all_keys:
@@ -700,6 +911,7 @@ def _compute_field_changes(old: dict, new: dict) -> list[dict]:
         new_val = new.get(key)
         old_str = json.dumps(old_val, sort_keys=True, default=str)
         new_str = json.dumps(new_val, sort_keys=True, default=str)
+
         if old_str != new_str:
             changes.append({"field": key, "old": old_val, "new": new_val})
 

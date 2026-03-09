@@ -3,7 +3,7 @@ Health check endpoint
 =====================
 
 Lightweight endpoint for Docker / load-balancer health probes.
-Returns 200 with ``{"status": "ok"}`` when the application is
+Returns 200 with `{"status": "ok"}` when the application is
 running and the database is reachable.
 """
 
