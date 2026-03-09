@@ -66,6 +66,11 @@ def generate_config(
     # Listen blocks
     for lb, lb_binds in listen_blocks:
         parts.append(f"listen {lb.name}")
+
+        if lb.comment:
+            for cl in lb.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         for b in lb_binds:
             parts.append(f"{_INDENT}bind {b.bind_line}")
 
@@ -115,6 +120,11 @@ def generate_config(
     # Frontends
     for fe, binds, options, acls in frontends:
         parts.append(f"frontend {fe.name}")
+
+        if fe.comment:
+            for cl in fe.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         for b in binds:
             parts.append(f"{_INDENT}bind {b.bind_line}")
 
@@ -190,11 +200,11 @@ def generate_config(
 
     # Backends
     for be, servers in backends:
+        parts.append(f"backend {be.name}")
+
         if be.comment:
             for cl in be.comment.splitlines():
-                parts.append(f"# {cl}")
-
-        parts.append(f"backend {be.name}")
+                parts.append(f"{_INDENT}# {cl}")
 
         if be.mode:
             parts.append(f"{_INDENT}mode {be.mode}")
@@ -339,6 +349,10 @@ def generate_config(
     for res, nameservers in resolvers or []:
         parts.append(f"resolvers {res.name}")
 
+        if res.comment:
+            for cl in res.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         if res.parse_resolv_conf:
             parts.append(f"{_INDENT}parse-resolv-conf")
 
@@ -372,6 +386,10 @@ def generate_config(
     for ps, entries in peers or []:
         parts.append(f"peers {ps.name}")
 
+        if ps.comment:
+            for cl in ps.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         if ps.default_bind:
             parts.append(f"{_INDENT}bind {ps.default_bind}")
 
@@ -389,6 +407,11 @@ def generate_config(
     # Mailers
     for ms, entries in mailers or []:
         parts.append(f"mailers {ms.name}")
+
+        if ms.comment:
+            for cl in ms.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         if ms.timeout_mail:
             parts.append(f"{_INDENT}timeout mail {ms.timeout_mail}")
 
@@ -413,6 +436,10 @@ def generate_config(
     for he_sec, entries in http_errors or []:
         parts.append(f"http-errors {he_sec.name}")
 
+        if he_sec.comment:
+            for cl in he_sec.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
+
         for e in entries:
             parts.append(f"{_INDENT}{e.type} {e.status_code} {e.value}")
 
@@ -424,6 +451,10 @@ def generate_config(
     # Cache
     for c in caches or []:
         parts.append(f"cache {c.name}")
+
+        if c.comment:
+            for cl in c.comment.splitlines():
+                parts.append(f"{_INDENT}# {cl}")
 
         if c.total_max_size is not None:
             parts.append(f"{_INDENT}total-max-size {c.total_max_size}")

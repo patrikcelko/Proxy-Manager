@@ -78,7 +78,7 @@ export function renderBackends(list: Backend[]): void {
             const servers = (b.servers || [])
                 .map((s) => {
                     const statusClass = s.check_enabled ? "srv-status-ok" : "srv-status-default";
-                    return `<div class="be-srv-card">
+                    return `<div class="be-srv-card" data-srv-key="${escHtml(s.name + "|" + s.address + ":" + s.port)}">
                 <div class="be-srv-indicator ${statusClass}"></div>
                 <div class="be-srv-body">
                     <div class="be-srv-name">${escHtml(s.name)}</div>
@@ -147,7 +147,7 @@ export function renderBackends(list: Backend[]): void {
             </div>
             <div class="be-features">${features.join("")}</div>
             ${detailHtml}
-            <div class="be-servers-section">
+            <div class="be-servers-section" data-entity-field="servers">
                 <div class="be-servers-head"><span>${IC.server} Servers <span class="be-srv-count">${sc}</span></span>
                     <button class="btn-icon" onclick="openServerModal(${b.id})">${SVG.plus}</button></div>
                 <div class="be-servers-grid">${servers || '<div class="be-srv-empty">' + icon("server", 16, 1.5) + " No servers configured</div>"}</div>

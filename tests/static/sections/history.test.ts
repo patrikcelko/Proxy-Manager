@@ -201,7 +201,6 @@ describe("rollbackVersion", () => {
             <div id="toast-container"></div>
         `;
         document.body.appendChild(container);
-        (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(true);
     });
 
     afterEach(() => container.remove());
@@ -228,7 +227,7 @@ describe("rollbackVersion", () => {
     });
 
     it("does nothing when cancelled", async () => {
-        (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (globalThis as any).__confirmPopupMock.mockResolvedValueOnce(false);
         const fetchSpy = vi.spyOn(globalThis, "fetch");
         await rollbackVersion(hash);
         expect(fetchSpy).not.toHaveBeenCalled();

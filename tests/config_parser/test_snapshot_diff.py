@@ -13,6 +13,7 @@ from proxy_manager.config_parser.snapshot import (
     _diff_entity_list,  # type: ignore
     _match_renamed_entities,  # type: ignore
     _parse_iso_datetime,  # type: ignore
+    _strip_nested_sort_order,  # type: ignore
     compute_diff,  # type: ignore
 )
 
@@ -258,7 +259,7 @@ def test_added_setting_at_beginning_does_not_cascade_ordered() -> None:
         {"id": 730, "directive": "daemon", "value": "", "comment": None, "sort_order": 3},
         {"id": 731, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 4},
     ]
-    # User added a new log entry (id=778) at sort_order=0 — all IDs are different (reimport)
+    # User added a new log entry (id=778) at sort_order=0 - all IDs are different (reimport)
     new = [
         {"id": 753, "directive": "log", "value": "127.0.0.1:514  local0", "comment": None, "sort_order": 0},
         {"id": 778, "directive": "log", "value": "127.0.0.1:514 local0", "comment": "Send logs to remote syslog", "sort_order": 0},
@@ -268,7 +269,7 @@ def test_added_setting_at_beginning_does_not_cascade_ordered() -> None:
         {"id": 763, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 4},
     ]
     diff = _diff_entity_list(old, new, "_ordered")
-    # Only the new log entry should be created — everything else is unchanged
+    # Only the new log entry should be created - everything else is unchanged
     assert diff["total"] == 1
     assert len(diff["created"]) == 1
     assert diff["created"][0]["directive"] == "log"
@@ -367,6 +368,55 @@ def test_duplicate_directives_modify_one_ordered() -> None:
     assert diff["total"] == 1
     assert len(diff["updated"]) == 1
     assert diff["updated"][0]["entity"] == "stats"
+
+
+def test_reorder_detected_ordered() -> None:
+    """Reordering settings (same IDs, swapped sort_order) should be detected."""
+
+    old = [
+        {"id": 1, "directive": "log", "value": "x", "comment": None, "sort_order": 0},
+        {"id": 2, "directive": "daemon", "value": "", "comment": None, "sort_order": 1},
+        {"id": 3, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 2},
+    ]
+    new = [
+        {"id": 1, "directive": "log", "value": "x", "comment": None, "sort_order": 0},
+        {"id": 2, "directive": "daemon", "value": "", "comment": None, "sort_order": 2},  # swapped
+        {"id": 3, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 1},  # swapped
+    ]
+    diff = _diff_entity_list(old, new, "_ordered")
+    assert diff["total"] == 2
+    assert len(diff["updated"]) == 2
+    # Both swapped entries should carry entity_id
+    ids = {u["entity_id"] for u in diff["updated"]}
+    assert ids == {"2", "3"}
+
+
+def test_reorder_after_reimport_detected_ordered() -> None:
+    """Reorder after reimport (different IDs) should detect order changes.
+
+    After a Manual-Edit re-import all database IDs change.  A subsequent
+    UI sort-order swap must still be detected via position-inversion
+    analysis on content-matched pairs (Phase 1b).
+    """
+
+    # Committed snapshot (old IDs)
+    old = [
+        {"id": 857, "directive": "log", "value": "x", "comment": None, "sort_order": 0},
+        {"id": 858, "directive": "daemon", "value": "", "comment": None, "sort_order": 1},
+        {"id": 859, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 2},
+    ]
+    # Current DB after reimport + reorder: daemon and maxconn swapped
+    # (sorted by sort_order, so maxconn at pos 1 and daemon at pos 2)
+    new = [
+        {"id": 1040, "directive": "log", "value": "x", "comment": None, "sort_order": 0},
+        {"id": 1042, "directive": "maxconn", "value": "10000", "comment": None, "sort_order": 1},
+        {"id": 1041, "directive": "daemon", "value": "", "comment": None, "sort_order": 2},
+    ]
+    diff = _diff_entity_list(old, new, "_ordered")
+    assert diff["total"] == 2
+    assert len(diff["updated"]) == 2
+    ids = {u["entity_id"] for u in diff["updated"]}
+    assert ids == {"1042", "1041"}
 
 
 def test_nonsequential_sort_order_stripped_ordered() -> None:
@@ -560,15 +610,17 @@ def test_same_ids_mixed_add_modify_delete_ordered() -> None:
         {"id": 3, "directive": "maxconn", "value": "4096", "sort_order": 2},
     ]
     new = [
-        {"id": 1, "directive": "log", "value": "y", "sort_order": 0},  # modified
+        {"id": 1, "directive": "log", "value": "y", "sort_order": 0},  # value modified
         # id=2 deleted
-        {"id": 3, "directive": "maxconn", "value": "4096", "sort_order": 1},  # unchanged
+        {"id": 3, "directive": "maxconn", "value": "4096", "sort_order": 1},  # sort_order modified
         {"id": 4, "directive": "user", "value": "haproxy", "sort_order": 2},  # new
     ]
     diff = _diff_entity_list(old, new, "_ordered")
-    assert diff["total"] == 3
-    assert len(diff["updated"]) == 1
-    assert diff["updated"][0]["entity"] == "log"
+    assert diff["total"] == 4
+    assert len(diff["updated"]) == 2
+    updated_entities = [u["entity"] for u in diff["updated"]]
+    assert "log" in updated_entities
+    assert "maxconn" in updated_entities
     assert len(diff["deleted"]) == 1
     assert diff["deleted"][0]["directive"] == "daemon"
     assert len(diff["created"]) == 1
@@ -606,9 +658,9 @@ def test_entity_id_in_created_entries_ordered() -> None:
     diff = _diff_entity_list(old, new, "_ordered")
     assert len(diff["created"]) == 1
     assert diff["created"][0]["entity_id"] == "42"
-    # id and sort_order should be stripped from the entry itself
+    # id should be stripped from the entry itself, sort_order is kept
     assert "id" not in diff["created"][0]
-    assert "sort_order" not in diff["created"][0]
+    assert "sort_order" in diff["created"][0]
 
 
 #  _diff_entity_list – id-based (settings with id)
@@ -705,43 +757,54 @@ def test_reorder_does_not_cascade_by_id() -> None:
     assert len(diff["updated"]) == 2
 
 
-#  _diff_entity_list – composite (ACL rules)
+#  _diff_entity_list – id-keyed (ACL rules)
 
 
-def test_no_changes_composite() -> None:
-    """No changes composite."""
+def test_no_changes_id_keyed() -> None:
+    """No changes id-keyed."""
 
-    items = [{"frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]
-    diff = _diff_entity_list(items, list(items), "_composite")
+    items = [{"id": 1, "frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]
+    diff = _diff_entity_list(items, list(items), "_id_keyed")
     assert diff["total"] == 0
 
 
-def test_acl_updated_composite() -> None:
-    """Acl updated composite."""
+def test_acl_updated_id_keyed() -> None:
+    """ACL updated using id-keyed matching (Phase 1: by id)."""
 
-    old = [{"frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]
-    new = [{"frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": "edited"}]
-    diff = _diff_entity_list(old, new, "_composite")
+    old = [{"id": 1, "frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]
+    new = [{"id": 1, "frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": "edited"}]
+    diff = _diff_entity_list(old, new, "_id_keyed")
     assert len(diff["updated"]) == 1
-    assert diff["updated"][0]["entity"] == "http:example.com:0"
+    assert diff["updated"][0]["entity"] == "1"
     assert diff["updated"][0]["changes"][0]["field"] == "comment"
 
 
-def test_acl_created_composite() -> None:
-    """Acl created composite."""
+def test_acl_updated_id_keyed_composite_fallback() -> None:
+    """ACL updated using id-keyed matching (Phase 2: composite fallback when IDs differ)."""
+
+    old = [{"id": 10, "frontend_name": "http", "domain": "example.com", "acl_match_type": "hdr", "sort_order": 0, "comment": None}]
+    new = [{"id": 99, "frontend_name": "http", "domain": "example.com", "acl_match_type": "hdr", "sort_order": 0, "comment": "edited"}]
+    diff = _diff_entity_list(old, new, "_id_keyed")
+    assert len(diff["updated"]) == 1
+    assert diff["updated"][0]["entity"] == "http:example.com:hdr"
+    assert diff["updated"][0]["changes"][0]["field"] == "comment"
+
+
+def test_acl_created_id_keyed() -> None:
+    """ACL created id-keyed."""
 
     old: list[dict[str, str | int | None]] = []
-    new = [{"frontend_name": "http", "domain": "new.com", "sort_order": 0}]
-    diff = _diff_entity_list(old, new, "_composite")
+    new = [{"id": 5, "frontend_name": "http", "domain": "new.com", "sort_order": 0}]
+    diff = _diff_entity_list(old, new, "_id_keyed")
     assert len(diff["created"]) == 1
 
 
-def test_acl_deleted_composite() -> None:
-    """Acl deleted composite."""
+def test_acl_deleted_id_keyed() -> None:
+    """ACL deleted id-keyed."""
 
-    old = [{"frontend_name": "http", "domain": "old.com", "sort_order": 0}]
+    old = [{"id": 3, "frontend_name": "http", "domain": "old.com", "sort_order": 0}]
     new: list[dict[str, str | int | None]] = []
-    diff = _diff_entity_list(old, new, "_composite")
+    diff = _diff_entity_list(old, new, "_id_keyed")
     assert len(diff["deleted"]) == 1
 
 
@@ -891,15 +954,15 @@ def test_peer_renamed() -> None:
     assert p["updated"][0]["entity"] == "mypeersc"
 
 
-def test_acl_updated_with_composite_key() -> None:
-    """Acl updated with composite key."""
+def test_acl_updated_with_id_keyed_via_compute_diff() -> None:
+    """ACL updated via compute_diff using id-keyed matching."""
 
-    old = {"acl_rules": [{"frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]}
-    new = {"acl_rules": [{"frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": "updated"}]}
+    old = {"acl_rules": [{"id": 1, "frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": None}]}
+    new = {"acl_rules": [{"id": 1, "frontend_name": "http", "domain": "example.com", "sort_order": 0, "comment": "updated"}]}
     diff = compute_diff(old, new)
     assert "acl_rules" in diff
     assert len(diff["acl_rules"]["updated"]) == 1
-    assert diff["acl_rules"]["updated"][0]["entity"] == "http:example.com:0"
+    assert diff["acl_rules"]["updated"][0]["entity"] == "1"
 
 
 def test_ssl_cert_matched_by_domain() -> None:
@@ -951,3 +1014,130 @@ def test_naive_iso_string() -> None:
     assert result is not None
     assert isinstance(result, datetime)
     assert result.year == 2025
+
+
+def test_strip_nested_sort_order_list_of_dicts() -> None:
+    """`sort_order` is removed from dicts inside a list."""
+
+    items = [
+        {"username": "alice", "password_hash": "abc", "sort_order": 0},
+        {"username": "bob", "password_hash": "def", "sort_order": 1},
+    ]
+    result = _strip_nested_sort_order(items)
+    assert result == [
+        {"username": "alice", "password_hash": "abc"},
+        {"username": "bob", "password_hash": "def"},
+    ]
+
+
+def test_strip_nested_sort_order_non_list() -> None:
+    """Non-list values pass through unchanged."""
+
+    assert _strip_nested_sort_order("hello") == "hello"
+    assert _strip_nested_sort_order(42) == 42
+    assert _strip_nested_sort_order(None) is None
+
+
+def test_strip_nested_sort_order_empty() -> None:
+    """Empty list returns empty list."""
+
+    assert _strip_nested_sort_order([]) == []
+
+
+def test_compute_field_changes_ignores_sort_order_in_entries() -> None:
+    """Nested entry `sort_order` differences do not produce field changes."""
+
+    old = {
+        "name": "auth_list",
+        "entries": [
+            {"password_hash": "abc", "sort_order": 0, "username": "sandbox"},
+            {"password_hash": "def", "sort_order": 0, "username": "ggggg"},
+        ],
+    }
+    new = {
+        "name": "auth_list",
+        "entries": [
+            {"username": "sandbox", "password_hash": "abc", "sort_order": 0},
+            {"username": "ggggg", "password_hash": "def", "sort_order": 1},
+        ],
+    }
+    changes = _compute_field_changes(old, new)
+    assert changes == []
+
+
+def test_compute_field_changes_detects_real_entry_change() -> None:
+    """Real entry changes (non-sort_order) are still detected."""
+
+    old = {
+        "name": "auth_list",
+        "entries": [
+            {"username": "alice", "password_hash": "old_hash", "sort_order": 0},
+        ],
+    }
+    new = {
+        "name": "auth_list",
+        "entries": [
+            {"username": "alice", "password_hash": "new_hash", "sort_order": 0},
+        ],
+    }
+    changes = _compute_field_changes(old, new)
+    assert len(changes) == 1
+    assert changes[0]["field"] == "entries"
+
+
+def test_diff_entity_list_no_false_positive_on_sort_order() -> None:
+    """Userlist entities with only `sort_order` differences are not flagged."""
+
+    old_items = [
+        {
+            "name": "my_list",
+            "entries": [
+                {"password_hash": "abc", "sort_order": 0, "username": "user1"},
+                {"password_hash": "def", "sort_order": 0, "username": "user2"},
+            ],
+        }
+    ]
+    new_items = [
+        {
+            "name": "my_list",
+            "entries": [
+                {"username": "user1", "password_hash": "abc", "sort_order": 0},
+                {"username": "user2", "password_hash": "def", "sort_order": 1},
+            ],
+        }
+    ]
+    diff = _diff_entity_list(old_items, new_items, "name")
+    assert diff["total"] == 0
+    assert diff["created"] == []
+    assert diff["deleted"] == []
+    assert diff["updated"] == []
+
+
+def test_compute_diff_no_userlist_phantom() -> None:
+    """Full `compute_diff` does not report userlist changes when
+    only `sort_order` and dict key ordering differ."""
+
+    old_snapshot = {
+        "userlists": [
+            {
+                "name": "auth_list",
+                "entries": [
+                    {"password_hash": "abc", "sort_order": 0, "username": "sandbox"},
+                    {"password_hash": "def", "sort_order": 0, "username": "ggggg"},
+                ],
+            }
+        ]
+    }
+    new_snapshot = {
+        "userlists": [
+            {
+                "name": "auth_list",
+                "entries": [
+                    {"username": "sandbox", "password_hash": "abc", "sort_order": 0},
+                    {"username": "ggggg", "password_hash": "def", "sort_order": 1},
+                ],
+            }
+        ]
+    }
+    diff = compute_diff(old_snapshot, new_snapshot)
+    assert "userlists" not in diff

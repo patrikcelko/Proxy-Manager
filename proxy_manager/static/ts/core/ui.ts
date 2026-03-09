@@ -120,5 +120,39 @@ export function toggleEntityCard(el: HTMLElement): void {
     el.closest(".entity-card")?.classList.toggle("open");
 }
 
+/** Shows a custom confirmation dialog and returns a promise that resolves to true/false. */
+export function confirmPopup(message: string, title = "Confirm"): Promise<boolean> {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById("confirm-overlay")!;
+        const titleEl = document.getElementById("confirm-title")!;
+        const msgEl = document.getElementById("confirm-message")!;
+        const okBtn = document.getElementById("confirm-ok")!;
+        const cancelBtn = document.getElementById("confirm-cancel")!;
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        overlay.classList.add("show");
+
+        const cleanup = () => {
+            overlay.classList.remove("show");
+            okBtn.removeEventListener("click", onOk);
+            cancelBtn.removeEventListener("click", onCancel);
+            overlay.removeEventListener("click", onBackdrop);
+            document.removeEventListener("keydown", onKey);
+        };
+        const onOk = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+        const onBackdrop = (e: MouseEvent) => { if (e.target === overlay) onCancel(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); else if (e.key === "Enter") onOk(); };
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        overlay.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKey);
+
+        cancelBtn.focus();
+    });
+}
+
 /* Re-export icon for convenience in section modules that import from ui */
 export { icon };

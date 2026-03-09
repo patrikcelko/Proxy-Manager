@@ -71,7 +71,7 @@
         <div class="nav-label">Advanced</div>
         <li class="nav-item" data-section="resolvers" data-label="DNS Resolvers" onclick="switchSection('resolvers')">
             <svg width="16" height="16" stroke-width="2">
-                <use href="#i-clock" />
+                <use href="#i-search" />
             </svg>
             DNS Resolvers
         </li>
@@ -95,7 +95,7 @@
         </li>
         <li class="nav-item" data-section="caches" data-label="Cache" onclick="switchSection('caches')">
             <svg width="16" height="16" stroke-width="2">
-                <use href="#i-activity" />
+                <use href="#i-database" />
             </svg>
             Cache
         </li>
@@ -136,7 +136,13 @@
         </button>
     </div>
     <div class="sidebar-footer">
-        <div class="sidebar-version-footer">v{{ version }}</div>
+        <div class="sidebar-version-footer">&copy; 2025-<script>document.write(new Date().getFullYear())</script> Proxy Manager v{{ version }}</div>
+        <div class="sidebar-github-link">
+            Check this project on
+            <a href="https://github.com/patrikcelko/Proxy-Manager" target="_blank" rel="noopener">
+                <svg width="13" height="13"><use href="#i-github"/></svg> GitHub
+            </a>
+        </div>
     </div>
 </nav>
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>

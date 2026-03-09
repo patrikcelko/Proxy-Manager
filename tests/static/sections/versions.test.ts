@@ -275,7 +275,6 @@ describe("discardChanges", () => {
             <div id="top-bar-page-title"></div>
         `;
         document.body.appendChild(container);
-        (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(true);
     });
 
     afterEach(() => container.remove());
@@ -294,7 +293,7 @@ describe("discardChanges", () => {
     });
 
     it("does nothing when cancelled", async () => {
-        (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (globalThis as any).__confirmPopupMock.mockResolvedValueOnce(false);
         const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
             ok: true,
             status: 200,
@@ -537,12 +536,12 @@ describe("applySectionChangeMarkers", () => {
         expect(row.classList.contains("entity-modified")).toBe(true);
     });
 
-    it("marks newly created ACL rules using composite key", () => {
+    it("marks newly created ACL rules using entity id", () => {
         setup(
             "acl",
             `<table id="acl-table">
                 <tbody>
-                    <tr class="acl-row" data-entity-name="http:new.com:0">
+                    <tr class="acl-row" data-entity-name="42">
                         <td class="acl-domain-cell">new.com</td>
                     </tr>
                 </tbody>
@@ -554,14 +553,14 @@ describe("applySectionChangeMarkers", () => {
             pending_counts: { acl_rules: 1 },
             sections: {
                 acl_rules: makeDiff({
-                    created: [{ frontend_name: "http", domain: "new.com", sort_order: 0 }],
+                    created: [{ id: 42, frontend_name: "http", domain: "new.com", sort_order: 0 }],
                 }),
             },
         };
 
         applySectionChangeMarkers();
 
-        const row = document.querySelector("[data-entity-name='http:new.com:0']")!;
+        const row = document.querySelector("[data-entity-name='42']")!;
         expect(row.classList.contains("entity-created")).toBe(true);
     });
 

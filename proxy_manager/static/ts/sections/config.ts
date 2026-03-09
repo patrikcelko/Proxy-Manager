@@ -8,6 +8,7 @@
  */
 
 import { api, toast } from "../core/api";
+import { confirmPopup } from "../core/ui";
 
 /** Tracks whether the editor has been loaded and modified. */
 let _loaded = false;
@@ -122,7 +123,7 @@ export async function discardManualEdit(): Promise<void> {
     const msgEl = document.getElementById("config-validation-msg") as HTMLElement;
 
     if (_loaded && ta.value.trim() !== _originalText.trim()) {
-        if (!confirm("Discard your unsaved editor changes and reload the current configuration?")) return;
+        if (!(await confirmPopup("Discard your unsaved editor changes and reload the current configuration?", "Discard Changes"))) return;
     }
 
     ta.value = _originalText;

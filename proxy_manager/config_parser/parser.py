@@ -712,6 +712,7 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
     comment_buf: list[str] = []
     pending_acls: dict[str, str | None] = {}  # acl_name -> comment
     option_order = 0
+    seen_content = False  # Track whether any content line has been seen
 
     i = 0
     while i < len(lines):
@@ -729,6 +730,12 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        # Capture initial comment block as section-level comment
+        if comment_buf and not fe.comment and not seen_content:
+            fe.comment = "\n".join(comment_buf)
+            comment_buf = []
+        seen_content = True
 
         # Bind directives
         if _BIND_RE.match(content):
@@ -1077,13 +1084,24 @@ def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     r = ParsedResolver(name=name)
     ns_order = 0
     extra_lines: list[str] = []
+    comment_buf: list[str] = []
 
     for line in lines:
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if not r.comment:
+                cm = _COMMENT_BLOCK_RE.match(line)
+                comment_buf.append(cm.group(1) if cm else line[1:].strip())
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        if comment_buf and not r.comment:
+            r.comment = "\n".join(comment_buf)
+            comment_buf = []
+
         lower = content.lower()
 
         m = _NS_RE.match(content)
@@ -1136,13 +1154,24 @@ def _parse_peers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     ps = ParsedPeerSection(name=name)
     entry_order = 0
     extra_lines: list[str] = []
+    comment_buf: list[str] = []
 
     for line in lines:
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if not ps.comment:
+                cm = _COMMENT_BLOCK_RE.match(line)
+                comment_buf.append(cm.group(1) if cm else line[1:].strip())
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        if comment_buf and not ps.comment:
+            ps.comment = "\n".join(comment_buf)
+            comment_buf = []
+
         lower = content.lower()
 
         m = _PEER_RE.match(content)
@@ -1182,6 +1211,7 @@ def _parse_mailers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     ms = ParsedMailerSection(name=name)
     entry_order = 0
     extra_lines: list[str] = []
+    comment_buf: list[str] = []
     # Collect auth metadata keyed by mailer entry name.
     auth_meta: dict[str, dict[str, str]] = {}
 
@@ -1195,10 +1225,18 @@ def _parse_mailers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             auth_meta[am.group("mailer")] = am.groupdict()
             continue
         if stripped.startswith("#"):
+            if not ms.comment:
+                cm = _COMMENT_BLOCK_RE.match(stripped)
+                comment_buf.append(cm.group(1) if cm else stripped[1:].strip())
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        if comment_buf and not ms.comment:
+            ms.comment = "\n".join(comment_buf)
+            comment_buf = []
+
         lower = content.lower()
 
         if lower.startswith("timeout mail "):
@@ -1241,13 +1279,23 @@ def _parse_http_errors(result: ParsedConfig, name: str, lines: list[str]) -> Non
     sec = ParsedHttpErrorsSection(name=name)
     entry_order = 0
     extra_lines: list[str] = []
+    comment_buf: list[str] = []
 
     for line in lines:
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if not sec.comment:
+                cm = _COMMENT_BLOCK_RE.match(line)
+                comment_buf.append(cm.group(1) if cm else line[1:].strip())
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        if comment_buf and not sec.comment:
+            sec.comment = "\n".join(comment_buf)
+            comment_buf = []
 
         m = _ERRORFILE_RE.match(content)
         if m:
@@ -1274,13 +1322,24 @@ def _parse_cache(result: ParsedConfig, name: str, lines: list[str]) -> None:
 
     c = ParsedCacheSection(name=name)
     extra_lines: list[str] = []
+    comment_buf: list[str] = []
 
     for line in lines:
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if not c.comment:
+                cm = _COMMENT_BLOCK_RE.match(line)
+                comment_buf.append(cm.group(1) if cm else line[1:].strip())
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
+
+        if comment_buf and not c.comment:
+            c.comment = "\n".join(comment_buf)
+            comment_buf = []
+
         lower = content.lower()
 
         if lower.startswith("total-max-size "):

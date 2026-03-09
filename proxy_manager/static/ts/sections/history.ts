@@ -6,6 +6,7 @@
 import { api, toast } from "../core/api";
 import { icon } from "../core/icons";
 import { escHtml, SECTION_LABELS } from "../core/utils";
+import { confirmPopup } from "../core/ui";
 import { refreshPendingBadges } from "./versions";
 import type { VersionListResponse, VersionSummary, VersionDetail, SectionDiff, FieldChange, EntityUpdate } from "../types";
 
@@ -60,7 +61,7 @@ export function switchDiffTab(tabId: string, tab: string): void {
 
 /** Rollback to a specific version. */
 export async function rollbackVersion(hash: string): Promise<void> {
-    if (!confirm(`Rollback to version ${hash.substring(0, 8)}? This will restore the configuration to that state and create a new version.`)) return;
+    if (!(await confirmPopup(`Rollback to version ${hash.substring(0, 8)}? This will restore the configuration to that state and create a new version.`, "Rollback Version"))) return;
 
     try {
         await api(`/api/versions/${hash}/rollback`, { method: "POST" });
@@ -127,7 +128,7 @@ function _renderDiffTabs(diff: Record<string, SectionDiff>, id: string): string 
 
     const summaryParts: string[] = [];
     if (totalAdded > 0) summaryParts.push(`<span class="dtab-stat dtab-s-add">+${totalAdded}</span>`);
-    if (totalModified > 0) summaryParts.push(`<span class="dtab-stat dtab-s-mod">~${totalModified}</span>`);
+    if (totalModified > 0) summaryParts.push(`<span class="dtab-stat dtab-s-mod">&Delta;${totalModified}</span>`);
     if (totalDeleted > 0) summaryParts.push(`<span class="dtab-stat dtab-s-del">-${totalDeleted}</span>`);
     const summary = summaryParts.length ? `<span class="dtab-summary">${summaryParts.join("")}</span>` : "";
 
@@ -242,12 +243,18 @@ function _isNestedField(field: string): boolean {
 /** Render nested sub-entity changes (e.g. frontend options). */
 function _renderNestedChanges(changes: FieldChange[]): string {
     return changes.map((c) => {
-        const oldArr = Array.isArray(c.old) ? c.old : [];
-        const newArr = Array.isArray(c.new) ? c.new : [];
-        const added = newArr.length - oldArr.length;
+        const oldArr = Array.isArray(c.old) ? c.old as Record<string, unknown>[] : [];
+        const newArr = Array.isArray(c.new) ? c.new as Record<string, unknown>[] : [];
+        const oldKeys = new Set(oldArr.map((i) => JSON.stringify(i, Object.keys(i).sort())));
+        const newKeys = new Set(newArr.map((i) => JSON.stringify(i, Object.keys(i).sort())));
+        const removed = oldArr.filter((i) => !newKeys.has(JSON.stringify(i, Object.keys(i).sort())));
+        const added = newArr.filter((i) => !oldKeys.has(JSON.stringify(i, Object.keys(i).sort())));
         const label = c.field;
-        const badge = added > 0 ? `<span class="dtab-stat dtab-s-add">+${added}</span>` : added < 0 ? `<span class="dtab-stat dtab-s-del">${added}</span>` : `<span class="dtab-stat dtab-s-mod">~</span>`;
-        return `<div class="diff-nested-note">${icon("layers", 11)} <span>${escHtml(label)}</span> ${badge} <span class="diff-nested-count">(${newArr.length} total)</span></div>`;
+        const badges: string[] = [];
+        if (added.length > 0) badges.push(`<span class="dtab-stat dtab-s-add">+${added.length}</span>`);
+        if (removed.length > 0) badges.push(`<span class="dtab-stat dtab-s-del">-${removed.length}</span>`);
+        if (badges.length === 0) badges.push(`<span class="dtab-stat dtab-s-mod">&Delta;</span>`);
+        return `<div class="diff-nested-note">${icon("layers", 11)} <span>${escHtml(label)}</span> ${badges.join("")} <span class="diff-nested-count">(${newArr.length} total)</span></div>`;
     }).join("");
 }
 
@@ -278,12 +285,27 @@ function _renderUnifiedDiff(diff: Record<string, SectionDiff>): string {
 
         // Updated entities
         for (const u of s.updated) {
-            lines.push(_udLine("~", `  ${u.entity}`, "ctx"));
+            lines.push(_udLine(" ", `  ${u.entity}`, "ctx"));
             for (const c of u.changes) {
                 if (_isNestedField(c.field)) {
-                    const oldLen = Array.isArray(c.old) ? c.old.length : 0;
-                    const newLen = Array.isArray(c.new) ? c.new.length : 0;
-                    lines.push(_udLine("~", `    ${c.field}: ${oldLen} \u2192 ${newLen} items`, "mod"));
+                    // Expand nested sub-entities into individual +/- lines
+                    const oldArr = Array.isArray(c.old) ? c.old as Record<string, unknown>[] : [];
+                    const newArr = Array.isArray(c.new) ? c.new as Record<string, unknown>[] : [];
+                    const oldKeys = new Set(oldArr.map((i) => JSON.stringify(i, Object.keys(i).sort())));
+                    const newKeys = new Set(newArr.map((i) => JSON.stringify(i, Object.keys(i).sort())));
+                    const removed = oldArr.filter((i) => !newKeys.has(JSON.stringify(i, Object.keys(i).sort())));
+                    const added = newArr.filter((i) => !oldKeys.has(JSON.stringify(i, Object.keys(i).sort())));
+                    if (removed.length || added.length) {
+                        lines.push(_udLine(" ", `  ${c.field}:`, "ctx"));
+                        for (const item of removed) {
+                            const desc = _nestedItemDesc(item);
+                            lines.push(_udLine("-", `-     ${desc}`, "del"));
+                        }
+                        for (const item of added) {
+                            const desc = _nestedItemDesc(item);
+                            lines.push(_udLine("+", `+     ${desc}`, "add"));
+                        }
+                    }
                     continue;
                 }
                 lines.push(_udLine("-", `-   ${c.field}: ${_fmtVal(c.old)}`, "del"));
@@ -325,6 +347,34 @@ function _entityToLines(item: Record<string, unknown>): string[] {
     return Object.entries(item)
         .filter(([k, v]) => !skip.has(k) && v !== null && v !== undefined)
         .map(([k, v]) => `${k}: ${_fmtVal(v)}`);
+}
+
+/** Produce a short description of a nested sub-entity item (option, bind, server, etc.). */
+function _nestedItemDesc(item: Record<string, unknown>): string {
+    // Options: directive + value
+    if (item.directive != null) return `${item.directive}${item.value ? " " + item.value : ""}`;
+
+    // Servers: name address:port
+    if (item.name != null && item.address != null) return `${item.name} ${item.address}:${item.port || ""}`;
+
+    // Binds: bind_line
+    if (item.bind_line != null) return String(item.bind_line);
+
+    // Userlist entries: username
+    if (item.username != null) return String(item.username);
+
+    // Mailer/peer entries: name address:port
+    if (item.name != null && item.port != null) return `${item.name} ${item.address || ""}:${item.port}`;
+
+    // Nameservers: name address:port
+    // HTTP error entries: status_code type value
+    if (item.status_code != null) return `${item.status_code} ${item.type || ""} ${item.value || ""}`;
+
+    // Fallback: key=value pairs
+    return Object.entries(item)
+        .filter(([k, v]) => k !== "sort_order" && k !== "id" && v != null)
+        .map(([k, v]) => `${k}: ${_fmtVal(v)}`)
+        .join(", ");
 }
 
 /* Utilities */

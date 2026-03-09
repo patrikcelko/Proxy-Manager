@@ -9,8 +9,9 @@
 
 import { api, toast } from "../core/api";
 import { icon, SVG } from "../core/icons";
-import { openModal, closeModal } from "../core/ui";
+import { openModal, closeModal, confirmPopup } from "../core/ui";
 import { escHtml, escJsonAttr, filterPresetGrid, searchPresetGrid } from "../core/utils";
+import { applySectionChangeMarkers, refreshPendingBadges } from "./versions";
 import type { Setting, SettingPreset, CategoryDef } from "../types";
 
 /* Category definitions  */
@@ -202,6 +203,7 @@ export async function loadSettings(tab?: string): Promise<void> {
         const items: Setting[] = d.items || d;
         renderSettingsTable(items);
         switchSettingsTab(settTab);
+        applySectionChangeMarkers();
     } catch (err) {
         toast((err as Error).message, "error");
     }
@@ -260,7 +262,7 @@ export function renderSettingsTable(items: Setting[]): void {
 }
 
 /** Swaps the sort order of a setting with its neighbour in the given direction. */
-export function reorderSetting(id: number, direction: string): void {
+export async function reorderSetting(id: number, direction: string): Promise<void> {
     const rows = [...document.querySelectorAll(`#${settTab}-table tbody tr`)] as HTMLTableRowElement[];
     const ids = rows.map((r) => {
         const btn = r.querySelector(".reorder-btn:not(.disabled)") as HTMLButtonElement | null;
@@ -294,15 +296,17 @@ export function reorderSetting(id: number, direction: string): void {
     const swapId = ids[swapIdx];
     if (swapId == null) return;
 
-    Promise.all([
-        api(`${settingsApiBase()}/${curId}`, { method: "PUT", body: JSON.stringify({ sort_order: newCurOrder }) }),
-        api(`${settingsApiBase()}/${swapId}`, { method: "PUT", body: JSON.stringify({ sort_order: newSwapOrder }) }),
-    ])
-        .then(() => {
-            loadSettings();
-            toast("Order updated", "info");
-        })
-        .catch((err: Error) => toast(err.message, "error"));
+    try {
+        await Promise.all([
+            api(`${settingsApiBase()}/${curId}`, { method: "PUT", body: JSON.stringify({ sort_order: newCurOrder }) }),
+            api(`${settingsApiBase()}/${swapId}`, { method: "PUT", body: JSON.stringify({ sort_order: newSwapOrder }) }),
+        ]);
+        await loadSettings();
+        await refreshPendingBadges();
+        toast("Order updated", "info");
+    } catch (err: any) {
+        toast(err.message, "error");
+    }
 }
 
 /** Activates the given settings tab and updates the section label. */
@@ -360,30 +364,27 @@ export function openSettingsAddModal(type: string): void {
         <h3>Add ${type === "global" ? "Global" : "Defaults"} Setting</h3>
         <p class="modal-subtitle">Choose a template to auto-fill the form, or configure manually below.</p>
 
-        <div class="form-collapsible" style="margin-bottom:1rem">
-            <div class="form-collapsible-head open" onclick="toggleCollapsible(this)">${IC.templates} Templates <span class="stab-count">${presets.length}</span> ${SVG.chevron}</div>
-            <div class="form-collapsible-body open">
-                <div class="stabs" style="margin-bottom:.5rem">
-                    <button class="stab active" onclick="filterSettingsPresets('all')">All</button>
-                    ${cats.map((c) => `<button class="stab" onclick="filterSettingsPresets('${c}')">${c}</button>`).join("")}
-                </div>
-                <div class="preset-search-wrap" style="margin-bottom:.75rem">
-                    ${icon("search")}
-                    <input id="sett-preset-filter" placeholder="Search presets..." oninput="searchSettPresets()">
-                </div>
-                <div class="dir-grid" id="${gridId}">${presets
-                    .map(
-                        (p, i) =>
-                            `<div class="dir-card" data-pcat="${escHtml(p.c)}" data-search-text="${escHtml((p.d + " " + p.v + " " + p.h).toLowerCase())}"
-                     onclick="applySettingPreset('${type}',${i})">
-                    <div class="dir-card-name">${escHtml(p.d)}</div>
-                    ${p.v ? `<div class="dir-card-val">${escHtml(p.v)}</div>` : ""}
-                    <div class="dir-card-desc">${escHtml(p.h)}</div>
-                </div>`,
-                    )
-                    .join("")}
-                </div>
-            </div>
+        <div class="form-section-title">${IC.templates} Templates <span class="stab-count">${presets.length}</span></div>
+        <div class="form-help" style="margin-bottom:.5rem">Choose a preset to auto-fill the form, or configure manually below.</div>
+        <div class="stabs" style="margin-bottom:.5rem">
+            <button class="stab active" onclick="filterSettingsPresets('all')">All</button>
+            ${cats.map((c) => `<button class="stab" onclick="filterSettingsPresets('${c}')">${c}</button>`).join("")}
+        </div>
+        <div class="preset-search-wrap" style="margin-bottom:.75rem">
+            ${icon("search")}
+            <input id="sett-preset-filter" placeholder="Search presets..." oninput="searchSettPresets()">
+        </div>
+        <div class="dir-grid" id="${gridId}">${presets
+            .map(
+                (p, i) =>
+                    `<div class="dir-card" data-pcat="${escHtml(p.c)}" data-search-text="${escHtml((p.d + " " + p.v + " " + p.h).toLowerCase())}"
+             onclick="applySettingPreset('${type}',${i})">
+            <div class="dir-card-name">${escHtml(p.d)}</div>
+            ${p.v ? `<div class="dir-card-val">${escHtml(p.v)}</div>` : ""}
+            <div class="dir-card-desc">${escHtml(p.h)}</div>
+        </div>`,
+            )
+            .join("")}
         </div>
 
         <hr class="form-divider">
@@ -484,7 +485,7 @@ export async function saveSetting(id: number | null): Promise<void> {
 
 /** Deletes a setting after user confirmation and reloads the table. */
 export async function deleteSetting(id: number): Promise<void> {
-    if (!confirm("Delete this setting?")) return;
+    if (!(await confirmPopup("Delete this setting?", "Delete"))) return;
     try {
         await api(`${settingsApiBase()}/${id}`, { method: "DELETE" });
         toast("Deleted");

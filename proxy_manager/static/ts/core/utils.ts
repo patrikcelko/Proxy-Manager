@@ -6,7 +6,7 @@
  */
 
 import { api, toast } from "./api";
-import { closeModal } from "./ui";
+import { closeModal, confirmPopup } from "./ui";
 
 /** Escapes HTML special characters to prevent XSS in rendered templates. */
 export function escHtml(s: unknown): string {
@@ -57,7 +57,7 @@ export async function crudSave(baseUrl: string, body: unknown, entityId: number 
 
 /** Generic CRUD delete: confirms with user then deletes and reloads. */
 export async function crudDelete(url: string, confirmMsg: string, reloadFn: () => void): Promise<void> {
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmPopup(confirmMsg, "Delete"))) return;
     try {
         await api(url, { method: "DELETE" });
         toast("Deleted");

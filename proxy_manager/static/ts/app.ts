@@ -101,7 +101,7 @@ import {
     saveUserlist,
     deleteUserlist,
 } from "./sections/userlists";
-import { loadResolvers, filterResolvers, openResolverModal, openResolverQuickAdd, filterResolverPresets, searchResolverPresets, applyResolverPreset, openNameserverModal, saveResolver, deleteResolver, saveNameserver, deleteNameserver } from "./sections/resolvers";
+import { loadResolvers, filterResolvers, openResolverModal, openResolverQuickAdd, filterResolverPresets, searchResolverPresets, applyResolverPreset, addNsRow, openNameserverModal, saveResolver, deleteResolver, saveNameserver, deleteNameserver } from "./sections/resolvers";
 import { loadPeers, filterPeers, openPeerModal, openPeerEntryModal, savePeer, deletePeer, savePeerEntry, deletePeerEntry } from "./sections/peers";
 import { loadMailers, filterMailers, openMailerModal, openMailerEntryModal, saveMailer, deleteMailer, saveMailerEntry, deleteMailerEntry } from "./sections/mailers";
 import {
@@ -261,6 +261,7 @@ Object.assign(window, {
     filterResolverPresets,
     searchResolverPresets,
     applyResolverPreset,
+    addNsRow,
     openNameserverModal,
     saveResolver,
     deleteResolver,

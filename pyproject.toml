@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "proxy-manager"
-version = "1.4.0"
+version = "1.5.3"
 description = "HAProxy configuration management service with web UI."
 readme = "README.md"
 requires-python = ">=3.12"

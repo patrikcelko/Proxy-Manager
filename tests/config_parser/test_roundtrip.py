@@ -59,6 +59,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
             option_tcplog=lb.option_tcplog,
             option_forwardfor=lb.option_forwardfor,
             content=lb.content,
+            comment=lb.comment,
         )
         lb_binds = [SimpleNamespace(bind_line=b, sort_order=i) for i, b in enumerate(lb.binds)]
         listen_blocks.append((lb_model, lb_binds))
@@ -180,6 +181,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
             hold_aa=r.hold_aa,
             accepted_payload_size=r.accepted_payload_size,
             parse_resolv_conf=r.parse_resolv_conf,
+            comment=r.comment,
             extra_options=r.extra_options,
         )
         ns = [SimpleNamespace(name=n.name, address=n.address, port=n.port) for n in r.nameservers]
@@ -189,6 +191,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
     for p in parsed.peers:
         p_model = SimpleNamespace(
             name=p.name,
+            comment=p.comment,
             default_bind=p.default_bind,
             default_server_options=p.default_server_options,
             extra_options=p.extra_options,
@@ -201,6 +204,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
         m_model = SimpleNamespace(
             name=m.name,
             timeout_mail=m.timeout_mail,
+            comment=m.comment,
             extra_options=m.extra_options,
         )
         entries = [
@@ -222,6 +226,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
     for he in parsed.http_errors:
         he_model = SimpleNamespace(
             name=he.name,
+            comment=he.comment,
             extra_options=he.extra_options,
         )
         entries = [SimpleNamespace(type=e.type, status_code=e.status_code, value=e.value) for e in he.entries]
@@ -237,6 +242,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
                 max_age=c.max_age,
                 max_secondary_entries=c.max_secondary_entries,
                 process_vary=c.process_vary,
+                comment=c.comment,
                 extra_options=c.extra_options,
             )
         )

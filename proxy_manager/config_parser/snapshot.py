@@ -166,6 +166,7 @@ async def take_snapshot(session: AsyncSession) -> dict[str, Any]:
     all_acls = await list_all_acl_rules(session)
     snapshot["acl_rules"] = [
         {
+            "id": acl.id,
             "frontend_name": fe_name_map.get(acl.frontend_id, "") if acl.frontend_id is not None else "",
             "domain": acl.domain,
             "backend_name": acl.backend_name,
@@ -790,7 +791,7 @@ def _section_name_key(section_key: str, items: list[dict[str, Any]] | None = Non
         return "domain"
 
     if section_key == "acl_rules":
-        return "_composite"  # Use composite key
+        return "_id_keyed"  # Use id-based matching with composite fallback
 
     return "name"
 
@@ -806,7 +807,7 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
         # Settings: multi-phase matching that correctly handles
         # insertions, deletions, modifications, and directive
         # renames regardless of position or database IDs.
-        _STRIP_KEYS = {"id", "sort_order"}  # noqa
+        _STRIP_KEYS = {"id"}  # noqa
 
         def _strip_meta(d: dict[str, Any]) -> dict[str, Any]:
             return {k: v for k, v in d.items() if k not in _STRIP_KEYS}
@@ -818,7 +819,7 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
             old_stripped = _strip_meta(old_items[old_i])
             new_stripped = _strip_meta(new_items[new_j])
             if old_stripped == new_stripped:
-                return  # identical after stripping meta — no change
+                return  # identical after stripping meta - no change
 
             changes = _compute_field_changes(old_stripped, new_stripped)
             new_d = new_items[new_j].get("directive", "")
@@ -858,13 +859,16 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
 
         # Phase 1 Exact content matches for remaining
         # (unchanged entries with different IDs, e.g. after
-        # Manual-Edit re-import).
+        # Manual-Edit re-import).  Track matched pairs so we
+        # can detect ORDER changes afterwards.
         old_remaining = [i for i in range(len(old_items)) if i not in old_matched]
 
         old_by_content: dict[tuple[Any, Any, Any], list[int]] = {}
         for i in old_remaining:
             key = _content_key(old_items[i])
             old_by_content.setdefault(key, []).append(i)
+
+        phase1_pairs: list[tuple[int, int]] = []
 
         for j in range(len(new_items)):
             if j in new_matched:
@@ -875,6 +879,29 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
                 old_i = old_by_content[key].pop(0)
                 old_matched.add(old_i)
                 new_matched.add(j)
+                phase1_pairs.append((old_i, j))
+
+        # Phase 1b  Detect ORDER changes among content-matched
+        # items.  After a Manual-Edit re-import sort_order values
+        # are renumbered (e.g. 0,5,10 -> 0,1,2) which is noise,
+        # but an actual UI reorder swaps the positions of items
+        # in the list.  We distinguish the two by checking for
+        # inversions in the old-position sequence (sorted by new
+        # position).  Items involved in at least one inversion
+        # were truly reordered.
+        if len(phase1_pairs) > 1:
+            phase1_pairs.sort(key=lambda p: p[1])
+            old_positions = [p[0] for p in phase1_pairs]
+
+            reordered: set[int] = set()
+            for a in range(len(old_positions)):
+                for b in range(a + 1, len(old_positions)):
+                    if old_positions[a] > old_positions[b]:
+                        reordered.add(a)
+                        reordered.add(b)
+
+            for idx in reordered:
+                _emit_updated(phase1_pairs[idx][0], phase1_pairs[idx][1])
 
         # Phase 2 Match remaining by directive name
         # (modified entries after Manual-Edit re-import).
@@ -912,16 +939,79 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
 
         return {"created": created, "deleted": deleted, "updated": updated, "total": len(created) + len(deleted) + len(updated)}
 
-    if name_key == "_composite":
-        # ACL rules: use (frontend_name, domain, sort_order) as composite key
-        def acl_key(item: dict[str, Any]) -> str:
-            return f"{item.get('frontend_name', '')}:{item.get('domain', '')}:{item.get('sort_order', 0)}"
+    if name_key == "_id_keyed":
+        # ACL rules: match by database id first (stable for normal UI operations
+        # including reorder), then fall back to composite key without sort_order
+        # for Manual Edit re-imports where IDs change.
+        _id_strip = {"id"}
 
-        old_map = {acl_key(item): item for item in old_items}
-        new_map = {acl_key(item): item for item in new_items}
-    else:
-        old_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(old_items)}
-        new_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(new_items)}
+        def _strip_id(d: dict[str, Any]) -> dict[str, Any]:
+            return {k: v for k, v in d.items() if k not in _id_strip}
+
+        acl_by_id: dict[Any, dict[str, Any]] = {}
+        for item in old_items:
+            eid = item.get("id")
+            if eid is not None:
+                acl_by_id[eid] = item
+
+        matched_old_ids: set[Any] = set()
+        matched_new_idx: set[int] = set()
+
+        # Phase 1: match by database id
+        for j, new_item in enumerate(new_items):
+            eid = new_item.get("id")
+            if eid is not None and eid in acl_by_id:
+                matched_old_ids.add(eid)
+                matched_new_idx.add(j)
+                old_stripped = _strip_id(acl_by_id[eid])
+                new_stripped = _strip_id(new_item)
+                if old_stripped != new_stripped:
+                    changes = _compute_field_changes(old_stripped, new_stripped)
+                    updated.append({"entity": str(eid), "entity_id": str(eid), "old": old_stripped, "new": new_stripped, "changes": changes})
+
+        # Phase 2: composite fallback for unmatched (after Manual Edit re-import)
+        def _acl_content_key(item: dict[str, Any]) -> str:
+            return f"{item.get('frontend_name', '')}:{item.get('domain', '')}:{item.get('acl_match_type', '')}"
+
+        remaining_old = [item for item in old_items if item.get("id") not in matched_old_ids]
+        remaining_new = [(j, item) for j, item in enumerate(new_items) if j not in matched_new_idx]
+
+        old_cmap: dict[str, list[dict[str, Any]]] = {}
+        for item in remaining_old:
+            key = _acl_content_key(item)
+            old_cmap.setdefault(key, []).append(item)
+
+        unmatched_new: list[dict[str, Any]] = []
+        for _j, new_item in remaining_new:
+            key = _acl_content_key(new_item)
+            if key in old_cmap and old_cmap[key]:
+                old_item = old_cmap[key].pop(0)
+                old_stripped = _strip_id(old_item)
+                new_stripped = _strip_id(new_item)
+                if old_stripped != new_stripped:
+                    changes = _compute_field_changes(old_stripped, new_stripped)
+                    entry: dict[str, Any] = {"entity": key, "old": old_stripped, "new": new_stripped, "changes": changes}
+                    new_id = new_item.get("id")
+                    if new_id is not None:
+                        entry["entity_id"] = str(new_id)
+                    updated.append(entry)
+            else:
+                unmatched_new.append(new_item)
+
+        for remaining in old_cmap.values():
+            for item in remaining:
+                deleted.append(_strip_id(item))
+        for item in unmatched_new:
+            entry = _strip_id(item)
+            new_id = item.get("id")
+            if new_id is not None:
+                entry["entity_id"] = str(new_id)
+            created.append(entry)
+
+        return {"created": created, "deleted": deleted, "updated": updated, "total": len(created) + len(deleted) + len(updated)}
+
+    old_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(old_items)}
+    new_map = {item.get(name_key, f"#{i}"): item for i, item in enumerate(new_items)}
 
     # Created: in new but not in old
     for key in new_map:
@@ -936,8 +1026,12 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
     # Updated: in both but different
     for key in old_map:
         if key in new_map:
-            old_json = json.dumps(old_map[key], sort_keys=True, default=str)
-            new_json = json.dumps(new_map[key], sort_keys=True, default=str)
+            # Normalise nested list items by stripping sort_order
+            # (list position encodes ordering) to avoid false diffs.
+            old_norm = {k: _strip_nested_sort_order(v) for k, v in old_map[key].items()}
+            new_norm = {k: _strip_nested_sort_order(v) for k, v in new_map[key].items()}
+            old_json = json.dumps(old_norm, sort_keys=True, default=str)
+            new_json = json.dumps(new_norm, sort_keys=True, default=str)
 
             if old_json != new_json:
                 changes = _compute_field_changes(old_map[key], new_map[key])
@@ -970,7 +1064,7 @@ def _diff_entity_list(old_items: list[dict[str, Any]], new_items: list[dict[str,
     # created. Detect such pairs by field similarity and convert them
     # to "updated" entries so the UI shows "Modified" instead of
     # "Deleted" + "New".
-    if deleted and created and name_key not in ("_ordered", "_composite"):
+    if deleted and created and name_key not in ("_ordered", "_id_keyed"):
         matched = _match_renamed_entities(deleted, created, name_key)
 
         for old_entity, new_entity in matched:
@@ -1040,6 +1134,26 @@ def _match_renamed_entities(deleted: list[dict[str, Any]], created: list[dict[st
     return pairs
 
 
+def _strip_nested_sort_order(val: Any) -> Any:
+    """Strip `sort_order` from dicts inside a list.
+
+    List position already encodes ordering, so the explicit
+    `sort_order` field is redundant.  Committed snapshots may
+    store different `sort_order` values (e.g. all zeros vs
+    sequential) which causes false-positive diffs.
+    """
+
+    if not isinstance(val, list):
+        return val
+
+    return [
+        {k: v for k, v in item.items() if k != "sort_order"}
+        if isinstance(item, dict)
+        else item
+        for item in val
+    ]
+
+
 def _compute_field_changes(old: dict[str, Any], new: dict[str, Any]) -> list[dict[str, Any]]:
     """Compute field-level changes between two entity dicts."""
 
@@ -1047,8 +1161,8 @@ def _compute_field_changes(old: dict[str, Any], new: dict[str, Any]) -> list[dic
     all_keys = sorted(set(list(old.keys()) + list(new.keys())))
 
     for key in all_keys:
-        old_val = old.get(key)
-        new_val = new.get(key)
+        old_val = _strip_nested_sort_order(old.get(key))
+        new_val = _strip_nested_sort_order(new.get(key))
         old_str = json.dumps(old_val, sort_keys=True, default=str)
         new_str = json.dumps(new_val, sort_keys=True, default=str)
 

@@ -13,6 +13,7 @@ import { api, toast } from "../core/api";
 import { icon } from "../core/icons";
 import { switchSection } from "../core/ui";
 import { escHtml } from "../core/utils";
+import { state } from "../state";
 import type { FlowPoint, StatCardItem } from "../types";
 
 /* Connection graph (built during drawFlowConnections)  */
@@ -36,11 +37,11 @@ export async function loadOverview(): Promise<void> {
             { key: "acl_rules", label: "ACL Rules", section: "acl", color: "var(--danger)", icon: "routing" },
             { key: "listen_blocks", label: "Listen Blocks", section: "listen", color: "#f472b6", icon: "activity" },
             { key: "userlists", label: "Auth Lists", section: "userlists", color: "#34d399", icon: "users" },
-            { key: "resolvers", label: "Resolvers", section: "resolvers", color: "#60a5fa", icon: "clock" },
+            { key: "resolvers", label: "Resolvers", section: "resolvers", color: "#60a5fa", icon: "search" },
             { key: "peers", label: "Peers", section: "peers", color: "#c084fc", icon: "rss" },
             { key: "mailers", label: "Mailers", section: "mailers", color: "#fbbf24", icon: "mail" },
             { key: "http_errors", label: "HTTP Errors", section: "http-errors", color: "#fb923c", icon: "alert-triangle" },
-            { key: "caches", label: "Caches", section: "caches", color: "#2dd4bf", icon: "activity" },
+            { key: "caches", label: "Caches", section: "caches", color: "#2dd4bf", icon: "database" },
             { key: "ssl_certificates", label: "SSL Certificates", section: "ssl-certificates", color: "#22d3ee", icon: "shield" },
         ];
         document.getElementById("overview-grid")!.innerHTML = items
@@ -186,7 +187,7 @@ export async function renderFlowCanvas(): Promise<void> {
                         const detail = a.is_redirect
                             ? `<span class="fn-mode-pill fn-mode-redirect">${icon("redirect", 8)} ${a.redirect_code || 301}</span>`
                             : `<span class="fn-mode-pill fn-mode-backend">${icon("server", 8)}</span>`;
-                        return `<div class="flow-node acl" data-node-id="acl-${idx}" data-backend="${escHtml(a.backend_name || "")}" data-fid="${a.frontend_id || ""}">
+                        return `<div class="flow-node acl" data-node-id="acl-${idx}" data-id="${a.id}" data-backend="${escHtml(a.backend_name || "")}" data-fid="${a.frontend_id || ""}">
           <div class="fn-name">${icon("routing", 8)} ${escHtml(a.domain)}</div>
           <div class="fn-detail"><span class="fn-mode-pill fn-mode-match">${matchType}</span> ${detail}</div>
         </div>`;
@@ -238,7 +239,7 @@ export async function renderFlowCanvas(): Promise<void> {
                         (s: any) =>
                             `<div class="flow-node srv" data-node-id="srv-${escHtml(b.name)}-${escHtml(s.name)}" data-backend="${escHtml(b.name)}" data-resolver="${escHtml(s.resolvers_ref || "")}">
             <div class="fn-name">${icon("cluster", 8)} ${escHtml(s.name)}</div>
-            <div class="fn-detail">${escHtml(s.address)}:${s.port}${s.resolvers_ref ? " &bull; " + icon("clock", 9) + " " + escHtml(s.resolvers_ref) : ""}</div>
+            <div class="fn-detail">${escHtml(s.address)}:${s.port}${s.resolvers_ref ? " &bull; " + icon("search", 9) + " " + escHtml(s.resolvers_ref) : ""}</div>
           </div>`,
                     ),
                 )
@@ -252,7 +253,7 @@ export async function renderFlowCanvas(): Promise<void> {
                 .map(
                     (r: any) =>
                         `<div class="flow-node resolver" data-node-id="res-${escHtml(r.name)}" data-name="${escHtml(r.name)}">
-          <div class="fn-name">${icon("clock", 8)} ${escHtml(r.name)}</div>
+          <div class="fn-name">${icon("search", 8)} ${escHtml(r.name)}</div>
           <div class="fn-detail">${(r.nameservers || []).length} nameserver(s)</div>
         </div>`,
                 )
@@ -272,7 +273,7 @@ export async function renderFlowCanvas(): Promise<void> {
             pills.push(`<span class="fn-mode-pill fn-mode-match">${icon("server", 8)} ${nsCnt}</span>`);
             serviceNodes.push(
                 `<div class="flow-node resolver svc-node" data-node-id="res-${escHtml(r.name)}" data-name="${escHtml(r.name)}">
-        <div class="fn-name">${icon("clock", 8)} ${escHtml(r.name)}</div>
+        <div class="fn-name">${icon("search", 8)} ${escHtml(r.name)}</div>
         <div class="fn-detail">${pills.join(" ")}</div>
       </div>`,
             );
@@ -328,7 +329,7 @@ export async function renderFlowCanvas(): Promise<void> {
             if (c.process_vary) pills.push(`<span class="fn-mode-pill fn-mode-fwd">vary</span>`);
             serviceNodes.push(
                 `<div class="flow-node cache svc-node" data-node-id="cache-${escHtml(c.name)}">
-        <div class="fn-name">${icon("activity", 8)} ${escHtml(c.name)}</div>
+        <div class="fn-name">${icon("database", 8)} ${escHtml(c.name)}</div>
         <div class="fn-detail">${pills.length ? pills.join(" ") : '<span class="fn-mode-pill fn-mode-port">default</span>'}</div>
       </div>`,
             );
@@ -406,6 +407,7 @@ export async function renderFlowCanvas(): Promise<void> {
             requestAnimationFrame(() => {
                 drawFlowConnections();
                 _initHoverHighlight();
+                _applyFlowChangeBadges();
             }),
         );
     } catch (err) {
@@ -626,6 +628,58 @@ export function drawFlowConnections(): void {
 /*  Hover Highlight   */
 
 /** Initialize hover listeners on flow nodes for highlight / dim behavior. */
+/** Applies NEW / MODIF. badges to flow nodes with uncommitted changes. */
+function _applyFlowChangeBadges(): void {
+    const diff = state.pendingDiff;
+    if (!diff?.has_pending) return;
+
+    const diagram = document.getElementById("flow-diagram");
+    if (!diagram) return;
+
+    /* section key -> [CSS selector, entity property for created, node key extractor] */
+    const cfg: Record<string, [string, string, (el: HTMLElement) => string]> = {
+        frontends:        [".flow-node.fe",       "id",     el => el.dataset.id || ""],
+        backends:         [".flow-node.be",       "name",   el => el.dataset.name || ""],
+        acl_rules:        [".flow-node.acl",      "id",     el => el.dataset.id || ""],
+        listen_blocks:    [".flow-node.listen-n", "name",   el => (el.dataset.nodeId || "").replace(/^listen-/, "")],
+        userlists:        [".flow-node.auth-ul",  "name",   el => el.dataset.name || ""],
+        resolvers:        [".flow-node.resolver", "name",   el => el.dataset.name || ""],
+        peers:            [".flow-node.peer",     "name",   el => (el.dataset.nodeId || "").replace(/^peer-/, "")],
+        mailers:          [".flow-node.mailer",   "name",   el => (el.dataset.nodeId || "").replace(/^mailer-/, "")],
+        http_errors:      [".flow-node.http-err", "name",   el => (el.dataset.nodeId || "").replace(/^he-/, "")],
+        caches:           [".flow-node.cache",    "name",   el => (el.dataset.nodeId || "").replace(/^cache-/, "")],
+        ssl_certificates: [".flow-node.ssl-cert", "domain", el => el.dataset.domain || ""],
+    };
+
+    for (const [sec, sd] of Object.entries(diff.sections)) {
+        const c = cfg[sec];
+        if (!c) continue;
+        const [sel, eKey, nodeKey] = c;
+
+        const useId = eKey === "id";
+        const createdKeys = new Set(sd.created.map(e => String(e[eKey] ?? "")));
+        const updatedKeys = new Set(sd.updated.map(u => useId ? String(u.entity_id ?? "") : u.entity));
+
+        diagram.querySelectorAll(sel).forEach(node => {
+            const el = node as HTMLElement;
+            const k = nodeKey(el);
+            if (!k) return;
+
+            let badge = "";
+            if (createdKeys.has(k)) {
+                badge = '<span class="fn-badge fn-badge-new" title="New (uncommitted)">NEW</span>';
+            } else if (updatedKeys.has(k)) {
+                badge = '<span class="fn-badge fn-badge-modif" title="Modified (uncommitted)">MODIF.</span>';
+            }
+
+            if (badge) {
+                const nameEl = el.querySelector(".fn-name");
+                if (nameEl) nameEl.insertAdjacentHTML("beforeend", badge);
+            }
+        });
+    }
+}
+
 export function _initHoverHighlight(): void {
     const diagram = document.getElementById("flow-diagram");
     if (!diagram) return;

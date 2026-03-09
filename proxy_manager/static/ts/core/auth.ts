@@ -11,7 +11,6 @@ import { openModal, closeModal } from "./ui";
 import { loadOverview } from "../sections/overview";
 import { escHtml } from "./utils";
 import { state } from "../state";
-import { log } from "console";
 
 /** Switches between the Login and Register tabs on the auth overlay. */
 export function switchAuthTab(tab: string): void {
@@ -33,7 +32,7 @@ export async function checkFirstRun(): Promise<void> {
             switchAuthTab("register");
         }
     } catch {
-        log("Failed to check setup status");
+        console.warn("Failed to check setup status");
     }
 }
 

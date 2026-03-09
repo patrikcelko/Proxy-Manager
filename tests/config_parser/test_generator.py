@@ -335,7 +335,7 @@ def test_backend_basic() -> None:
 
 
 def test_backend_comment() -> None:
-    """Backend comment is emitted before the section."""
+    """Backend comment is emitted inside the section."""
 
     be = _mock(Backend, name="be", mode="http", comment="Main backend")
     srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
@@ -1172,3 +1172,214 @@ def test_listen_mode_none_not_emitted() -> None:
     assert "listen lb_raw" in result
     assert "mode None" not in result
     assert "mode " not in result
+
+
+def test_resolver_comment_roundtrip() -> None:
+    """Resolver comment survives generate -> parse round-trip."""
+
+    res = _mock(
+        Resolver,
+        name="opendns",
+        resolve_retries=3,
+        timeout_resolve="1s",
+        timeout_retry="1s",
+        comment="Cisco OpenDNS",
+        parse_resolv_conf=None,
+        accepted_payload_size=None,
+        extra_options=None,
+    )
+    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
+        setattr(res, f"hold_{hold}", None)
+
+    ns = _mock(ResolverNameserver, name="dns1", address="208.67.222.222", port=53)
+
+    text = _empty_gen(resolvers=[(res, [ns])])
+    assert "    # Cisco OpenDNS" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.resolvers) == 1
+    assert parsed.resolvers[0].comment == "Cisco OpenDNS"
+
+
+def test_resolver_multiline_comment_roundtrip() -> None:
+    """Resolver multi-line comment survives round-trip."""
+
+    res = _mock(
+        Resolver,
+        name="mydns",
+        resolve_retries=3,
+        timeout_resolve="1s",
+        timeout_retry="1s",
+        comment="Primary DNS\nUsed for all lookups",
+        parse_resolv_conf=None,
+        accepted_payload_size=None,
+        extra_options=None,
+    )
+    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
+        setattr(res, f"hold_{hold}", None)
+
+    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+
+    text = _empty_gen(resolvers=[(res, [ns])])
+    parsed = parse_config(text)
+    assert parsed.resolvers[0].comment == "Primary DNS\nUsed for all lookups"
+
+
+def test_peer_comment_roundtrip() -> None:
+    """Peer section comment survives round-trip."""
+
+    ps = _mock(
+        PeerSection,
+        name="mypeers",
+        comment="HA cluster peers",
+        default_bind=None,
+        default_server_options=None,
+        extra_options=None,
+    )
+    pe = _mock(PeerEntry, name="node1", address="10.0.0.1", port=10000)
+
+    text = _empty_gen(peers=[(ps, [pe])])
+    assert "    # HA cluster peers" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.peers) == 1
+    assert parsed.peers[0].comment == "HA cluster peers"
+
+
+def test_mailer_comment_roundtrip() -> None:
+    """Mailer section comment survives round-trip."""
+
+    ms = _mock(
+        MailerSection,
+        name="alerts",
+        timeout_mail="10s",
+        comment="Alert mailers",
+        extra_options=None,
+    )
+    me = _mock(
+        MailerEntry,
+        name="smtp1",
+        address="smtp.example.com",
+        port=25,
+        smtp_auth=False,
+    )
+
+    text = _empty_gen(mailers=[(ms, [me])])
+    assert "    # Alert mailers" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.mailers) == 1
+    assert parsed.mailers[0].comment == "Alert mailers"
+
+
+def test_http_errors_comment_roundtrip() -> None:
+    """Http-errors section comment survives round-trip."""
+
+    he_sec = _mock(
+        HttpErrorsSection,
+        name="custom",
+        comment="Custom error pages",
+        extra_options=None,
+    )
+    e1 = _mock(HttpErrorEntry, type="errorfile", status_code=503, value="/errors/503.http")
+
+    text = _empty_gen(http_errors=[(he_sec, [e1])])
+    assert "    # Custom error pages" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.http_errors) == 1
+    assert parsed.http_errors[0].comment == "Custom error pages"
+
+
+def test_cache_comment_roundtrip() -> None:
+    """Cache section comment survives round-trip."""
+
+    c = _mock(
+        CacheSection,
+        name="my_cache",
+        total_max_size=4,
+        max_object_size=524288,
+        max_age=60,
+        max_secondary_entries=None,
+        process_vary=None,
+        comment="Static asset cache",
+        extra_options=None,
+    )
+
+    text = _empty_gen(caches=[c])
+    assert "    # Static asset cache" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.caches) == 1
+    assert parsed.caches[0].comment == "Static asset cache"
+
+
+def test_listen_comment_roundtrip() -> None:
+    """Listen block comment survives round-trip."""
+
+    lb = _mock(
+        ListenBlock,
+        name="stats",
+        mode="http",
+        comment="Stats dashboard",
+        content="stats enable\nstats uri /stats",
+    )
+    lb_bind = _mock(ListenBlockBind, bind_line="*:8404")
+
+    text = _empty_gen(listen_blocks=[(lb, [lb_bind])])
+    assert "    # Stats dashboard" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.listen_blocks) == 1
+    assert parsed.listen_blocks[0].comment == "Stats dashboard"
+
+
+def test_frontend_comment_roundtrip() -> None:
+    """Frontend section comment survives round-trip."""
+
+    fe = _mock(Frontend, name="fe_web", mode="http", default_backend="be_web", comment="Main web frontend")
+    bind = _mock(FrontendBind, bind_line="*:80")
+
+    text = _empty_gen(frontends=[(fe, [bind], [], [])])
+    assert "    # Main web frontend" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.frontends) == 1
+    assert parsed.frontends[0].comment == "Main web frontend"
+
+
+def test_backend_comment_roundtrip() -> None:
+    """Backend section comment survives round-trip."""
+
+    be = _mock(Backend, name="be_web", mode="http", comment="Application servers")
+    srv = _mock(BackendServer, name="web1", address="10.0.0.1", port=8080)
+
+    text = _empty_gen(backends=[(be, [srv])])
+    assert "    # Application servers" in text
+
+    parsed = parse_config(text)
+    assert len(parsed.backends) == 1
+    assert parsed.backends[0].comment == "Application servers"
+
+
+def test_no_comment_roundtrip() -> None:
+    """Sections without comments produce comment=None after round-trip."""
+
+    res = _mock(
+        Resolver,
+        name="dns",
+        resolve_retries=3,
+        timeout_resolve="1s",
+        timeout_retry="1s",
+        comment=None,
+        parse_resolv_conf=None,
+        accepted_payload_size=None,
+        extra_options=None,
+    )
+    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
+        setattr(res, f"hold_{hold}", None)
+    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+
+    text = _empty_gen(resolvers=[(res, [ns])])
+    parsed = parse_config(text)
+    assert parsed.resolvers[0].comment is None

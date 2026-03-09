@@ -209,7 +209,7 @@ describe("deleteUserById", () => {
     });
 
     it("skips when confirm is declined", async () => {
-        vi.spyOn(window, "confirm").mockReturnValue(false);
+        (globalThis as any).__confirmPopupMock.mockResolvedValueOnce(false);
         const fetchSpy = vi.spyOn(globalThis, "fetch");
 
         await deleteUserById(5);

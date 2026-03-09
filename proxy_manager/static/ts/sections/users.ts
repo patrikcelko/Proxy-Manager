@@ -7,7 +7,7 @@
  */
 
 import { api, toast } from "../core/api";
-import { openModal, closeModal } from "../core/ui";
+import { openModal, closeModal, confirmPopup } from "../core/ui";
 import { escHtml } from "../core/utils";
 import { state } from "../state";
 import type { UserProfile } from "../types";
@@ -146,7 +146,7 @@ export async function saveNewUser(e: Event): Promise<void> {
 
 /** Deletes a user by ID after confirmation. */
 export async function deleteUserById(userId: number): Promise<void> {
-    if (!confirm("Remove this user? They will no longer be able to log in.")) return;
+    if (!(await confirmPopup("Remove this user? They will no longer be able to log in.", "Remove User"))) return;
 
     try {
         await api(`/auth/users/${userId}`, { method: "DELETE" });

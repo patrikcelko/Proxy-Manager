@@ -188,6 +188,20 @@ export function searchResolverPresets(): void {
     searchPresetGrid("resolverAddGrid", "resolver-preset-filter", "pcat");
 }
 
+/** Adds a new empty nameserver row to the inline nameserver list in the create modal. */
+export function addNsRow(name = "", address = "", port = 53): void {
+    const list = document.getElementById("m-ns-list");
+    if (!list) return;
+    const idx = list.querySelectorAll(".ns-inline-row").length;
+    const row = document.createElement("div");
+    row.className = "ns-inline-row";
+    row.innerHTML = `<input class="ns-field-name" placeholder="dns${idx + 1}" value="${escHtml(name)}">
+        <input class="ns-field-addr" placeholder="8.8.8.8" value="${escHtml(address)}">
+        <input class="ns-field-port" type="number" placeholder="53" value="${port}" min="1" max="65535">
+        <button type="button" class="btn-icon danger" onclick="this.closest('.ns-inline-row').remove()">${SVG.delSm}</button>`;
+    list.appendChild(row);
+}
+
 /** Applies a resolver preset: fills the form fields with the preset values. */
 export async function applyResolverPreset(idx: number): Promise<void> {
     const p = RESOLVER_PRESETS[idx];
@@ -205,11 +219,18 @@ export async function applyResolverPreset(idx: number): Promise<void> {
     setVal("m-timeout-retry", p.timeout_retry);
     setVal("m-hold-valid", p.hold_valid);
 
+    // Populate inline nameserver rows from preset
+    const list = document.getElementById("m-ns-list");
+    if (list) {
+        list.innerHTML = "";
+        for (const ns of p.nameservers) addNsRow(ns.name, ns.address, ns.port);
+    }
+
     // Focus on the name field so the user sees the filled form
     const nameEl = document.getElementById("m-name") as HTMLInputElement | null;
     nameEl?.focus();
     nameEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-    toast(`Template "${p.name}" applied - review, save, then add nameservers`, "info");
+    toast(`Template "${p.name}" applied - review and save`, "info");
 }
 
 /** Opens the resolver create/edit modal with identification, resolution settings, hold timers, and advanced options.
@@ -223,6 +244,7 @@ export function openResolverModal(existing: Partial<Resolver> | null = null): vo
         hold: icon("shield", 15),
         advanced: icon("edit-pen", 15),
         templates: icon("grid", 15),
+        ns: icon("server", 15),
     };
 
     // Build template picker for new resolvers
@@ -295,6 +317,12 @@ export function openResolverModal(existing: Partial<Resolver> | null = null): vo
             </label>
             <div class="form-help">Auto-import nameservers from system resolv.conf</div>
         </div></div>
+
+        ${isNew ? `<hr class="form-divider">
+        <div class="form-section-title">${SEC.ns} Nameservers</div>
+        <p class="form-help" style="margin-bottom:.5rem">Add DNS nameserver entries for this resolver. You can also add more after creation.</p>
+        <div id="m-ns-list"></div>
+        <button type="button" class="btn btn-secondary" style="margin-top:.5rem;font-size:.8rem" onclick="addNsRow()">+ Add Nameserver</button>` : ""}
 
         <div class="form-collapsible" style="margin-top:1rem">
             <div class="form-collapsible-head" onclick="toggleCollapsible(this)">${SEC.hold} Hold Timers ${SVG.chevron}</div>
@@ -402,8 +430,27 @@ export async function saveResolver(id: number | null): Promise<void> {
         extra_options: (document.getElementById("m-extra") as HTMLTextAreaElement).value || null,
     };
     try {
-        if (id) await api(`/api/resolvers/${id}`, { method: "PUT", body: JSON.stringify(body) });
-        else await api("/api/resolvers", { method: "POST", body: JSON.stringify(body) });
+        if (id) {
+            await api(`/api/resolvers/${id}`, { method: "PUT", body: JSON.stringify(body) });
+        } else {
+            const created: any = await api("/api/resolvers", { method: "POST", body: JSON.stringify(body) });
+            // Create inline nameservers if any were added
+            const rows = document.querySelectorAll("#m-ns-list .ns-inline-row");
+            const resolverId = created.id;
+            if (resolverId && rows.length) {
+                let order = 0;
+                for (const row of rows) {
+                    const name = (row.querySelector(".ns-field-name") as HTMLInputElement).value.trim();
+                    const address = (row.querySelector(".ns-field-addr") as HTMLInputElement).value.trim();
+                    const port = parseInt((row.querySelector(".ns-field-port") as HTMLInputElement).value) || 53;
+                    if (!name || !address) continue;
+                    await api(`/api/resolvers/${resolverId}/nameservers`, {
+                        method: "POST",
+                        body: JSON.stringify({ name, address, port, sort_order: order++ }),
+                    });
+                }
+            }
+        }
         closeModal();
         toast(id ? "Updated" : "Created");
         loadResolvers();

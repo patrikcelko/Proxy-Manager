@@ -17,6 +17,7 @@
                 <input type="email" id="login-email" required placeholder="admin@example.com">
                 <label>Password</label>
                 <input type="password" id="login-password" required placeholder="Enter password">
+                <div class="auth-form-spacer"></div>
                 <button type="submit" class="btn btn-primary btn-full">Login</button>
             </form>
         </div>
@@ -28,8 +29,18 @@
                 <input type="email" id="register-email" required placeholder="admin@example.com">
                 <label>Password</label>
                 <input type="password" id="register-password" required minlength="6" placeholder="Min 6 characters">
+                <div class="auth-form-spacer"></div>
                 <button type="submit" class="btn btn-primary btn-full">Create Account</button>
             </form>
+        </div>
+        <div class="auth-footer">
+            <div class="auth-footer-copy">&copy; 2025-<script>document.write(new Date().getFullYear())</script> Proxy Manager v{{ version }}</div>
+            <div class="auth-footer-github">
+                Check this project on
+                <a href="https://github.com/patrikcelko/Proxy-Manager" target="_blank" rel="noopener">
+                    <svg width="13" height="13"><use href="#i-github"/></svg> GitHub
+                </a>
+            </div>
         </div>
     </div>
 </div>

@@ -36,7 +36,18 @@ export async function api<T = unknown>(path: string, opts: RequestInit & { json?
         throw new Error("Unauthorized");
     }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as Record<string, unknown>).detail as string || `Error ${res.status}`);
+    if (!res.ok) {
+        const detail = (data as Record<string, unknown>).detail;
+        let msg: string;
+        if (typeof detail === "string") {
+            msg = detail;
+        } else if (Array.isArray(detail)) {
+            msg = detail.map((d: any) => d.msg || String(d)).join("; ");
+        } else {
+            msg = `Error ${res.status}`;
+        }
+        throw new Error(msg);
+    }
 
     // Auto-refresh version badges after any data mutation
     const method = (fetchOpts.method || "GET").toUpperCase();

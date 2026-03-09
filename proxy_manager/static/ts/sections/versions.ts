@@ -8,12 +8,12 @@
  */
 
 import { api, toast } from "../core/api";
-import { openModal, closeModal, switchSection } from "../core/ui";
+import { openModal, closeModal, switchSection, confirmPopup } from "../core/ui";
 import { state } from "../state";
 import { escHtml, SECTION_LABELS } from "../core/utils";
 import { renderDiffContent } from "./history";
 import { switchDiffTab } from "./history";
-import type { PendingChanges, SectionDiff, VersionStatus } from "../types";
+import type { EntityUpdate, PendingChanges, SectionDiff, VersionStatus } from "../types";
 
 /** Section key -> sidebar data-section attribute. */
 const SECTION_MAP: Record<string, string> = {
@@ -146,7 +146,7 @@ export async function saveVersion(e: Event): Promise<void> {
 
 /** Discard all pending changes. */
 export async function discardChanges(): Promise<void> {
-    if (!confirm("Discard all pending changes? This will restore the configuration to the last saved version.")) return;
+    if (!(await confirmPopup("Discard all pending changes? This will restore the configuration to the last saved version.", "Discard Changes"))) return;
 
     try {
         await api("/api/versions/discard", { method: "POST" });
@@ -163,7 +163,7 @@ export async function discardChanges(): Promise<void> {
 /** Revert a specific section to its last committed state. */
 export async function revertSection(sectionKey: string): Promise<void> {
     const label = _sectionLabel(sectionKey);
-    if (!confirm(`Revert all changes in "${label}"? This will restore this section to the last saved version.`)) return;
+    if (!(await confirmPopup(`Revert all changes in "${label}"? This will restore this section to the last saved version.`, "Revert Section"))) return;
 
     try {
         await api("/api/versions/revert-section", {
@@ -287,9 +287,9 @@ function _markEntities(sec: HTMLElement, sectionKey: string, diff: SectionDiff):
     const isSettings = sectionKey === "global_settings" || sectionKey === "default_settings";
 
     const createdNames = new Set(diff.created.map((e) => _entityId(e, nameKey)));
-    // For settings, the diff may carry entity_id on created entries
+    // For id-keyed sections, the diff may carry entity_id on created entries
     // so we can match them to specific table rows by DB id.
-    if (isSettings) {
+    if (nameKey === "id") {
         diff.created.forEach((e) => {
             if (e.entity_id != null) createdNames.add(String(e.entity_id));
             if (e.id != null) createdNames.add(String(e.id));
@@ -301,11 +301,16 @@ function _markEntities(sec: HTMLElement, sectionKey: string, diff: SectionDiff):
     // data-entity-name on the directive cell.
     const updatedById = new Set<string>();
     const updatedByDirective = new Set<string>();
+    // ACL composite fallback: map composite key -> updated entry for content matching
+    const aclCompositeUpdates = new Map<string, EntityUpdate>();
     diff.updated.forEach((u) => {
         if (u.entity_id) {
             updatedById.add(String(u.entity_id));
         } else if (isSettings) {
             updatedByDirective.add(String(u.entity));
+        } else if (sectionKey === "acl_rules" && !u.entity_id) {
+            // Phase 2 composite fallback entry - entity is "frontend:domain:match"
+            aclCompositeUpdates.set(String(u.entity), u);
         } else {
             updatedById.add(String(u.entity));
         }
@@ -320,6 +325,7 @@ function _markEntities(sec: HTMLElement, sectionKey: string, diff: SectionDiff):
         } else if (updatedById.has(name)) {
             el.classList.add("entity-modified");
             _appendEntityBadge(el, "Modified", "modified");
+            _markSubsections(el, diff.updated, name);
         } else if (isSettings && updatedByDirective.size > 0) {
             // Legacy fallback: match by directive text inside the row
             const dir = el.querySelector(".sett-directive")?.textContent?.trim() || "";
@@ -327,6 +333,20 @@ function _markEntities(sec: HTMLElement, sectionKey: string, diff: SectionDiff):
                 el.classList.add("entity-modified");
                 _appendEntityBadge(el, "Modified", "modified");
                 updatedByDirective.delete(dir); // one match per directive
+            }
+        } else if (aclCompositeUpdates.size > 0) {
+            // ACL Phase 2 composite fallback: match by domain text in row
+            const domainText = el.querySelector(".acl-domain-cell")?.textContent?.trim() || "";
+            for (const [key, _entry] of aclCompositeUpdates) {
+                // Composite key format: "frontend_name:domain:match_type"
+                const parts = key.split(":");
+                const domain = parts.length >= 3 ? parts.slice(1, -1).join(":") : parts[1] || "";
+                if (domain && domain === domainText) {
+                    el.classList.add("entity-modified");
+                    _appendEntityBadge(el, "Modified", "modified");
+                    aclCompositeUpdates.delete(key);
+                    break;
+                }
             }
         }
     });
@@ -357,22 +377,109 @@ function _appendEntityBadge(el: HTMLElement, label: string, type: string): void 
     el.prepend(badge);
 }
 
+/** Mark individual rows (options, binds) within an entity card when those items changed. */
+function _markSubsections(card: HTMLElement, updated: EntityUpdate[], entityName: string): void {
+    const entry = updated.find((u) => {
+        const eid = u.entity_id ? String(u.entity_id) : "";
+        return eid === entityName || u.entity === entityName;
+    });
+    if (!entry) return;
+
+    const changes = entry.changes;
+    if (!changes?.length) return;
+
+    for (const change of changes) {
+        const field = change.field;
+        const oldArr = change.old;
+        const newArr = change.new;
+        if (!Array.isArray(oldArr) || !Array.isArray(newArr)) continue;
+
+        // Determine key function and CSS selectors based on field type
+        let keyFn: (o: Record<string, unknown>) => string;
+        let rowSelector: string;
+        let dataAttr: string;
+        if (field === "binds") {
+            keyFn = _bindKey;
+            rowSelector = "li[data-bind-key]";
+            dataAttr = "bindKey";
+        } else if (field === "servers") {
+            keyFn = _serverKey;
+            rowSelector = "[data-srv-key]";
+            dataAttr = "srvKey";
+        } else {
+            keyFn = _optKey;
+            rowSelector = "li[data-opt-key]";
+            dataAttr = "optKey";
+        }
+
+        // Build multiset of old-item keys
+        const oldKeys = new Map<string, number>();
+        for (const item of oldArr as Record<string, unknown>[]) {
+            const k = keyFn(item);
+            oldKeys.set(k, (oldKeys.get(k) || 0) + 1);
+        }
+
+        // Also detect items present in old but NOT in new (deleted items not shown but
+        // items that were modified will have a new key that doesn't match old)
+        const newKeys = new Map<string, number>();
+        for (const item of newArr as Record<string, unknown>[]) {
+            const k = keyFn(item);
+            newKeys.set(k, (newKeys.get(k) || 0) + 1);
+        }
+
+        // Find section(s) with matching data-entity-field
+        card.querySelectorAll<HTMLElement>(`[data-entity-field="${field}"]`).forEach((sec) => {
+            sec.querySelectorAll<HTMLElement>(rowSelector).forEach((row) => {
+                const k = row.dataset[dataAttr] || "";
+                const remaining = oldKeys.get(k) || 0;
+                if (remaining > 0) {
+                    // This row existed in old snapshot - unchanged
+                    oldKeys.set(k, remaining - 1);
+                } else {
+                    // This row is new or modified
+                    row.classList.add("entity-modified");
+                    const target = row.querySelector(".be-srv-badges, .el-main");
+                    if (target && !target.querySelector(".entity-change-badge")) {
+                        const badge = document.createElement("span");
+                        badge.className = "entity-change-badge ecb-modified";
+                        badge.textContent = "Modified";
+                        target.appendChild(badge);
+                    }
+                }
+            });
+        });
+    }
+}
+
+/** Build a content key for an option snapshot object. */
+function _optKey(o: Record<string, unknown>): string {
+    return `${o.directive || ""}|${o.value || ""}|${o.comment || ""}`;
+}
+
+/** Build a content key for a bind snapshot object. */
+function _bindKey(b: Record<string, unknown>): string {
+    return String(b.bind_line || "");
+}
+
+/** Build a content key for a server snapshot object. */
+function _serverKey(s: Record<string, unknown>): string {
+    return `${s.name || ""}|${s.address || ""}:${s.port || ""}`;
+}
+
 /** Get the name/key field used for entity identification in a section. */
 function _entityNameKey(sectionKey: string): string {
     if (sectionKey === "global_settings" || sectionKey === "default_settings") return "id";
     if (sectionKey === "ssl_certificates") return "domain";
-    if (sectionKey === "acl_rules") return "_composite";
+    if (sectionKey === "acl_rules") return "id";
     return "name";
 }
 
 /** Extract the entity identifier from a diff entity. */
 function _entityId(entity: Record<string, unknown>, nameKey: string): string {
-    if (nameKey === "_composite") {
-        // ACL rules use frontend_name:domain:sort_order composite key
-        const fn = String(entity["frontend_name"] ?? "");
-        const dom = String(entity["domain"] ?? "");
-        const so = String(entity["sort_order"] ?? 0);
-        return `${fn}:${dom}:${so}`;
+    if (nameKey === "id") {
+        // Settings and ACL rules: prefer entity_id, then id
+        if (entity["entity_id"] != null) return String(entity["entity_id"]);
+        if (entity["id"] != null) return String(entity["id"]);
     }
     return String(entity[nameKey] ?? "");
 }

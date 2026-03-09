@@ -8,7 +8,7 @@ HAProxy configuration management service with web UI.
 import os
 from pathlib import Path
 
-__version__: str = "1.5.0"
+__version__: str = "1.5.3"
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

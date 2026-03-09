@@ -11,6 +11,7 @@ import { api, toast } from "../core/api";
 import { icon, SVG } from "../core/icons";
 import { openModal, closeModal } from "../core/ui";
 import { escHtml, escJsonAttr, safeInt, crudDelete } from "../core/utils";
+import { applySectionChangeMarkers, refreshPendingBadges } from "./versions";
 import { state } from "../state";
 import type { AclRule } from "../types";
 
@@ -23,6 +24,7 @@ export async function loadAclRules(): Promise<void> {
         const d: { items: AclRule[] } = await api("/api/acl-rules");
         state.allAclRules = d.items || d;
         renderAclTable(state.allAclRules);
+        applySectionChangeMarkers();
     } catch (err: any) {
         toast(err.message, "error");
     }
@@ -91,7 +93,7 @@ export function renderAclTable(list: AclRule[]): void {
             const matchCat = matchIcons[matchType] || "header";
             const matchBadgeClass = matchCat === "domain" ? "badge-info" : matchCat === "path" ? "badge-warn" : "badge-muted";
 
-            return `<tr class="acl-row" data-id="${a.id}" data-entity-name="${escHtml(feLabel)}:${escHtml(a.domain)}:${a.sort_order}">
+            return `<tr class="acl-row" data-id="${a.id}" data-entity-name="${a.id}">
             <td class="acl-domain-cell">${domainDisplay}</td>
             <td>${actionDisplay}</td>
             <td><span class="badge ${matchBadgeClass}">${escHtml(matchType)}</span></td>
@@ -249,6 +251,7 @@ export async function reorderAclRule(id: number, direction: "up" | "down"): Prom
             }),
         ]);
         await loadAclRules();
+        await refreshPendingBadges();
         toast("Order updated", "info");
     } catch (err: any) {
         toast(err.message, "error");

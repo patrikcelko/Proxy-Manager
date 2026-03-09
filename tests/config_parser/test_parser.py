@@ -2683,3 +2683,156 @@ def test_example_config_integration() -> None:
     assert len(parsed.http_errors) == 2
     assert len(parsed.caches) == 1
     assert parsed.caches[0].total_max_size == 64
+
+
+def test_resolver_comment_parsed() -> None:
+    """Resolver section comment is captured from initial `#` lines."""
+
+    config = textwrap.dedent("""\
+        resolvers opendns
+            # Cisco OpenDNS
+            nameserver dns1 208.67.222.222:53
+            resolve_retries 3
+            timeout resolve 1s
+            timeout retry 1s
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.resolvers) == 1
+    assert parsed.resolvers[0].comment == "Cisco OpenDNS"
+
+
+def test_resolver_multiline_comment_parsed() -> None:
+    """Multi-line resolver comment is captured."""
+
+    config = textwrap.dedent("""\
+        resolvers mydns
+            # Primary DNS
+            # Used for all lookups
+            nameserver dns1 8.8.8.8:53
+    """)
+    parsed = parse_config(config)
+    assert parsed.resolvers[0].comment == "Primary DNS\nUsed for all lookups"
+
+
+def test_resolver_no_comment() -> None:
+    """Resolver without comment has `comment=None`."""
+
+    config = textwrap.dedent("""\
+        resolvers mydns
+            nameserver dns1 8.8.8.8:53
+    """)
+    parsed = parse_config(config)
+    assert parsed.resolvers[0].comment is None
+
+
+def test_peer_comment_parsed() -> None:
+    """Peer section comment is captured."""
+
+    config = textwrap.dedent("""\
+        peers mycluster
+            # HA cluster peers
+            peer node1 10.0.0.1:10000
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.peers) == 1
+    assert parsed.peers[0].comment == "HA cluster peers"
+
+
+def test_mailer_comment_parsed() -> None:
+    """Mailer section comment is captured."""
+
+    config = textwrap.dedent("""\
+        mailers alerts
+            # Alert mailers
+            timeout mail 10s
+            mailer smtp1 smtp.example.com:25
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.mailers) == 1
+    assert parsed.mailers[0].comment == "Alert mailers"
+
+
+def test_mailer_comment_skips_pm_metadata() -> None:
+    """Mailer comment does not capture `_pm_mailer_auth` metadata."""
+
+    config = textwrap.dedent("""\
+        mailers mymailers
+            # _pm_mailer_auth smtp1 smtp_auth=true smtp_user=user@example.com smtp_password=secret use_tls=false use_starttls=true
+            timeout mail 10s
+            mailer smtp1 smtp.example.com:587
+    """)
+    parsed = parse_config(config)
+    assert parsed.mailers[0].comment is None
+
+
+def test_http_errors_comment_parsed() -> None:
+    """Http-errors section comment is captured."""
+
+    config = textwrap.dedent("""\
+        http-errors custom
+            # Custom error pages
+            errorfile 503 /errors/503.http
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.http_errors) == 1
+    assert parsed.http_errors[0].comment == "Custom error pages"
+
+
+def test_cache_comment_parsed() -> None:
+    """Cache section comment is captured."""
+
+    config = textwrap.dedent("""\
+        cache static
+            # Static asset cache
+            total-max-size 4
+            max-object-size 524288
+            max-age 60
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.caches) == 1
+    assert parsed.caches[0].comment == "Static asset cache"
+
+
+def test_frontend_comment_parsed() -> None:
+    """Frontend section comment is captured."""
+
+    config = textwrap.dedent("""\
+        frontend fe_web
+            # Main web frontend
+            bind *:80
+            mode http
+            default_backend be_web
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.frontends) == 1
+    assert parsed.frontends[0].comment == "Main web frontend"
+
+
+def test_backend_comment_parsed() -> None:
+    """Backend section comment is captured."""
+
+    config = textwrap.dedent("""\
+        backend be_web
+            # Application servers
+            mode http
+            balance roundrobin
+            server web1 10.0.0.1:8080 check
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.backends) == 1
+    assert parsed.backends[0].comment == "Application servers"
+
+
+def test_listen_comment_parsed() -> None:
+    """Listen block comment is captured."""
+
+    config = textwrap.dedent("""\
+        listen stats
+            # Stats dashboard
+            bind *:8404
+            mode http
+            stats enable
+    """)
+    parsed = parse_config(config)
+    assert len(parsed.listen_blocks) == 1
+    assert parsed.listen_blocks[0].comment == "Stats dashboard"

@@ -142,7 +142,7 @@ export function renderFrontends(list: Frontend[]): void {
 
             const binds = (f.binds || [])
                 .map(
-                    (b) => `<li>
+                    (b) => `<li data-bind-key="${escHtml(b.bind_line)}">
             <span class="el-main bind-parsed">${renderBindChips(b.bind_line)}</span>
             <span class="el-actions">
                 <button class="btn-icon" onclick='event.stopPropagation();openBindModal(${f.id},${escJsonAttr(b)})'>${SVG.editSm}</button>
@@ -182,7 +182,7 @@ export function renderFrontends(list: Frontend[]): void {
             const opts = regularOpts
                 .map((o) => {
                     const fullDir = (o.directive || "") + " " + (o.value || "");
-                    return `<li data-fe-cat="${categorizeFrontendOpt(fullDir)}">
+                    return `<li data-fe-cat="${categorizeFrontendOpt(fullDir)}" data-opt-key="${escHtml(o.directive + "|" + (o.value || "") + "|" + (o.comment || ""))}">
             <span class="el-main">
                 <span class="sett-directive">${escHtml(o.directive)}</span>
                 ${o.value ? `<span class="mono sett-value">${escHtml(o.value)}</span>` : ""}
@@ -199,7 +199,7 @@ export function renderFrontends(list: Frontend[]): void {
                 .map((o) => {
                     const fullDir = (o.directive || "") + " " + (o.value || "");
                     const isDeny = /deny|reject/i.test(fullDir);
-                    return `<li>
+                    return `<li data-opt-key="${escHtml(o.directive + "|" + (o.value || "") + "|" + (o.comment || ""))}">
                 <span class="el-main">
                     <span class="badge ${isDeny ? "badge-danger" : "badge-ok"}" style="font-size:.65rem;margin-right:.35rem">${isDeny ? "DENY" : "ALLOW"}</span>
                     <span class="sett-directive">${escHtml(o.directive)}</span>
@@ -239,14 +239,14 @@ export function renderFrontends(list: Frontend[]): void {
             </div>
             <div class="entity-body">
                 ${details.length ? `<div class="entity-section fe-details-section"><div class="fe-detail-grid">${details.map((d) => `<div class="fe-detail-item"><span class="fe-detail-label">${d.l}</span><span class="fe-detail-value">${escHtml(d.v)}</span></div>`).join("")}</div></div>` : ""}
-                <div class="entity-section">
+                <div class="entity-section" data-entity-field="binds">
                     <div class="entity-section-head">
                         <span class="entity-section-label">${FI.bind} Binds (${bc})</span>
                         <button class="btn-icon" onclick="openBindModal(${f.id})" title="Add Bind">${SVG.plus}</button>
                     </div>
                     <ul class="entity-list">${binds || '<li class="fe-empty-item"><span class="el-main muted">No binds configured</span></li>'}</ul>
                 </div>
-                <div class="entity-section">
+                <div class="entity-section" data-entity-field="options">
                     <div class="entity-section-head">
                         <span class="entity-section-label">${FI.opts} Options (${regularOpts.length})</span>
                         <button class="btn-icon" onclick="openOptionModal(${f.id})" title="Add Option">${SVG.plus}</button>
@@ -255,7 +255,7 @@ export function renderFrontends(list: Frontend[]): void {
                     <div class="fe-opt-tabs stabs" style="margin-bottom:.5rem">${catTabs}</div>
                     <ul class="entity-list" id="${feCardId}">${opts || '<li class="fe-empty-item"><span class="el-main muted">No options configured</span></li>'}</ul>
                 </div>
-                ${ipRules.length ? `<div class="entity-section"><div class="entity-section-head"><span class="entity-section-label">${FI.shield} IP Access Rules (${ipRules.length})</span></div><ul class="entity-list" id="${feIpId}">${ipList}</ul></div>` : ""}
+                ${ipRules.length ? `<div class="entity-section" data-entity-field="options"><div class="entity-section-head"><span class="entity-section-label">${FI.shield} IP Access Rules (${ipRules.length})</span></div><ul class="entity-list" id="${feIpId}">${ipList}</ul></div>` : ""}
                 ${f.comment ? `<div class="entity-section"><span class="entity-section-label">Comment</span><div class="entity-detail">${escHtml(f.comment)}</div></div>` : ""}
             </div>
         </div>`;
