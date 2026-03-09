@@ -14,7 +14,7 @@ class ConfigImportRequest(BaseModel):
     config_text: str = Field(..., min_length=1)
     """Raw HAProxy configuration text."""
 
-    merge: bool = Field(default=False, description="If true, merge with existing; if false, replace all")
+    merge: bool = Field(default=False, description='If true, merge with existing; if false, replace all')
     """Merge with existing config instead of replacing."""
 
 

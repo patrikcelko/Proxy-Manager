@@ -107,17 +107,17 @@ class MailerEntryResponse(BaseModel):
     sort_order: int
     """Display ordering index."""
 
-    @model_validator(mode="before")
+    @model_validator(mode='before')
     @classmethod
     def _hide_smtp_password(cls, data: object) -> object:
         """Replace smtp_password with a boolean flag to avoid credential leaks."""
 
         if isinstance(data, dict):
-            data["has_smtp_password"] = bool(data.get("smtp_password"))
-            data.pop("smtp_password", None)
+            data['has_smtp_password'] = bool(data.get('smtp_password'))
+            data.pop('smtp_password', None)
         else:
-            pw = getattr(data, "smtp_password", None)
-            object.__setattr__(data, "has_smtp_password", bool(pw))
+            pw = getattr(data, 'smtp_password', None)
+            object.__setattr__(data, 'has_smtp_password', bool(pw))
         return data
 
 

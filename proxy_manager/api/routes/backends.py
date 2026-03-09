@@ -32,7 +32,7 @@ from proxy_manager.database.models.backend import (
     update_backend_server,
 )
 
-router = APIRouter(tags=["backends"])
+router = APIRouter(tags=['backends'])
 
 
 async def _build_detail(session: AsyncSession, be: Backend) -> BackendDetailResponse:
@@ -71,7 +71,7 @@ async def _build_detail(session: AsyncSession, be: Backend) -> BackendDetailResp
     )
 
 
-@router.get("/api/backends", response_model=BackendListResponse)
+@router.get('/api/backends', response_model=BackendListResponse)
 async def api_list_backends(session: DBSession) -> BackendListResponse:
     """List all backends with their servers."""
 
@@ -81,18 +81,18 @@ async def api_list_backends(session: DBSession) -> BackendListResponse:
     return BackendListResponse(count=len(items), items=items)
 
 
-@router.get("/api/backends/{backend_id}", response_model=BackendDetailResponse)
+@router.get('/api/backends/{backend_id}', response_model=BackendDetailResponse)
 async def api_get_backend(backend_id: int, session: DBSession) -> BackendDetailResponse:
     """Get a single backend by ID with servers."""
 
     be = await get_backend(session, backend_id)
     if not be:
-        raise HTTPException(status_code=404, detail="Backend not found")
+        raise HTTPException(status_code=404, detail='Backend not found')
 
     return await _build_detail(session, be)
 
 
-@router.post("/api/backends", response_model=BackendDetailResponse, status_code=201)
+@router.post('/api/backends', response_model=BackendDetailResponse, status_code=201)
 async def api_create_backend(body: BackendCreate, session: DBSession) -> BackendDetailResponse:
     """Create a new backend."""
 
@@ -104,13 +104,13 @@ async def api_create_backend(body: BackendCreate, session: DBSession) -> Backend
     return await _build_detail(session, row)
 
 
-@router.put("/api/backends/{backend_id}", response_model=BackendDetailResponse)
+@router.put('/api/backends/{backend_id}', response_model=BackendDetailResponse)
 async def api_update_backend(backend_id: int, body: BackendUpdate, session: DBSession) -> BackendDetailResponse:
     """Update an existing backend."""
 
     be = await get_backend(session, backend_id)
     if not be:
-        raise HTTPException(status_code=404, detail="Backend not found")
+        raise HTTPException(status_code=404, detail='Backend not found')
 
     if body.name is not None and body.name != be.name:
         existing = await get_backend_by_name(session, body.name)
@@ -123,38 +123,38 @@ async def api_update_backend(backend_id: int, body: BackendUpdate, session: DBSe
     return await _build_detail(session, updated)
 
 
-@router.delete("/api/backends/{backend_id}", response_model=MessageResponse)
+@router.delete('/api/backends/{backend_id}', response_model=MessageResponse)
 async def api_delete_backend(backend_id: int, session: DBSession) -> MessageResponse:
     """Delete a backend and its servers."""
 
     be = await get_backend(session, backend_id)
 
     if not be:
-        raise HTTPException(status_code=404, detail="Backend not found")
+        raise HTTPException(status_code=404, detail='Backend not found')
     await delete_backend(session, be)
 
     return MessageResponse(detail=f"Backend '{be.name}' deleted")
 
 
-@router.post("/api/backends/{backend_id}/servers", response_model=BackendServerResponse, status_code=201)
+@router.post('/api/backends/{backend_id}/servers', response_model=BackendServerResponse, status_code=201)
 async def api_create_server(backend_id: int, body: BackendServerCreate, session: DBSession) -> BackendServerResponse:
     """Add a server to a backend."""
 
     be = await get_backend(session, backend_id)
     if not be:
-        raise HTTPException(status_code=404, detail="Backend not found")
+        raise HTTPException(status_code=404, detail='Backend not found')
 
     srv = await create_backend_server(session, backend_id=backend_id, **body.model_dump())
     return BackendServerResponse.model_validate(srv)
 
 
-@router.put("/api/backends/{backend_id}/servers/{server_id}", response_model=BackendServerResponse)
+@router.put('/api/backends/{backend_id}/servers/{server_id}', response_model=BackendServerResponse)
 async def api_update_server(backend_id: int, server_id: int, body: BackendServerUpdate, session: DBSession) -> BackendServerResponse:
     """Update a backend server."""
 
     srv = await get_backend_server(session, server_id)
     if not srv or srv.backend_id != backend_id:
-        raise HTTPException(status_code=404, detail="Server not found")
+        raise HTTPException(status_code=404, detail='Server not found')
 
     data = {k: v for k, v in body.model_dump().items() if v is not None or k in body.model_fields_set}
     updated = await update_backend_server(session, srv, **data)
@@ -162,13 +162,13 @@ async def api_update_server(backend_id: int, server_id: int, body: BackendServer
     return BackendServerResponse.model_validate(updated)
 
 
-@router.delete("/api/backends/{backend_id}/servers/{server_id}", response_model=MessageResponse)
+@router.delete('/api/backends/{backend_id}/servers/{server_id}', response_model=MessageResponse)
 async def api_delete_server(backend_id: int, server_id: int, session: DBSession) -> MessageResponse:
     """Remove a server from a backend."""
 
     srv = await get_backend_server(session, server_id)
     if not srv or srv.backend_id != backend_id:
-        raise HTTPException(status_code=404, detail="Server not found")
+        raise HTTPException(status_code=404, detail='Server not found')
 
     await delete_backend_server(session, srv)
-    return MessageResponse(detail="Server deleted")
+    return MessageResponse(detail='Server deleted')

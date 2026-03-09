@@ -49,7 +49,7 @@ def test_parse_global() -> None:
     assert len(parsed.global_settings) >= 2
 
     directives = {s.directive for s in parsed.global_settings}
-    assert "log" in directives or any("log" in s.directive for s in parsed.global_settings)
+    assert 'log' in directives or any('log' in s.directive for s in parsed.global_settings)
 
 
 def test_parse_defaults() -> None:
@@ -62,7 +62,7 @@ def test_parse_defaults() -> None:
 def test_parse_empty() -> None:
     """Empty config produces empty result."""
 
-    parsed = parse_config("")
+    parsed = parse_config('')
     assert len(parsed.global_settings) == 0
     assert len(parsed.frontends) == 0
     assert len(parsed.backends) == 0
@@ -78,9 +78,9 @@ def test_parse_global_comment_block() -> None:
             log 127.0.0.1 local0
     """)
     parsed = parse_config(config)
-    maxconn = [s for s in parsed.global_settings if s.directive == "maxconn"][0]
+    maxconn = [s for s in parsed.global_settings if s.directive == 'maxconn'][0]
 
-    assert maxconn.comment == "Important setting"
+    assert maxconn.comment == 'Important setting'
 
 
 def test_parse_settings_directive_only() -> None:
@@ -92,9 +92,9 @@ def test_parse_settings_directive_only() -> None:
     """)
 
     parsed = parse_config(config)
-    daemon = [s for s in parsed.global_settings if s.directive == "daemon"]
+    daemon = [s for s in parsed.global_settings if s.directive == 'daemon']
     assert len(daemon) == 1
-    assert daemon[0].value == ""
+    assert daemon[0].value == ''
 
 
 def test_parse_inline_comment_in_global() -> None:
@@ -106,10 +106,10 @@ def test_parse_inline_comment_in_global() -> None:
     """)
 
     parsed = parse_config(config)
-    gs = [s for s in parsed.global_settings if s.directive == "maxconn"]
+    gs = [s for s in parsed.global_settings if s.directive == 'maxconn']
     assert len(gs) == 1
-    assert gs[0].value == "4096"
-    assert gs[0].comment == "max connections"
+    assert gs[0].value == '4096'
+    assert gs[0].comment == 'max connections'
 
 
 def test_parse_inline_comment_quoted() -> None:
@@ -121,10 +121,10 @@ def test_parse_inline_comment_quoted() -> None:
     """)
 
     parsed = parse_config(config)
-    gs = [s for s in parsed.global_settings if s.directive == "log"]
+    gs = [s for s in parsed.global_settings if s.directive == 'log']
 
     assert len(gs) == 1
-    assert "#" in gs[0].value
+    assert '#' in gs[0].value
 
 
 def test_parse_frontend() -> None:
@@ -134,8 +134,8 @@ def test_parse_frontend() -> None:
     assert len(parsed.frontends) == 1
 
     fe = parsed.frontends[0]
-    assert fe.name == "fe_http"
-    assert fe.default_backend == "be_web"
+    assert fe.name == 'fe_http'
+    assert fe.default_backend == 'be_web'
     assert len(fe.binds) >= 1
 
 
@@ -162,15 +162,15 @@ def test_parse_frontend_new_fields() -> None:
     assert len(parsed.frontends) == 1
 
     fe = parsed.frontends[0]
-    assert fe.timeout_client == "30s"
-    assert fe.timeout_http_request == "10s"
-    assert fe.timeout_http_keep_alive == "5s"
+    assert fe.timeout_client == '30s'
+    assert fe.timeout_http_request == '10s'
+    assert fe.timeout_http_keep_alive == '5s'
     assert fe.maxconn == 10000
     assert fe.option_httplog is True
     assert fe.option_tcplog is True
     assert fe.option_forwardfor is True
-    assert fe.compression_algo == "gzip"
-    assert fe.compression_type == "text/html text/css"
+    assert fe.compression_algo == 'gzip'
+    assert fe.compression_type == 'text/html text/css'
 
 
 def test_parse_frontend_maxconn_invalid() -> None:
@@ -196,7 +196,7 @@ def test_parse_frontend_inline_comment() -> None:
     """)
 
     parsed = parse_config(config)
-    opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
+    opts = [o for o in parsed.frontends[0].options if o.directive == 'http-request']
     assert len(opts) == 1
 
 
@@ -210,7 +210,7 @@ def test_simple_option_directive_only() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.frontends[0].name == "fe_test"
+    assert parsed.frontends[0].name == 'fe_test'
 
 
 def test_option_split_directive_value() -> None:
@@ -229,9 +229,9 @@ def test_option_split_directive_value() -> None:
     assert len(fe.options) >= 3
 
     opts = {o.directive: o for o in fe.options}
-    assert opts["http-request"].value == "set-header X-Forwarded-Proto https"
-    assert opts["http-response"].value == "del-header server"
-    assert opts["capture"].value == "request header User-Agent len 64"
+    assert opts['http-request'].value == 'set-header X-Forwarded-Proto https'
+    assert opts['http-response'].value == 'del-header server'
+    assert opts['capture'].value == 'request header User-Agent len 64'
 
 
 def test_option_no_value() -> None:
@@ -244,9 +244,9 @@ def test_option_no_value() -> None:
     """)
 
     parsed = parse_config(config)
-    opts_by_dir = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
+    opts_by_dir = [o for o in parsed.frontends[0].options if o.directive == 'http-request']
     assert len(opts_by_dir) >= 1
-    assert opts_by_dir[0].value == "del-header Proxy"
+    assert opts_by_dir[0].value == 'del-header Proxy'
 
 
 def test_option_with_comment() -> None:
@@ -260,9 +260,9 @@ def test_option_with_comment() -> None:
     """)
 
     parsed = parse_config(config)
-    proxy_opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
+    proxy_opts = [o for o in parsed.frontends[0].options if o.directive == 'http-request']
     assert len(proxy_opts) >= 1
-    assert proxy_opts[0].comment == "Security header cleanup"
+    assert proxy_opts[0].comment == 'Security header cleanup'
 
 
 def test_option_order_preserved() -> None:
@@ -278,7 +278,7 @@ def test_option_order_preserved() -> None:
 
     parsed = parse_config(config)
     directives = [o.directive for o in parsed.frontends[0].options]
-    assert directives == ["http-request", "http-response", "tcp-request"]
+    assert directives == ['http-request', 'http-response', 'tcp-request']
 
 
 def test_stick_table_option() -> None:
@@ -291,10 +291,10 @@ def test_stick_table_option() -> None:
     """)
 
     parsed = parse_config(config)
-    stick_opts = [o for o in parsed.frontends[0].options if o.directive == "stick-table"]
+    stick_opts = [o for o in parsed.frontends[0].options if o.directive == 'stick-table']
     assert len(stick_opts) == 1
-    assert "type ipv6" in stick_opts[0].value
-    assert "size 100k" in stick_opts[0].value
+    assert 'type ipv6' in stick_opts[0].value
+    assert 'size 100k' in stick_opts[0].value
 
 
 def test_acl_as_option() -> None:
@@ -308,9 +308,9 @@ def test_acl_as_option() -> None:
     """)
 
     parsed = parse_config(config)
-    acl_opts = [o for o in parsed.frontends[0].options if o.directive == "acl"]
+    acl_opts = [o for o in parsed.frontends[0].options if o.directive == 'acl']
     assert len(acl_opts) == 1
-    assert "whitelist_ips" in acl_opts[0].value
+    assert 'whitelist_ips' in acl_opts[0].value
 
 
 def test_redirect_non_acl_as_option() -> None:
@@ -323,9 +323,9 @@ def test_redirect_non_acl_as_option() -> None:
     """)
 
     parsed = parse_config(config)
-    redir_opts = [o for o in parsed.frontends[0].options if o.directive == "redirect"]
+    redir_opts = [o for o in parsed.frontends[0].options if o.directive == 'redirect']
     assert len(redir_opts) == 1
-    assert "scheme https" in redir_opts[0].value
+    assert 'scheme https' in redir_opts[0].value
 
 
 def test_multiple_comments_before_option() -> None:
@@ -340,11 +340,11 @@ def test_multiple_comments_before_option() -> None:
     """)
 
     parsed = parse_config(config)
-    opts = [o for o in parsed.frontends[0].options if o.directive == "http-request"]
+    opts = [o for o in parsed.frontends[0].options if o.directive == 'http-request']
     assert len(opts) >= 1
     assert opts[0].comment is not None
-    assert "Line one" in opts[0].comment
-    assert "Line two" in opts[0].comment
+    assert 'Line one' in opts[0].comment
+    assert 'Line two' in opts[0].comment
 
 
 def test_mixed_options_and_known_fields() -> None:
@@ -363,14 +363,14 @@ def test_mixed_options_and_known_fields() -> None:
 
     parsed = parse_config(config)
     fe = parsed.frontends[0]
-    assert fe.timeout_client == "30s"
+    assert fe.timeout_client == '30s'
     assert fe.maxconn == 5000
-    assert fe.default_backend == "mybackend"
+    assert fe.default_backend == 'mybackend'
 
     opt_directives = [o.directive for o in fe.options]
-    assert "http-request" in opt_directives
-    assert "timeout" not in opt_directives
-    assert "maxconn" not in opt_directives
+    assert 'http-request' in opt_directives
+    assert 'timeout' not in opt_directives
+    assert 'maxconn' not in opt_directives
 
 
 def test_roundtrip_parser_preserves_split() -> None:
@@ -396,13 +396,13 @@ def test_roundtrip_parser_preserves_split() -> None:
     parsed = parse_config(config)
     fe = parsed.frontends[0]
     for o in fe.options:
-        assert o.directive, f"Empty directive found: {o}"
-        assert isinstance(o.value, str), f"Value should be str: {o}"
+        assert o.directive, f'Empty directive found: {o}'
+        assert isinstance(o.value, str), f'Value should be str: {o}'
 
-    set_headers = [o for o in fe.options if o.directive == "http-request" and "set-header" in o.value]
+    set_headers = [o for o in fe.options if o.directive == 'http-request' and 'set-header' in o.value]
     assert len(set_headers) >= 2
 
-    del_headers = [o for o in fe.options if o.directive == "http-request" and "del-header" in o.value]
+    del_headers = [o for o in fe.options if o.directive == 'http-request' and 'del-header' in o.value]
     assert len(del_headers) >= 1
 
 
@@ -416,9 +416,9 @@ def test_parse_frontend_non_acl_redirect_as_option() -> None:
     """)
 
     parsed = parse_config(config)
-    redir = [o for o in parsed.frontends[0].options if o.directive == "redirect"]
+    redir = [o for o in parsed.frontends[0].options if o.directive == 'redirect']
     assert len(redir) == 1
-    assert "scheme https" in redir[0].value
+    assert 'scheme https' in redir[0].value
 
 
 def test_parse_frontend_acl_use_backend() -> None:
@@ -435,9 +435,9 @@ def test_parse_frontend_acl_use_backend() -> None:
     parsed = parse_config(config)
     fe = parsed.frontends[0]
     assert len(fe.acls) == 1
-    assert fe.acls[0].domain == "example.com"
-    assert fe.acls[0].backend_name == "be_example"
-    assert fe.acls[0].acl_match_type == "hdr"
+    assert fe.acls[0].domain == 'example.com'
+    assert fe.acls[0].backend_name == 'be_example'
+    assert fe.acls[0].acl_match_type == 'hdr'
 
 
 def test_parse_frontend_acl_redirect() -> None:
@@ -455,9 +455,9 @@ def test_parse_frontend_acl_redirect() -> None:
     acl = parsed.frontends[0].acls[0]
 
     assert acl.is_redirect is True
-    assert acl.redirect_target == "https://new.example.com"
+    assert acl.redirect_target == 'https://new.example.com'
     assert acl.redirect_code == 301
-    assert acl.domain == "old.example.com"
+    assert acl.domain == 'old.example.com'
 
 
 def test_parse_frontend_acl_with_comment() -> None:
@@ -473,7 +473,7 @@ def test_parse_frontend_acl_with_comment() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.frontends[0].acls[0].comment == "Route to API backend"
+    assert parsed.frontends[0].acls[0].comment == 'Route to API backend'
 
 
 def test_no_ssl_in_config() -> None:
@@ -510,12 +510,12 @@ def test_ssl_pem_file_in_frontend() -> None:
     assert len(parsed.ssl_certificates) == 1
 
     sc = parsed.ssl_certificates[0]
-    assert sc.domain == "site.pem"
-    assert sc.fullchain_path == "/etc/haproxy/certs/site.pem"
-    assert sc.provider == "manual"
-    assert sc.status == "active"
+    assert sc.domain == 'site.pem'
+    assert sc.fullchain_path == '/etc/haproxy/certs/site.pem'
+    assert sc.provider == 'manual'
+    assert sc.status == 'active'
     assert sc.auto_renew is False
-    assert "frontend fe_https" in (sc.comment or "")
+    assert 'frontend fe_https' in (sc.comment or '')
 
 
 def test_ssl_directory_in_frontend() -> None:
@@ -534,8 +534,8 @@ def test_ssl_directory_in_frontend() -> None:
     assert len(parsed.ssl_certificates) == 1
 
     sc = parsed.ssl_certificates[0]
-    assert sc.domain == "certs"
-    assert sc.fullchain_path == "/etc/haproxy/certs"
+    assert sc.domain == 'certs'
+    assert sc.fullchain_path == '/etc/haproxy/certs'
 
 
 def test_ssl_in_listen_block() -> None:
@@ -553,8 +553,8 @@ def test_ssl_in_listen_block() -> None:
     assert len(parsed.ssl_certificates) == 1
 
     sc = parsed.ssl_certificates[0]
-    assert sc.domain == "stats.pem"
-    assert "listen stats" in (sc.comment or "")
+    assert sc.domain == 'stats.pem'
+    assert 'listen stats' in (sc.comment or '')
 
 
 def test_letsencrypt_domain_extraction() -> None:
@@ -571,7 +571,7 @@ def test_letsencrypt_domain_extraction() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
-    assert parsed.ssl_certificates[0].domain == "example.com"
+    assert parsed.ssl_certificates[0].domain == 'example.com'
 
 
 def test_letsencrypt_wildcard_domain() -> None:
@@ -584,7 +584,7 @@ def test_letsencrypt_wildcard_domain() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.ssl_certificates[0].domain == "wildcard.example.org"
+    assert parsed.ssl_certificates[0].domain == 'wildcard.example.org'
 
 
 def test_multiple_ssl_binds_different_sections() -> None:
@@ -607,8 +607,8 @@ def test_multiple_ssl_binds_different_sections() -> None:
     assert len(parsed.ssl_certificates) == 2
 
     domains = {sc.domain for sc in parsed.ssl_certificates}
-    assert "app.example.com" in domains
-    assert "admin.pem" in domains
+    assert 'app.example.com' in domains
+    assert 'admin.pem' in domains
 
 
 def test_duplicate_ssl_path_deduplicated() -> None:
@@ -632,7 +632,7 @@ def test_duplicate_ssl_path_deduplicated() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
-    assert parsed.ssl_certificates[0].fullchain_path == "/etc/haproxy/cert.pem"
+    assert parsed.ssl_certificates[0].fullchain_path == '/etc/haproxy/cert.pem'
 
 
 def test_ssl_with_additional_options() -> None:
@@ -648,8 +648,8 @@ def test_ssl_with_additional_options() -> None:
     assert len(parsed.ssl_certificates) == 1
 
     sc = parsed.ssl_certificates[0]
-    assert sc.domain == "nethostssl"
-    assert sc.fullchain_path == "/etc/nethostssl"
+    assert sc.domain == 'nethostssl'
+    assert sc.fullchain_path == '/etc/nethostssl'
 
 
 def test_ssl_crt_with_quoted_path() -> None:
@@ -663,7 +663,7 @@ def test_ssl_crt_with_quoted_path() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
-    assert parsed.ssl_certificates[0].fullchain_path == "/etc/haproxy/my cert.pem"
+    assert parsed.ssl_certificates[0].fullchain_path == '/etc/haproxy/my cert.pem'
 
 
 def test_ssl_cert_default_fields() -> None:
@@ -677,9 +677,9 @@ def test_ssl_cert_default_fields() -> None:
 
     parsed = parse_config(config)
     sc = parsed.ssl_certificates[0]
-    assert sc.provider == "manual"
-    assert sc.status == "active"
-    assert sc.challenge_type == "http-01"
+    assert sc.provider == 'manual'
+    assert sc.status == 'active'
+    assert sc.challenge_type == 'http-01'
     assert sc.auto_renew is False
     assert sc.alt_domains is None
     assert sc.key_path is None
@@ -711,7 +711,7 @@ def test_complex_bind_with_multiple_addresses() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
-    assert parsed.ssl_certificates[0].domain == "mysite.io"
+    assert parsed.ssl_certificates[0].domain == 'mysite.io'
 
 
 def test_multiple_frontends_different_certs() -> None:
@@ -737,15 +737,15 @@ def test_multiple_frontends_different_certs() -> None:
     assert len(parsed.ssl_certificates) == 2
 
     domains = {sc.domain for sc in parsed.ssl_certificates}
-    assert "site-a.com" in domains
-    assert "site-b.com" in domains
+    assert 'site-a.com' in domains
+    assert 'site-b.com' in domains
 
 
 def test_ssl_certificates_in_parsed_config_dataclass() -> None:
     """`ParsedConfig` has `ssl_certificates` as an empty list."""
 
-    parsed = parse_config("")
-    assert hasattr(parsed, "ssl_certificates")
+    parsed = parse_config('')
+    assert hasattr(parsed, 'ssl_certificates')
     assert isinstance(parsed.ssl_certificates, list)
     assert len(parsed.ssl_certificates) == 0
 
@@ -753,14 +753,14 @@ def test_ssl_certificates_in_parsed_config_dataclass() -> None:
 def test_parsed_ssl_certificate_dataclass() -> None:
     """`ParsedSslCertificate` has expected defaults."""
 
-    sc = ParsedSslCertificate(domain="test.com")
-    assert sc.domain == "test.com"
+    sc = ParsedSslCertificate(domain='test.com')
+    assert sc.domain == 'test.com'
     assert sc.cert_path is None
     assert sc.key_path is None
     assert sc.fullchain_path is None
-    assert sc.provider == "manual"
-    assert sc.status == "active"
-    assert sc.challenge_type == "http-01"
+    assert sc.provider == 'manual'
+    assert sc.status == 'active'
+    assert sc.challenge_type == 'http-01'
     assert sc.auto_renew is False
     assert sc.alt_domains is None
     assert sc.comment is None
@@ -776,7 +776,7 @@ def test_non_standard_cert_domain_name() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.ssl_certificates[0].domain == "my.domain.com"
+    assert parsed.ssl_certificates[0].domain == 'my.domain.com'
 
 
 def test_example_config_ssl_extraction() -> None:
@@ -812,8 +812,8 @@ def test_example_config_ssl_extraction() -> None:
     assert len(parsed.ssl_certificates) == 2
 
     domains = {sc.domain for sc in parsed.ssl_certificates}
-    assert "nethostssl" in domains
-    assert "default.pem" in domains
+    assert 'nethostssl' in domains
+    assert 'default.pem' in domains
 
 
 def test_ssl_cert_source_comment() -> None:
@@ -833,8 +833,8 @@ def test_ssl_cert_source_comment() -> None:
     assert len(parsed.ssl_certificates) == 2
 
     comments = {sc.domain: sc.comment for sc in parsed.ssl_certificates}
-    assert "frontend fe_web" in (comments["web.pem"] or "")
-    assert "listen api" in (comments["api.pem"] or "")
+    assert 'frontend fe_web' in (comments['web.pem'] or '')
+    assert 'listen api' in (comments['api.pem'] or '')
 
 
 def test_case_insensitive_ssl_keyword() -> None:
@@ -862,7 +862,7 @@ def test_multiple_bind_lines_one_frontend() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.ssl_certificates) == 1
-    assert parsed.ssl_certificates[0].fullchain_path == "/etc/ssl/site.pem"
+    assert parsed.ssl_certificates[0].fullchain_path == '/etc/ssl/site.pem'
 
 
 def test_parse_ssl_cert_no_basename() -> None:
@@ -888,7 +888,7 @@ def test_parse_ssl_cert_fullchain_in_letsencrypt() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.ssl_certificates[0].domain == "site.example.com"
+    assert parsed.ssl_certificates[0].domain == 'site.example.com'
 
 
 def test_parse_ssl_cert_crt_extension() -> None:
@@ -901,7 +901,7 @@ def test_parse_ssl_cert_crt_extension() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.ssl_certificates[0].fullchain_path == "/etc/ssl/server.crt"
+    assert parsed.ssl_certificates[0].fullchain_path == '/etc/ssl/server.crt'
 
 
 def test_parse_ssl_cert_letsencrypt_bad_live_path() -> None:
@@ -924,10 +924,10 @@ def test_parse_backend() -> None:
     assert len(parsed.backends) == 1
 
     be = parsed.backends[0]
-    assert be.name == "be_web"
-    assert be.balance == "roundrobin"
+    assert be.name == 'be_web'
+    assert be.balance == 'roundrobin'
     assert len(be.servers) == 1
-    assert be.servers[0].name == "web1"
+    assert be.servers[0].name == 'web1'
     assert be.servers[0].port == 8080
 
 
@@ -948,8 +948,8 @@ def test_parse_multiple_backends() -> None:
     assert len(parsed.backends) == 2
 
     names = {b.name for b in parsed.backends}
-    assert "be_a" in names
-    assert "be_b" in names
+    assert 'be_a' in names
+    assert 'be_b' in names
 
 
 def test_parse_backend_new_fields() -> None:
@@ -977,24 +977,24 @@ def test_parse_backend_new_fields() -> None:
 
     parsed = parse_config(cfg)
     be = parsed.backends[0]
-    assert be.cookie == "SRVID insert indirect nocache"
-    assert be.timeout_server == "30s"
-    assert be.timeout_connect == "5s"
-    assert be.timeout_queue == "60s"
-    assert be.http_check_expect == "status 200"
-    assert be.default_server_options == "inter 3s fall 3 rise 2"
-    assert be.http_reuse == "aggressive"
-    assert be.hash_type == "consistent sdbm"
+    assert be.cookie == 'SRVID insert indirect nocache'
+    assert be.timeout_server == '30s'
+    assert be.timeout_connect == '5s'
+    assert be.timeout_queue == '60s'
+    assert be.http_check_expect == 'status 200'
+    assert be.default_server_options == 'inter 3s fall 3 rise 2'
+    assert be.http_reuse == 'aggressive'
+    assert be.hash_type == 'consistent sdbm'
     assert be.option_httplog is True
     assert be.option_tcplog is True
-    assert be.compression_algo == "gzip deflate"
-    assert be.compression_type == "text/html text/css"
+    assert be.compression_algo == 'gzip deflate'
+    assert be.compression_type == 'text/html text/css'
 
     srv = be.servers[0]
     assert srv.check_enabled is True
     assert srv.weight == 100
     assert srv.ssl_enabled is True
-    assert srv.ssl_verify == "none"
+    assert srv.ssl_verify == 'none'
     assert srv.backup is True
 
 
@@ -1009,7 +1009,7 @@ def test_parse_backend_comment() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].comment == "Main backend for web"
+    assert parsed.backends[0].comment == 'Main backend for web'
 
 
 def test_parse_backend_retries_invalid() -> None:
@@ -1024,7 +1024,7 @@ def test_parse_backend_retries_invalid() -> None:
     be = parsed.backends[0]
     assert be.retries is None
     assert be.extra_options is not None
-    assert "retries" in be.extra_options
+    assert 'retries' in be.extra_options
 
 
 def test_parse_backend_retry_on() -> None:
@@ -1036,7 +1036,7 @@ def test_parse_backend_retry_on() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].retry_on == "conn-failure empty-response"
+    assert parsed.backends[0].retry_on == 'conn-failure empty-response'
 
 
 def test_parse_backend_option_redispatch() -> None:
@@ -1060,7 +1060,7 @@ def test_parse_backend_errorfile() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].errorfile == "503 /errors/503.http"
+    assert parsed.backends[0].errorfile == '503 /errors/503.http'
 
 
 def test_parse_backend_cookie() -> None:
@@ -1072,7 +1072,7 @@ def test_parse_backend_cookie() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].cookie == "SRVID insert indirect nocache"
+    assert parsed.backends[0].cookie == 'SRVID insert indirect nocache'
 
 
 def test_parse_backend_timeouts() -> None:
@@ -1087,9 +1087,9 @@ def test_parse_backend_timeouts() -> None:
 
     parsed = parse_config(config)
     be = parsed.backends[0]
-    assert be.timeout_server == "30s"
-    assert be.timeout_connect == "5s"
-    assert be.timeout_queue == "60s"
+    assert be.timeout_server == '30s'
+    assert be.timeout_connect == '5s'
+    assert be.timeout_queue == '60s'
 
 
 def test_parse_backend_default_server() -> None:
@@ -1101,7 +1101,7 @@ def test_parse_backend_default_server() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].default_server_options == "inter 3s fall 3 rise 2"
+    assert parsed.backends[0].default_server_options == 'inter 3s fall 3 rise 2'
 
 
 def test_parse_backend_http_reuse_hash_type() -> None:
@@ -1115,8 +1115,8 @@ def test_parse_backend_http_reuse_hash_type() -> None:
 
     parsed = parse_config(config)
     be = parsed.backends[0]
-    assert be.http_reuse == "aggressive"
-    assert be.hash_type == "consistent sdbm"
+    assert be.http_reuse == 'aggressive'
+    assert be.hash_type == 'consistent sdbm'
 
 
 def test_parse_backend_compression() -> None:
@@ -1130,8 +1130,8 @@ def test_parse_backend_compression() -> None:
 
     parsed = parse_config(config)
     be = parsed.backends[0]
-    assert be.compression_algo == "gzip deflate"
-    assert be.compression_type == "text/html text/css"
+    assert be.compression_algo == 'gzip deflate'
+    assert be.compression_type == 'text/html text/css'
 
 
 def test_parse_backend_auth_userlist() -> None:
@@ -1144,7 +1144,7 @@ def test_parse_backend_auth_userlist() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].auth_userlist == "admins"
+    assert parsed.backends[0].auth_userlist == 'admins'
 
 
 def test_parse_backend_http_check_connect() -> None:
@@ -1160,8 +1160,8 @@ def test_parse_backend_http_check_connect() -> None:
     parsed = parse_config(config)
     be = parsed.backends[0]
     assert be.health_check_enabled is True
-    assert be.health_check_method == "GET"
-    assert be.health_check_uri == "/health"
+    assert be.health_check_method == 'GET'
+    assert be.health_check_uri == '/health'
 
 
 def test_parse_backend_http_check_expect() -> None:
@@ -1173,7 +1173,7 @@ def test_parse_backend_http_check_expect() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].http_check_expect == "status 200"
+    assert parsed.backends[0].http_check_expect == 'status 200'
 
 
 def test_parse_backend_with_inline_comment() -> None:
@@ -1186,7 +1186,7 @@ def test_parse_backend_with_inline_comment() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.backends[0].mode == "http"
+    assert parsed.backends[0].mode == 'http'
 
 
 def test_parse_backend_extra_options() -> None:
@@ -1201,8 +1201,8 @@ def test_parse_backend_extra_options() -> None:
     parsed = parse_config(config)
     be = parsed.backends[0]
     assert be.extra_options is not None
-    assert "stick on src" in be.extra_options
-    assert "stick-table" in be.extra_options
+    assert 'stick on src' in be.extra_options
+    assert 'stick-table' in be.extra_options
 
 
 def test_parse_backend_option_tcplog() -> None:
@@ -1240,7 +1240,7 @@ def test_parse_server_with_extra_params() -> None:
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
     assert srv.check_enabled is True
-    assert srv.address == "10.0.0.1"
+    assert srv.address == '10.0.0.1'
     assert srv.port == 80
 
 
@@ -1248,26 +1248,26 @@ def test_parse_server_fields() -> None:
     """Server with all tier-1/2 fields."""
 
     cfg = (
-        "\nbackend testsrv\n"
-        "    server s1 10.0.0.1:80 weight 50 check inter 3s rise 2 fall 3"
-        " cookie srv1 send-proxy-v2 slowstart 60s resolvers mydns"
-        " resolve-prefer ipv4 on-marked-down shutdown-sessions disabled\n"
+        '\nbackend testsrv\n'
+        '    server s1 10.0.0.1:80 weight 50 check inter 3s rise 2 fall 3'
+        ' cookie srv1 send-proxy-v2 slowstart 60s resolvers mydns'
+        ' resolve-prefer ipv4 on-marked-down shutdown-sessions disabled\n'
     )
     parsed = parse_config(cfg)
     srv = parsed.backends[0].servers[0]
 
     assert srv.weight == 50
     assert srv.check_enabled is True
-    assert srv.inter == "3s"
+    assert srv.inter == '3s'
     assert srv.rise == 2
     assert srv.fall == 3
-    assert srv.cookie_value == "srv1"
+    assert srv.cookie_value == 'srv1'
     assert srv.send_proxy_v2 is True
     assert srv.send_proxy is False
-    assert srv.slowstart == "60s"
-    assert srv.resolvers_ref == "mydns"
-    assert srv.resolve_prefer == "ipv4"
-    assert srv.on_marked_down == "shutdown-sessions"
+    assert srv.slowstart == '60s'
+    assert srv.resolvers_ref == 'mydns'
+    assert srv.resolve_prefer == 'ipv4'
+    assert srv.on_marked_down == 'shutdown-sessions'
     assert srv.disabled is True
 
 
@@ -1283,8 +1283,8 @@ def test_parse_server_maxconn_invalid() -> None:
     srv = parsed.backends[0].servers[0]
     assert srv.maxconn is None
     assert srv.extra_params is not None
-    assert "maxconn" in srv.extra_params
-    assert "abc" in srv.extra_params
+    assert 'maxconn' in srv.extra_params
+    assert 'abc' in srv.extra_params
 
 
 def test_parse_server_maxqueue_invalid() -> None:
@@ -1299,8 +1299,8 @@ def test_parse_server_maxqueue_invalid() -> None:
     srv = parsed.backends[0].servers[0]
     assert srv.maxqueue is None
     assert srv.extra_params is not None
-    assert "maxqueue" in srv.extra_params
-    assert "xyz" in srv.extra_params
+    assert 'maxqueue' in srv.extra_params
+    assert 'xyz' in srv.extra_params
 
 
 def test_parse_server_weight_invalid() -> None:
@@ -1315,8 +1315,8 @@ def test_parse_server_weight_invalid() -> None:
     srv = parsed.backends[0].servers[0]
     assert srv.weight is None
     assert srv.extra_params is not None
-    assert "weight" in srv.extra_params
-    assert "heavy" in srv.extra_params
+    assert 'weight' in srv.extra_params
+    assert 'heavy' in srv.extra_params
 
 
 def test_parse_server_rise_fall_invalid() -> None:
@@ -1331,8 +1331,8 @@ def test_parse_server_rise_fall_invalid() -> None:
     assert srv.rise is None
     assert srv.fall is None
     assert srv.extra_params is not None
-    assert "rise" in srv.extra_params
-    assert "fall" in srv.extra_params
+    assert 'rise' in srv.extra_params
+    assert 'fall' in srv.extra_params
 
 
 def test_parse_server_send_proxy_v1() -> None:
@@ -1361,7 +1361,7 @@ def test_parse_server_unknown_tokens() -> None:
     srv = parsed.backends[0].servers[0]
     assert srv.check_enabled is True
     assert srv.extra_params is not None
-    assert "ca-file" in srv.extra_params
+    assert 'ca-file' in srv.extra_params
 
 
 def test_parse_server_fastinter_downinter() -> None:
@@ -1374,9 +1374,9 @@ def test_parse_server_fastinter_downinter() -> None:
 
     parsed = parse_config(config)
     srv = parsed.backends[0].servers[0]
-    assert srv.inter == "3s"
-    assert srv.fastinter == "1s"
-    assert srv.downinter == "5s"
+    assert srv.inter == '3s'
+    assert srv.fastinter == '1s'
+    assert srv.downinter == '5s'
 
 
 def test_parse_userlist() -> None:
@@ -1392,7 +1392,7 @@ def test_parse_userlist() -> None:
     assert len(parsed.userlists) == 1
 
     ul = parsed.userlists[0]
-    assert ul.name == "myusers"
+    assert ul.name == 'myusers'
     assert len(ul.entries) == 2
 
 
@@ -1406,7 +1406,7 @@ def test_parse_userlist_inline_comment() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.userlists[0].entries) == 1
-    assert parsed.userlists[0].entries[0].username == "admin"
+    assert parsed.userlists[0].entries[0].username == 'admin'
 
 
 def test_parse_listen() -> None:
@@ -1423,8 +1423,8 @@ def test_parse_listen() -> None:
     assert len(parsed.listen_blocks) == 1
 
     lb = parsed.listen_blocks[0]
-    assert lb.name == "stats"
-    assert lb.binds == ["*:8404"]
+    assert lb.name == 'stats'
+    assert lb.binds == ['*:8404']
 
 
 def test_parse_listen_expanded_fields() -> None:
@@ -1449,21 +1449,21 @@ def test_parse_listen_expanded_fields() -> None:
     parsed = parse_config(config)
     lb = parsed.listen_blocks[0]
 
-    assert lb.name == "mysql-proxy"
-    assert lb.binds == ["*:3306"]
-    assert lb.mode == "tcp"
-    assert lb.balance == "roundrobin"
+    assert lb.name == 'mysql-proxy'
+    assert lb.binds == ['*:3306']
+    assert lb.mode == 'tcp'
+    assert lb.balance == 'roundrobin'
     assert lb.maxconn == 2000
-    assert lb.timeout_client == "30s"
-    assert lb.timeout_server == "60s"
-    assert lb.timeout_connect == "5s"
-    assert lb.default_server_params == "inter 3s fall 3 rise 2"
+    assert lb.timeout_client == '30s'
+    assert lb.timeout_server == '60s'
+    assert lb.timeout_connect == '5s'
+    assert lb.default_server_params == 'inter 3s fall 3 rise 2'
     assert lb.option_tcplog is True
     assert lb.option_forwardfor is True
     assert lb.option_httplog is False
     assert lb.content is not None
-    assert "option mysql-check user haproxy" in lb.content
-    assert "server db1 10.0.0.1:3306 check" in lb.content
+    assert 'option mysql-check user haproxy' in lb.content
+    assert 'server db1 10.0.0.1:3306 check' in lb.content
 
 
 def test_parse_listen_timeout_server_connect() -> None:
@@ -1480,9 +1480,9 @@ def test_parse_listen_timeout_server_connect() -> None:
 
     parsed = parse_config(config)
     lb = parsed.listen_blocks[0]
-    assert lb.timeout_server == "60s"
-    assert lb.timeout_connect == "5s"
-    assert lb.default_server_params == "inter 3s"
+    assert lb.timeout_server == '60s'
+    assert lb.timeout_connect == '5s'
+    assert lb.default_server_params == 'inter 3s'
 
 
 def test_parse_listen_maxconn_invalid() -> None:
@@ -1498,7 +1498,7 @@ def test_parse_listen_maxconn_invalid() -> None:
     lb = parsed.listen_blocks[0]
     assert lb.maxconn is None
     assert lb.content is not None
-    assert "maxconn" in lb.content
+    assert 'maxconn' in lb.content
 
 
 def test_parse_listen_option_httplog() -> None:
@@ -1517,7 +1517,7 @@ def test_parse_listen_option_httplog() -> None:
 def test_no_resolvers() -> None:
     """No resolvers in empty config."""
 
-    parsed = parse_config("")
+    parsed = parse_config('')
     assert len(parsed.resolvers) == 0
 
 
@@ -1534,12 +1534,12 @@ def test_basic_resolver() -> None:
     assert len(parsed.resolvers) == 1
 
     r = parsed.resolvers[0]
-    assert r.name == "mydns"
+    assert r.name == 'mydns'
     assert len(r.nameservers) == 2
-    assert r.nameservers[0].name == "dns1"
-    assert r.nameservers[0].address == "8.8.8.8"
+    assert r.nameservers[0].name == 'dns1'
+    assert r.nameservers[0].address == '8.8.8.8'
     assert r.nameservers[0].port == 53
-    assert r.nameservers[1].name == "dns2"
+    assert r.nameservers[1].name == 'dns2'
 
 
 def test_resolver_with_timeouts() -> None:
@@ -1556,8 +1556,8 @@ def test_resolver_with_timeouts() -> None:
     parsed = parse_config(config)
     r = parsed.resolvers[0]
     assert r.resolve_retries == 3
-    assert r.timeout_resolve == "1s"
-    assert r.timeout_retry == "1s"
+    assert r.timeout_resolve == '1s'
+    assert r.timeout_retry == '1s'
 
 
 def test_resolver_with_hold_timers() -> None:
@@ -1575,11 +1575,11 @@ def test_resolver_with_hold_timers() -> None:
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
-    assert r.hold_valid == "10s"
-    assert r.hold_other == "30s"
-    assert r.hold_refused == "30s"
-    assert r.hold_timeout == "30s"
-    assert r.hold_obsolete == "30s"
+    assert r.hold_valid == '10s'
+    assert r.hold_other == '30s'
+    assert r.hold_refused == '30s'
+    assert r.hold_timeout == '30s'
+    assert r.hold_obsolete == '30s'
 
 
 def test_resolver_with_hold_nx_aa() -> None:
@@ -1594,8 +1594,8 @@ def test_resolver_with_hold_nx_aa() -> None:
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
-    assert r.hold_nx == "60s"
-    assert r.hold_aa == "5s"
+    assert r.hold_nx == '60s'
+    assert r.hold_aa == '5s'
 
 
 def test_resolver_with_parse_resolv_conf() -> None:
@@ -1659,18 +1659,18 @@ def test_resolver_all_fields() -> None:
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
-    assert r.name == "full-dns"
+    assert r.name == 'full-dns'
     assert len(r.nameservers) == 2
     assert r.resolve_retries == 5
-    assert r.timeout_resolve == "2s"
-    assert r.timeout_retry == "3s"
-    assert r.hold_valid == "10s"
-    assert r.hold_other == "30s"
-    assert r.hold_refused == "30s"
-    assert r.hold_timeout == "30s"
-    assert r.hold_obsolete == "30s"
-    assert r.hold_nx == "60s"
-    assert r.hold_aa == "5s"
+    assert r.timeout_resolve == '2s'
+    assert r.timeout_retry == '3s'
+    assert r.hold_valid == '10s'
+    assert r.hold_other == '30s'
+    assert r.hold_refused == '30s'
+    assert r.hold_timeout == '30s'
+    assert r.hold_obsolete == '30s'
+    assert r.hold_nx == '60s'
+    assert r.hold_aa == '5s'
     assert r.accepted_payload_size == 4096
     assert r.parse_resolv_conf == 1
 
@@ -1690,8 +1690,8 @@ def test_multiple_resolver_sections() -> None:
     assert len(parsed.resolvers) == 2
 
     names = {r.name for r in parsed.resolvers}
-    assert "dns-primary" in names
-    assert "dns-secondary" in names
+    assert 'dns-primary' in names
+    assert 'dns-secondary' in names
 
 
 def test_resolver_empty_nameservers() -> None:
@@ -1703,14 +1703,14 @@ def test_resolver_empty_nameservers() -> None:
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
-    assert r.name == "orphan"
+    assert r.name == 'orphan'
     assert len(r.nameservers) == 0
 
 
 def test_resolver_dataclass_defaults() -> None:
     """`ParsedResolver` default values."""
 
-    r = ParsedResolver(name="test")
+    r = ParsedResolver(name='test')
     assert r.resolve_retries is None
     assert r.timeout_resolve is None
     assert r.timeout_retry is None
@@ -1731,7 +1731,7 @@ def test_resolver_dataclass_defaults() -> None:
 def test_nameserver_dataclass_defaults() -> None:
     """`ParsedResolverNameserver` default values."""
 
-    ns = ParsedResolverNameserver(name="dns1", address="8.8.8.8")
+    ns = ParsedResolverNameserver(name='dns1', address='8.8.8.8')
     assert ns.port == 53
     assert ns.order == 0
 
@@ -1761,7 +1761,7 @@ def test_resolver_with_extra_options() -> None:
     parsed = parse_config(config)
     r = parsed.resolvers[0]
     assert r.extra_options is not None
-    assert "some-future-directive" in r.extra_options
+    assert 'some-future-directive' in r.extra_options
 
 
 def test_resolver_nameserver_order() -> None:
@@ -1793,7 +1793,7 @@ def test_parse_resolver_resolve_retries_invalid() -> None:
     r = parsed.resolvers[0]
     assert r.resolve_retries is None
     assert r.extra_options is not None
-    assert "resolve_retries" in r.extra_options
+    assert 'resolve_retries' in r.extra_options
 
 
 def test_parse_resolver_accepted_payload_invalid() -> None:
@@ -1808,7 +1808,7 @@ def test_parse_resolver_accepted_payload_invalid() -> None:
     r = parsed.resolvers[0]
     assert r.accepted_payload_size is None
     assert r.extra_options is not None
-    assert "accepted_payload_size" in r.extra_options
+    assert 'accepted_payload_size' in r.extra_options
 
 
 def test_parse_resolver_hold_other_refused_timeout_obsolete() -> None:
@@ -1825,16 +1825,16 @@ def test_parse_resolver_hold_other_refused_timeout_obsolete() -> None:
 
     parsed = parse_config(config)
     r = parsed.resolvers[0]
-    assert r.hold_other == "10s"
-    assert r.hold_refused == "20s"
-    assert r.hold_timeout == "30s"
-    assert r.hold_obsolete == "40s"
+    assert r.hold_other == '10s'
+    assert r.hold_refused == '20s'
+    assert r.hold_timeout == '30s'
+    assert r.hold_obsolete == '40s'
 
 
 def test_no_peers() -> None:
     """No peers in empty config."""
 
-    parsed = parse_config("")
+    parsed = parse_config('')
     assert len(parsed.peers) == 0
 
 
@@ -1851,12 +1851,12 @@ def test_basic_peer_section() -> None:
     assert len(parsed.peers) == 1
 
     ps = parsed.peers[0]
-    assert ps.name == "mypeers"
+    assert ps.name == 'mypeers'
     assert len(ps.entries) == 2
-    assert ps.entries[0].name == "haproxy1"
-    assert ps.entries[0].address == "10.0.0.1"
+    assert ps.entries[0].name == 'haproxy1'
+    assert ps.entries[0].address == '10.0.0.1'
     assert ps.entries[0].port == 10000
-    assert ps.entries[1].name == "haproxy2"
+    assert ps.entries[1].name == 'haproxy2'
 
 
 def test_multiple_peer_sections() -> None:
@@ -1875,8 +1875,8 @@ def test_multiple_peer_sections() -> None:
     assert len(parsed.peers) == 2
 
     names = {p.name for p in parsed.peers}
-    assert "cluster_a" in names
-    assert "cluster_b" in names
+    assert 'cluster_a' in names
+    assert 'cluster_b' in names
 
 
 def test_peer_with_extra_options() -> None:
@@ -1892,7 +1892,7 @@ def test_peer_with_extra_options() -> None:
     ps = parsed.peers[0]
     assert len(ps.entries) == 1
     assert ps.extra_options is not None
-    assert "table" in ps.extra_options or "stick_table" in ps.extra_options
+    assert 'table' in ps.extra_options or 'stick_table' in ps.extra_options
 
 
 def test_peer_empty_entries() -> None:
@@ -1904,23 +1904,23 @@ def test_peer_empty_entries() -> None:
 
     parsed = parse_config(config)
     ps = parsed.peers[0]
-    assert ps.name == "orphan"
+    assert ps.name == 'orphan'
     assert len(ps.entries) == 0
 
 
 def test_peer_entry_dataclass_defaults() -> None:
     """`ParsedPeerEntry` default values."""
 
-    pe = ParsedPeerEntry(name="test", address="10.0.0.1", port=10000)
-    assert pe.name == "test"
-    assert pe.address == "10.0.0.1"
+    pe = ParsedPeerEntry(name='test', address='10.0.0.1', port=10000)
+    assert pe.name == 'test'
+    assert pe.address == '10.0.0.1'
     assert pe.port == 10000
 
 
 def test_peer_section_dataclass_defaults() -> None:
     """`ParsedPeerSection` default values."""
 
-    ps = ParsedPeerSection(name="cluster")
+    ps = ParsedPeerSection(name='cluster')
     assert ps.entries == []
     assert ps.comment is None
     assert ps.extra_options is None
@@ -1940,8 +1940,8 @@ def test_peer_with_default_bind() -> None:
     parsed = parse_config(config)
     ps = parsed.peers[0]
     assert ps.default_bind is not None
-    assert ":10000" in ps.default_bind
-    assert "ssl" in ps.default_bind
+    assert ':10000' in ps.default_bind
+    assert 'ssl' in ps.default_bind
 
 
 def test_peer_with_default_server() -> None:
@@ -1956,8 +1956,8 @@ def test_peer_with_default_server() -> None:
     parsed = parse_config(config)
     ps = parsed.peers[0]
     assert ps.default_server_options is not None
-    assert "ssl" in ps.default_server_options
-    assert "verify none" in ps.default_server_options
+    assert 'ssl' in ps.default_server_options
+    assert 'verify none' in ps.default_server_options
 
 
 def test_peer_with_bind_and_default_server() -> None:
@@ -1989,7 +1989,7 @@ def test_peer_with_ipv6_address() -> None:
     parsed = parse_config(config)
     ps = parsed.peers[0]
     assert len(ps.entries) == 1
-    assert ps.entries[0].address == "::1"
+    assert ps.entries[0].address == '::1'
 
 
 def test_three_peers_in_section() -> None:
@@ -2007,9 +2007,9 @@ def test_three_peers_in_section() -> None:
     assert len(ps.entries) == 3
 
     addrs = [e.address for e in ps.entries]
-    assert "10.2.100.1" in addrs
-    assert "10.2.100.2" in addrs
-    assert "10.2.100.3" in addrs
+    assert '10.2.100.1' in addrs
+    assert '10.2.100.2' in addrs
+    assert '10.2.100.3' in addrs
 
 
 def test_parse_peer_default_server() -> None:
@@ -2022,13 +2022,13 @@ def test_parse_peer_default_server() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.peers[0].default_server_options == "ssl verify none"
+    assert parsed.peers[0].default_server_options == 'ssl verify none'
 
 
 def test_no_http_errors() -> None:
     """No http-errors in empty config."""
 
-    parsed = parse_config("")
+    parsed = parse_config('')
     assert len(parsed.http_errors) == 0
 
 
@@ -2045,11 +2045,11 @@ def test_basic_errorfile_section() -> None:
     assert len(parsed.http_errors) == 1
 
     he = parsed.http_errors[0]
-    assert he.name == "custom-errors"
+    assert he.name == 'custom-errors'
     assert len(he.entries) == 2
     assert he.entries[0].status_code == 503
-    assert he.entries[0].type == "errorfile"
-    assert he.entries[0].value == "/etc/haproxy/errors/503.http"
+    assert he.entries[0].type == 'errorfile'
+    assert he.entries[0].value == '/etc/haproxy/errors/503.http'
     assert he.entries[1].status_code == 504
 
 
@@ -2063,9 +2063,9 @@ def test_errorloc302_type() -> None:
 
     parsed = parse_config(config)
     he = parsed.http_errors[0]
-    assert he.entries[0].type == "errorloc302"
+    assert he.entries[0].type == 'errorloc302'
     assert he.entries[0].status_code == 503
-    assert he.entries[0].value == "https://maintenance.example.com"
+    assert he.entries[0].value == 'https://maintenance.example.com'
 
 
 def test_errorloc303_type() -> None:
@@ -2077,7 +2077,7 @@ def test_errorloc303_type() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.http_errors[0].entries[0].type == "errorloc303"
+    assert parsed.http_errors[0].entries[0].type == 'errorloc303'
 
 
 def test_errorloc_type() -> None:
@@ -2089,7 +2089,7 @@ def test_errorloc_type() -> None:
     """)
 
     parsed = parse_config(config)
-    assert parsed.http_errors[0].entries[0].type == "errorloc"
+    assert parsed.http_errors[0].entries[0].type == 'errorloc'
 
 
 def test_multiple_http_errors_sections() -> None:
@@ -2107,8 +2107,8 @@ def test_multiple_http_errors_sections() -> None:
     assert len(parsed.http_errors) == 2
 
     names = {h.name for h in parsed.http_errors}
-    assert "custom-errors" in names
-    assert "redirect-errors" in names
+    assert 'custom-errors' in names
+    assert 'redirect-errors' in names
 
 
 def test_many_errorfiles() -> None:
@@ -2131,22 +2131,22 @@ def test_many_errorfiles() -> None:
 
     codes = [e.status_code for e in he.entries]
     assert codes == [400, 403, 408, 500, 502, 503, 504]
-    assert all(e.type == "errorfile" for e in he.entries)
+    assert all(e.type == 'errorfile' for e in he.entries)
 
 
 def test_http_error_entry_dataclass() -> None:
     """`ParsedHttpErrorEntry` defaults."""
 
-    entry = ParsedHttpErrorEntry(status_code=503, type="errorfile", value="/errors/503.http")
+    entry = ParsedHttpErrorEntry(status_code=503, type='errorfile', value='/errors/503.http')
     assert entry.status_code == 503
-    assert entry.type == "errorfile"
-    assert entry.value == "/errors/503.http"
+    assert entry.type == 'errorfile'
+    assert entry.value == '/errors/503.http'
 
 
 def test_http_errors_section_dataclass_defaults() -> None:
     """`ParsedHttpErrorsSection` defaults."""
 
-    section = ParsedHttpErrorsSection(name="test")
+    section = ParsedHttpErrorsSection(name='test')
     assert section.entries == []
     assert section.comment is None
     assert section.extra_options is None
@@ -2165,7 +2165,7 @@ def test_http_errors_with_extra_options() -> None:
     parsed = parse_config(config)
     he = parsed.http_errors[0]
     assert he.extra_options is not None
-    assert "log global" in he.extra_options or "custom-directive" in he.extra_options
+    assert 'log global' in he.extra_options or 'custom-directive' in he.extra_options
 
 
 def test_http_errors_mixed_types() -> None:
@@ -2184,13 +2184,13 @@ def test_http_errors_mixed_types() -> None:
     assert len(he.entries) == 4
 
     types = [e.type for e in he.entries]
-    assert types == ["errorfile", "errorloc302", "errorloc303", "errorfile"]
+    assert types == ['errorfile', 'errorloc302', 'errorloc303', 'errorfile']
 
 
 def test_no_caches() -> None:
     """No caches in empty config."""
 
-    parsed = parse_config("")
+    parsed = parse_config('')
     assert len(parsed.caches) == 0
 
 
@@ -2208,7 +2208,7 @@ def test_basic_cache() -> None:
     assert len(parsed.caches) == 1
 
     c = parsed.caches[0]
-    assert c.name == "my_cache"
+    assert c.name == 'my_cache'
     assert c.total_max_size == 4
     assert c.max_object_size == 524288
     assert c.max_age == 60
@@ -2269,8 +2269,8 @@ def test_multiple_caches() -> None:
     assert len(parsed.caches) == 2
 
     names = {c.name for c in parsed.caches}
-    assert "cache_a" in names
-    assert "cache_b" in names
+    assert 'cache_a' in names
+    assert 'cache_b' in names
 
 
 def test_cache_with_extra_options() -> None:
@@ -2286,7 +2286,7 @@ def test_cache_with_extra_options() -> None:
     parsed = parse_config(config)
     c = parsed.caches[0]
     assert c.extra_options is not None
-    assert "some-future-directive" in c.extra_options
+    assert 'some-future-directive' in c.extra_options
 
 
 def test_cache_large_values() -> None:
@@ -2309,7 +2309,7 @@ def test_cache_large_values() -> None:
 def test_cache_section_dataclass_defaults() -> None:
     """`ParsedCacheSection` default values."""
 
-    c = ParsedCacheSection(name="test")
+    c = ParsedCacheSection(name='test')
     assert c.total_max_size is None
     assert c.max_object_size is None
     assert c.max_age is None
@@ -2344,7 +2344,7 @@ def test_parse_cache_total_max_size_invalid() -> None:
     c = parsed.caches[0]
     assert c.total_max_size is None
     assert c.extra_options is not None
-    assert "total-max-size" in c.extra_options
+    assert 'total-max-size' in c.extra_options
 
 
 def test_parse_cache_max_object_size_invalid() -> None:
@@ -2359,7 +2359,7 @@ def test_parse_cache_max_object_size_invalid() -> None:
     c = parsed.caches[0]
     assert c.max_object_size is None
     assert c.extra_options is not None
-    assert "max-object-size" in c.extra_options
+    assert 'max-object-size' in c.extra_options
 
 
 def test_parse_cache_max_age_invalid() -> None:
@@ -2374,7 +2374,7 @@ def test_parse_cache_max_age_invalid() -> None:
     c = parsed.caches[0]
     assert c.max_age is None
     assert c.extra_options is not None
-    assert "max-age" in c.extra_options
+    assert 'max-age' in c.extra_options
 
 
 def test_parse_cache_max_secondary_entries_invalid() -> None:
@@ -2389,7 +2389,7 @@ def test_parse_cache_max_secondary_entries_invalid() -> None:
     c = parsed.caches[0]
     assert c.max_secondary_entries is None
     assert c.extra_options is not None
-    assert "max-secondary-entries" in c.extra_options
+    assert 'max-secondary-entries' in c.extra_options
 
 
 def test_parse_cache_process_vary_invalid() -> None:
@@ -2404,7 +2404,7 @@ def test_parse_cache_process_vary_invalid() -> None:
     c = parsed.caches[0]
     assert c.process_vary is None
     assert c.extra_options is not None
-    assert "process-vary" in c.extra_options
+    assert 'process-vary' in c.extra_options
 
 
 def test_basic_mailer_section() -> None:
@@ -2417,10 +2417,10 @@ def test_basic_mailer_section() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.mailers) == 1
-    assert parsed.mailers[0].name == "mymailers"
+    assert parsed.mailers[0].name == 'mymailers'
     assert len(parsed.mailers[0].entries) == 1
-    assert parsed.mailers[0].entries[0].name == "smtp1"
-    assert parsed.mailers[0].entries[0].address == "smtp.example.com"
+    assert parsed.mailers[0].entries[0].name == 'smtp1'
+    assert parsed.mailers[0].entries[0].address == 'smtp.example.com'
     assert parsed.mailers[0].entries[0].port == 25
 
 
@@ -2435,7 +2435,7 @@ def test_mailer_with_timeout() -> None:
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
-    assert ms.timeout_mail == "10s"
+    assert ms.timeout_mail == '10s'
     assert ms.entries[0].port == 587
 
 
@@ -2453,9 +2453,9 @@ def test_multiple_mailer_entries() -> None:
     parsed = parse_config(config)
     ms = parsed.mailers[0]
     assert len(ms.entries) == 3
-    assert ms.entries[0].name == "primary"
-    assert ms.entries[1].name == "secondary"
-    assert ms.entries[2].name == "tertiary"
+    assert ms.entries[0].name == 'primary'
+    assert ms.entries[1].name == 'secondary'
+    assert ms.entries[2].name == 'tertiary'
     assert ms.entries[0].order == 0
     assert ms.entries[1].order == 1
     assert ms.entries[2].order == 2
@@ -2475,9 +2475,9 @@ def test_multiple_mailer_sections() -> None:
 
     parsed = parse_config(config)
     assert len(parsed.mailers) == 2
-    assert parsed.mailers[0].name == "primary-mailers"
-    assert parsed.mailers[1].name == "backup-mailers"
-    assert parsed.mailers[1].timeout_mail == "5s"
+    assert parsed.mailers[0].name == 'primary-mailers'
+    assert parsed.mailers[1].name == 'backup-mailers'
+    assert parsed.mailers[1].timeout_mail == '5s'
 
 
 def test_mailer_ignores_comments() -> None:
@@ -2495,7 +2495,7 @@ def test_mailer_ignores_comments() -> None:
     parsed = parse_config(config)
     ms = parsed.mailers[0]
     assert len(ms.entries) == 2
-    assert ms.timeout_mail == "10s"
+    assert ms.timeout_mail == '10s'
 
 
 def test_mailer_empty_entries() -> None:
@@ -2508,15 +2508,15 @@ def test_mailer_empty_entries() -> None:
 
     parsed = parse_config(config)
     ms = parsed.mailers[0]
-    assert ms.name == "empty-mailers"
-    assert ms.timeout_mail == "15s"
+    assert ms.name == 'empty-mailers'
+    assert ms.timeout_mail == '15s'
     assert len(ms.entries) == 0
 
 
 def test_mailer_entry_dataclass_defaults() -> None:
     """`ParsedMailerEntry` default values."""
 
-    entry = ParsedMailerEntry(name="test", address="localhost")
+    entry = ParsedMailerEntry(name='test', address='localhost')
     assert entry.port == 25
     assert entry.order == 0
 
@@ -2524,7 +2524,7 @@ def test_mailer_entry_dataclass_defaults() -> None:
 def test_mailer_section_dataclass_defaults() -> None:
     """`ParsedMailerSection` default values."""
 
-    section = ParsedMailerSection(name="test")
+    section = ParsedMailerSection(name='test')
     assert section.timeout_mail is None
     assert section.comment is None
     assert section.extra_options is None
@@ -2545,7 +2545,7 @@ def test_mailer_with_extra_options() -> None:
     parsed = parse_config(config)
     ms = parsed.mailers[0]
     assert ms.extra_options is not None
-    assert "log global" in ms.extra_options or "custom-directive" in ms.extra_options
+    assert 'log global' in ms.extra_options or 'custom-directive' in ms.extra_options
 
 
 def test_mailer_high_port() -> None:
@@ -2558,7 +2558,7 @@ def test_mailer_high_port() -> None:
 
     parsed = parse_config(config)
     assert parsed.mailers[0].entries[0].port == 2525
-    assert parsed.mailers[0].entries[0].address == "relay.internal.net"
+    assert parsed.mailers[0].entries[0].address == 'relay.internal.net'
 
 
 def test_mailer_smtp_auth_metadata() -> None:
@@ -2577,8 +2577,8 @@ def test_mailer_smtp_auth_metadata() -> None:
 
     e = ms.entries[0]
     assert e.smtp_auth is True
-    assert e.smtp_user == "user@gmail.com"
-    assert e.smtp_password == "app-pass"
+    assert e.smtp_user == 'user@gmail.com'
+    assert e.smtp_password == 'app-pass'
     assert e.use_tls is False
     assert e.use_starttls is True
 
@@ -2597,7 +2597,7 @@ def test_mailer_smtp_auth_multiple_entries() -> None:
     ms = parsed.mailers[0]
     assert len(ms.entries) == 2
     assert ms.entries[0].smtp_auth is True
-    assert ms.entries[0].smtp_user == "admin"
+    assert ms.entries[0].smtp_user == 'admin'
     assert ms.entries[0].use_tls is True
     assert ms.entries[1].smtp_auth is False
     assert ms.entries[1].smtp_user is None
@@ -2623,7 +2623,7 @@ def test_mailer_no_auth_metadata() -> None:
 def test_mailer_entry_dataclass_smtp_auth_defaults() -> None:
     """`ParsedMailerEntry` SMTP auth defaults."""
 
-    entry = ParsedMailerEntry(name="test", address="localhost")
+    entry = ParsedMailerEntry(name='test', address='localhost')
     assert entry.smtp_auth is False
     assert entry.smtp_user is None
     assert entry.smtp_password is None
@@ -2698,7 +2698,7 @@ def test_resolver_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.resolvers) == 1
-    assert parsed.resolvers[0].comment == "Cisco OpenDNS"
+    assert parsed.resolvers[0].comment == 'Cisco OpenDNS'
 
 
 def test_resolver_multiline_comment_parsed() -> None:
@@ -2711,7 +2711,7 @@ def test_resolver_multiline_comment_parsed() -> None:
             nameserver dns1 8.8.8.8:53
     """)
     parsed = parse_config(config)
-    assert parsed.resolvers[0].comment == "Primary DNS\nUsed for all lookups"
+    assert parsed.resolvers[0].comment == 'Primary DNS\nUsed for all lookups'
 
 
 def test_resolver_no_comment() -> None:
@@ -2735,7 +2735,7 @@ def test_peer_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.peers) == 1
-    assert parsed.peers[0].comment == "HA cluster peers"
+    assert parsed.peers[0].comment == 'HA cluster peers'
 
 
 def test_mailer_comment_parsed() -> None:
@@ -2749,7 +2749,7 @@ def test_mailer_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.mailers) == 1
-    assert parsed.mailers[0].comment == "Alert mailers"
+    assert parsed.mailers[0].comment == 'Alert mailers'
 
 
 def test_mailer_comment_skips_pm_metadata() -> None:
@@ -2775,7 +2775,7 @@ def test_http_errors_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.http_errors) == 1
-    assert parsed.http_errors[0].comment == "Custom error pages"
+    assert parsed.http_errors[0].comment == 'Custom error pages'
 
 
 def test_cache_comment_parsed() -> None:
@@ -2790,7 +2790,7 @@ def test_cache_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.caches) == 1
-    assert parsed.caches[0].comment == "Static asset cache"
+    assert parsed.caches[0].comment == 'Static asset cache'
 
 
 def test_frontend_comment_parsed() -> None:
@@ -2805,7 +2805,7 @@ def test_frontend_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.frontends) == 1
-    assert parsed.frontends[0].comment == "Main web frontend"
+    assert parsed.frontends[0].comment == 'Main web frontend'
 
 
 def test_backend_comment_parsed() -> None:
@@ -2820,7 +2820,7 @@ def test_backend_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.backends) == 1
-    assert parsed.backends[0].comment == "Application servers"
+    assert parsed.backends[0].comment == 'Application servers'
 
 
 def test_listen_comment_parsed() -> None:
@@ -2835,4 +2835,4 @@ def test_listen_comment_parsed() -> None:
     """)
     parsed = parse_config(config)
     assert len(parsed.listen_blocks) == 1
-    assert parsed.listen_blocks[0].comment == "Stats dashboard"
+    assert parsed.listen_blocks[0].comment == 'Stats dashboard'

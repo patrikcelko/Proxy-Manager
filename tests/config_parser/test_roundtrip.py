@@ -21,11 +21,11 @@ def _mock(spec: type, **attrs: Any) -> MagicMock:
     """Create a MagicMock with spec, defaulting columns to None/False."""
 
     m = MagicMock(spec=spec)
-    for col in getattr(spec, "__table__", MagicMock()).columns:
+    for col in getattr(spec, '__table__', MagicMock()).columns:
         col_type = str(col.type)
-        if "BOOLEAN" in col_type:
+        if 'BOOLEAN' in col_type:
             setattr(m, col.name, False)
-        elif "INTEGER" in col_type:
+        elif 'INTEGER' in col_type:
             setattr(m, col.name, None)
         else:
             setattr(m, col.name, None)
@@ -48,7 +48,7 @@ def _parsed_to_models(parsed: ParsedConfig) -> dict[str, Any]:
     for lb in parsed.listen_blocks:
         lb_model = SimpleNamespace(
             name=lb.name,
-            mode=lb.mode if lb.mode != "http" else lb.mode,
+            mode=lb.mode if lb.mode != 'http' else lb.mode,
             balance=lb.balance,
             maxconn=lb.maxconn,
             timeout_client=lb.timeout_client,
@@ -282,7 +282,7 @@ def _assert_stable(config_text: str, *, passes: int = 3) -> str:
 
     results = _roundtrip(config_text, passes=passes)
     for i in range(1, len(results)):
-        assert results[i] == results[0], f"Roundtrip diverged at pass {i + 1}.\n--- pass 1 ---\n{results[0]}\n--- pass {i + 1} ---\n{results[i]}"
+        assert results[i] == results[0], f'Roundtrip diverged at pass {i + 1}.\n--- pass 1 ---\n{results[0]}\n--- pass {i + 1} ---\n{results[i]}'
     return results[0]
 
 
@@ -376,7 +376,7 @@ def test_double_whitespace_preserved() -> None:
     """)
 
     result = _assert_stable(config)
-    assert "127.0.0.1:514  local0" in result
+    assert '127.0.0.1:514  local0' in result
 
 
 def test_basic_frontend() -> None:
@@ -717,37 +717,37 @@ def test_single_setting_change_detected() -> None:
     algorithm (positional, id/sort_order stripped)."""
 
     parsed_orig = parse_config(PRODUCTION_CONFIG)
-    modified_text = PRODUCTION_CONFIG.replace("hard-stop-after 30s", "hard-stop-after 31s")
+    modified_text = PRODUCTION_CONFIG.replace('hard-stop-after 30s', 'hard-stop-after 31s')
     parsed_mod = parse_config(modified_text)
 
     # Compare settings content-only (same logic as _strip_meta)
-    strip = {"id", "sort_order"}
+    strip = {'id', 'sort_order'}
 
     orig_gs = [
-        {k: v for k, v in {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.order}.items() if k not in strip} for s in parsed_orig.global_settings
+        {k: v for k, v in {'directive': s.directive, 'value': s.value, 'comment': s.comment, 'sort_order': s.order}.items() if k not in strip} for s in parsed_orig.global_settings
     ]
 
     mod_gs = [
-        {k: v for k, v in {"directive": s.directive, "value": s.value, "comment": s.comment, "sort_order": s.order}.items() if k not in strip} for s in parsed_mod.global_settings
+        {k: v for k, v in {'directive': s.directive, 'value': s.value, 'comment': s.comment, 'sort_order': s.order}.items() if k not in strip} for s in parsed_mod.global_settings
     ]
 
     diffs = sum(1 for a, b in zip(orig_gs, mod_gs, strict=False) if a != b)
     length_diff = abs(len(orig_gs) - len(mod_gs))
 
-    assert diffs + length_diff == 1, f"Expected exactly 1 diff, got {diffs} value diffs and {length_diff} length difference"
+    assert diffs + length_diff == 1, f'Expected exactly 1 diff, got {diffs} value diffs and {length_diff} length difference'
 
 
 def test_single_default_change_detected() -> None:
     """Changing one default setting yields exactly one diff."""
 
-    modified_text = PRODUCTION_CONFIG.replace("timeout connect 5s", "timeout connect 6s")
+    modified_text = PRODUCTION_CONFIG.replace('timeout connect 5s', 'timeout connect 6s')
     parsed_orig = parse_config(PRODUCTION_CONFIG)
     parsed_mod = parse_config(modified_text)
 
-    strip = {"id", "sort_order"}
-    orig_ds = [{k: v for k, v in {"directive": s.directive, "value": s.value, "comment": s.comment}.items() if k not in strip} for s in parsed_orig.default_settings]
+    strip = {'id', 'sort_order'}
+    orig_ds = [{k: v for k, v in {'directive': s.directive, 'value': s.value, 'comment': s.comment}.items() if k not in strip} for s in parsed_orig.default_settings]
 
-    mod_ds = [{k: v for k, v in {"directive": s.directive, "value": s.value, "comment": s.comment}.items() if k not in strip} for s in parsed_mod.default_settings]
+    mod_ds = [{k: v for k, v in {'directive': s.directive, 'value': s.value, 'comment': s.comment}.items() if k not in strip} for s in parsed_mod.default_settings]
 
     diffs = sum(1 for a, b in zip(orig_ds, mod_ds, strict=False) if a != b)
     assert diffs == 1
@@ -773,21 +773,21 @@ def test_nonsequential_sort_order() -> None:
     when sort_order is stripped from comparison."""
 
     old_items = [
-        {"id": 1, "directive": "log", "value": "127.0.0.1 local0", "comment": None, "sort_order": 0},
-        {"id": 2, "directive": "maxconn", "value": "4096", "comment": None, "sort_order": 5},
-        {"id": 3, "directive": "daemon", "value": "", "comment": None, "sort_order": 10},
+        {'id': 1, 'directive': 'log', 'value': '127.0.0.1 local0', 'comment': None, 'sort_order': 0},
+        {'id': 2, 'directive': 'maxconn', 'value': '4096', 'comment': None, 'sort_order': 5},
+        {'id': 3, 'directive': 'daemon', 'value': '', 'comment': None, 'sort_order': 10},
     ]
 
     # After re-import, IDs change and sort_order is sequential
     new_items = [
-        {"id": 100, "directive": "log", "value": "127.0.0.1 local0", "comment": None, "sort_order": 0},
-        {"id": 101, "directive": "maxconn", "value": "4096", "comment": None, "sort_order": 1},
-        {"id": 102, "directive": "daemon", "value": "", "comment": None, "sort_order": 2},
+        {'id': 100, 'directive': 'log', 'value': '127.0.0.1 local0', 'comment': None, 'sort_order': 0},
+        {'id': 101, 'directive': 'maxconn', 'value': '4096', 'comment': None, 'sort_order': 1},
+        {'id': 102, 'directive': 'daemon', 'value': '', 'comment': None, 'sort_order': 2},
     ]
 
-    diff = _diff_entity_list(old_items, new_items, "_ordered")
-    assert diff["total"] == 0, (
-        f"Expected 0 changes (different id/sort_order should be ignored), got {diff['total']}: created={diff['created']}, deleted={diff['deleted']}, updated={diff['updated']}"
+    diff = _diff_entity_list(old_items, new_items, '_ordered')
+    assert diff['total'] == 0, (
+        f'Expected 0 changes (different id/sort_order should be ignored), got {diff["total"]}: created={diff["created"]}, deleted={diff["deleted"]}, updated={diff["updated"]}'
     )
 
 
@@ -796,20 +796,20 @@ def test_one_value_change_with_different_sort_order() -> None:
     sort_order values differ between old and new snapshots."""
 
     old_items = [
-        {"id": 1, "directive": "log", "value": "127.0.0.1 local0", "comment": None, "sort_order": 0},
-        {"id": 2, "directive": "maxconn", "value": "4096", "comment": None, "sort_order": 5},
-        {"id": 3, "directive": "hard-stop-after", "value": "30s", "comment": None, "sort_order": 10},
+        {'id': 1, 'directive': 'log', 'value': '127.0.0.1 local0', 'comment': None, 'sort_order': 0},
+        {'id': 2, 'directive': 'maxconn', 'value': '4096', 'comment': None, 'sort_order': 5},
+        {'id': 3, 'directive': 'hard-stop-after', 'value': '30s', 'comment': None, 'sort_order': 10},
     ]
     new_items = [
-        {"id": 100, "directive": "log", "value": "127.0.0.1 local0", "comment": None, "sort_order": 0},
-        {"id": 101, "directive": "maxconn", "value": "4096", "comment": None, "sort_order": 1},
-        {"id": 102, "directive": "hard-stop-after", "value": "31s", "comment": None, "sort_order": 2},
+        {'id': 100, 'directive': 'log', 'value': '127.0.0.1 local0', 'comment': None, 'sort_order': 0},
+        {'id': 101, 'directive': 'maxconn', 'value': '4096', 'comment': None, 'sort_order': 1},
+        {'id': 102, 'directive': 'hard-stop-after', 'value': '31s', 'comment': None, 'sort_order': 2},
     ]
 
-    diff = _diff_entity_list(old_items, new_items, "_ordered")
-    assert diff["total"] == 1
-    assert len(diff["updated"]) == 1
-    assert diff["updated"][0]["entity"] == "hard-stop-after"
+    diff = _diff_entity_list(old_items, new_items, '_ordered')
+    assert diff['total'] == 1
+    assert len(diff['updated']) == 1
+    assert diff['updated'][0]['entity'] == 'hard-stop-after'
 
 
 def test_entity_id_carried_in_ordered_diff() -> None:
@@ -817,15 +817,15 @@ def test_entity_id_carried_in_ordered_diff() -> None:
     raw (pre-strip) id for frontend matching."""
 
     old_items = [
-        {"id": 1, "directive": "maxconn", "value": "4096", "comment": None, "sort_order": 0},
+        {'id': 1, 'directive': 'maxconn', 'value': '4096', 'comment': None, 'sort_order': 0},
     ]
     new_items = [
-        {"id": 42, "directive": "maxconn", "value": "8192", "comment": None, "sort_order": 0},
+        {'id': 42, 'directive': 'maxconn', 'value': '8192', 'comment': None, 'sort_order': 0},
     ]
 
-    diff = _diff_entity_list(old_items, new_items, "_ordered")
-    assert diff["total"] == 1
-    assert diff["updated"][0]["entity_id"] == "42"
+    diff = _diff_entity_list(old_items, new_items, '_ordered')
+    assert diff['total'] == 1
+    assert diff['updated'][0]['entity_id'] == '42'
 
 
 def test_hash_only_comment() -> None:
@@ -837,7 +837,7 @@ def test_hash_only_comment() -> None:
     """)
 
     result = _assert_stable(config)
-    assert "# ##" in result
+    assert '# ##' in result
 
 
 def test_comment_with_special_chars() -> None:
@@ -849,7 +849,7 @@ def test_comment_with_special_chars() -> None:
     """)
 
     result = _assert_stable(config)
-    assert "# max connections (production)" in result
+    assert '# max connections (production)' in result
 
 
 def test_no_comments() -> None:
@@ -862,4 +862,4 @@ def test_no_comments() -> None:
     """)
 
     result = _assert_stable(config)
-    assert "#" not in result.split("global")[1]
+    assert '#' not in result.split('global')[1]

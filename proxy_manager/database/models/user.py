@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class User(Base):
     """Application user for authentication."""
 
-    __tablename__ = "users"
+    __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -23,7 +23,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     """Unique email address."""
 
-    name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     """Unique name identifier."""
 
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -35,7 +35,7 @@ class User(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<User(id={self.id}, email={self.email!r})>"
+        return f'<User(id={self.id}, email={self.email!r})>'
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:

@@ -32,7 +32,7 @@ from proxy_manager.database.models.resolver import (
     update_resolver_nameserver,
 )
 
-router = APIRouter(tags=["resolvers"])
+router = APIRouter(tags=['resolvers'])
 
 
 async def _build_detail(session: AsyncSession, r: Resolver) -> ResolverDetailResponse:
@@ -60,7 +60,7 @@ async def _build_detail(session: AsyncSession, r: Resolver) -> ResolverDetailRes
     )
 
 
-@router.get("/api/resolvers", response_model=ResolverListResponse)
+@router.get('/api/resolvers', response_model=ResolverListResponse)
 async def api_list_resolvers(session: DBSession) -> ResolverListResponse:
     """List all resolvers with nameservers."""
 
@@ -69,18 +69,18 @@ async def api_list_resolvers(session: DBSession) -> ResolverListResponse:
     return ResolverListResponse(count=len(result), items=result)
 
 
-@router.get("/api/resolvers/{resolver_id}", response_model=ResolverDetailResponse)
+@router.get('/api/resolvers/{resolver_id}', response_model=ResolverDetailResponse)
 async def api_get_resolver(resolver_id: int, session: DBSession) -> ResolverDetailResponse:
     """Get a single resolver by ID."""
 
     r = await get_resolver(session, resolver_id)
     if not r:
-        raise HTTPException(status_code=404, detail="Resolver not found")
+        raise HTTPException(status_code=404, detail='Resolver not found')
 
     return await _build_detail(session, r)
 
 
-@router.post("/api/resolvers", response_model=ResolverDetailResponse, status_code=201)
+@router.post('/api/resolvers', response_model=ResolverDetailResponse, status_code=201)
 async def api_create_resolver(body: ResolverCreate, session: DBSession) -> ResolverDetailResponse:
     """Create a new resolver."""
 
@@ -92,13 +92,13 @@ async def api_create_resolver(body: ResolverCreate, session: DBSession) -> Resol
     return await _build_detail(session, r)
 
 
-@router.put("/api/resolvers/{resolver_id}", response_model=ResolverDetailResponse)
+@router.put('/api/resolvers/{resolver_id}', response_model=ResolverDetailResponse)
 async def api_update_resolver(resolver_id: int, body: ResolverUpdate, session: DBSession) -> ResolverDetailResponse:
     """Update an existing resolver."""
 
     r = await get_resolver(session, resolver_id)
     if not r:
-        raise HTTPException(status_code=404, detail="Resolver not found")
+        raise HTTPException(status_code=404, detail='Resolver not found')
 
     if body.name is not None and body.name != r.name:
         conflict = await get_resolver_by_name(session, body.name)
@@ -109,19 +109,19 @@ async def api_update_resolver(resolver_id: int, body: ResolverUpdate, session: D
     return await _build_detail(session, r)
 
 
-@router.delete("/api/resolvers/{resolver_id}", response_model=MessageResponse)
+@router.delete('/api/resolvers/{resolver_id}', response_model=MessageResponse)
 async def api_delete_resolver(resolver_id: int, session: DBSession) -> MessageResponse:
     """Delete a resolver and its nameservers."""
 
     r = await get_resolver(session, resolver_id)
     if not r:
-        raise HTTPException(status_code=404, detail="Resolver not found")
+        raise HTTPException(status_code=404, detail='Resolver not found')
 
     await delete_resolver(session, r)
-    return MessageResponse(detail="Resolver deleted")
+    return MessageResponse(detail='Resolver deleted')
 
 
-@router.post("/api/resolvers/{resolver_id}/nameservers", response_model=ResolverNameserverResponse, status_code=201)
+@router.post('/api/resolvers/{resolver_id}/nameservers', response_model=ResolverNameserverResponse, status_code=201)
 async def api_add_nameserver(
     resolver_id: int,
     body: ResolverNameserverCreate,
@@ -131,13 +131,13 @@ async def api_add_nameserver(
 
     r = await get_resolver(session, resolver_id)
     if not r:
-        raise HTTPException(status_code=404, detail="Resolver not found")
+        raise HTTPException(status_code=404, detail='Resolver not found')
 
     ns = await create_resolver_nameserver(session, resolver_id=resolver_id, **body.model_dump(exclude_unset=True))
     return ResolverNameserverResponse.model_validate(ns)
 
 
-@router.put("/api/resolvers/{resolver_id}/nameservers/{ns_id}", response_model=ResolverNameserverResponse)
+@router.put('/api/resolvers/{resolver_id}/nameservers/{ns_id}', response_model=ResolverNameserverResponse)
 async def api_update_nameserver(
     resolver_id: int,
     ns_id: int,
@@ -148,19 +148,19 @@ async def api_update_nameserver(
 
     ns = await get_resolver_nameserver(session, ns_id)
     if not ns or ns.resolver_id != resolver_id:
-        raise HTTPException(status_code=404, detail="Nameserver not found")
+        raise HTTPException(status_code=404, detail='Nameserver not found')
 
     ns = await update_resolver_nameserver(session, ns, **body.model_dump(exclude_unset=True))
     return ResolverNameserverResponse.model_validate(ns)
 
 
-@router.delete("/api/resolvers/{resolver_id}/nameservers/{ns_id}", response_model=MessageResponse)
+@router.delete('/api/resolvers/{resolver_id}/nameservers/{ns_id}', response_model=MessageResponse)
 async def api_delete_nameserver(resolver_id: int, ns_id: int, session: DBSession) -> MessageResponse:
     """Remove a nameserver from a resolver."""
 
     ns = await get_resolver_nameserver(session, ns_id)
     if not ns or ns.resolver_id != resolver_id:
-        raise HTTPException(status_code=404, detail="Nameserver not found")
+        raise HTTPException(status_code=404, detail='Nameserver not found')
 
     await delete_resolver_nameserver(session, ns)
-    return MessageResponse(detail="Nameserver deleted")
+    return MessageResponse(detail='Nameserver deleted')

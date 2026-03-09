@@ -14,7 +14,7 @@ class SettingCreate(BaseModel):
     directive: str = Field(..., min_length=1, max_length=255)
     """HAProxy directive name."""
 
-    value: str = Field(default="")
+    value: str = Field(default='')
     """Directive value."""
 
     comment: str | None = None

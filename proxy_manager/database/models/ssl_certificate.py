@@ -16,7 +16,7 @@ from proxy_manager.database.models.base import Base
 class SslCertificate(Base):
     """An SSL/TLS certificate record."""
 
-    __tablename__ = "ssl_certificates"
+    __tablename__ = 'ssl_certificates'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     """Primary key."""
@@ -33,14 +33,14 @@ class SslCertificate(Base):
     provider: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="certbot",
+        default='certbot',
     )  # certbot | manual | self-signed
     """Certificate provider (`certbot`, `manual`, `self-signed`)."""
 
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="pending",
+        default='pending',
     )  # pending | active | expired | revoked | error
     """Certificate status (`pending`, `active`, `expired`, etc.)."""
 
@@ -65,7 +65,7 @@ class SslCertificate(Base):
     challenge_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="http-01",
+        default='http-01',
     )  # http-01 | dns-01 | standalone
     """ACME challenge type (`http-01`, `dns-01`)."""
 
@@ -99,7 +99,7 @@ class SslCertificate(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<SslCertificate(id={self.id}, domain={self.domain!r}, status={self.status!r})>"
+        return f'<SslCertificate(id={self.id}, domain={self.domain!r}, status={self.status!r})>'
 
 
 async def list_ssl_certificates(session: AsyncSession) -> list[SslCertificate]:
@@ -145,10 +145,10 @@ async def update_ssl_certificate(
 ) -> SslCertificate:
     """Update an existing SSL certificate record."""
 
-    allowed = {c.name for c in SslCertificate.__table__.columns} - {"id", "created_at"}
+    allowed = {c.name for c in SslCertificate.__table__.columns} - {'id', 'created_at'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_ssl_certificate: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_ssl_certificate: ignoring unknown fields: %s', unknown)
 
     for k, v in kwargs.items():
         if k in allowed:

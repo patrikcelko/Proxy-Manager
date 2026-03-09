@@ -14,7 +14,7 @@ class HttpErrorEntryCreate(BaseModel):
     status_code: int = Field(..., ge=100, le=599)
     """HTTP status code."""
 
-    type: str = Field(default="errorfile", pattern=r"^(errorfile|errorloc|errorloc302|errorloc303)$")
+    type: str = Field(default='errorfile', pattern=r'^(errorfile|errorloc|errorloc302|errorloc303)$')
     """Error response type (`errorfile`, `errorloc`, etc.)."""
 
     value: str = Field(..., min_length=1)
@@ -30,7 +30,7 @@ class HttpErrorEntryUpdate(BaseModel):
     status_code: int | None = Field(default=None, ge=100, le=599)
     """HTTP status code."""
 
-    type: str | None = Field(default=None, pattern=r"^(errorfile|errorloc|errorloc302|errorloc303)$")
+    type: str | None = Field(default=None, pattern=r'^(errorfile|errorloc|errorloc302|errorloc303)$')
     """Error response type (`errorfile`, `errorloc`, etc`)."""
 
     value: str | None = None

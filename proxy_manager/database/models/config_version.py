@@ -23,19 +23,19 @@ from proxy_manager.database.models.base import Base
 class ConfigVersion(Base):
     """A committed configuration version with full snapshot."""
 
-    __tablename__ = "config_versions"
+    __tablename__ = 'config_versions'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     message: Mapped[str] = mapped_column(String(500), nullable=False)
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    user_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    user_name: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     parent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     def __repr__(self) -> str:
-        return f"<ConfigVersion(hash={self.hash[:8]!r}, message={self.message!r})>"
+        return f'<ConfigVersion(hash={self.hash[:8]!r}, message={self.message!r})>'
 
 
 def compute_snapshot_hash(snapshot_data: dict[str, Any]) -> str:
@@ -65,11 +65,11 @@ async def create_version(
     # Include metadata in hash (like Git commits) so rollbacks get unique hashes
     hash_input = json.dumps(
         {
-            "snapshot": snapshot_data,
-            "parent_hash": parent_hash,
-            "message": message,
-            "user_id": user_id,
-            "nonce": uuid.uuid4().hex,
+            'snapshot': snapshot_data,
+            'parent_hash': parent_hash,
+            'message': message,
+            'user_id': user_id,
+            'nonce': uuid.uuid4().hex,
         },
         sort_keys=True,
         default=str,

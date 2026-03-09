@@ -32,7 +32,7 @@ from proxy_manager.database.models.mailer import (
     update_mailer_section,
 )
 
-router = APIRouter(tags=["mailers"])
+router = APIRouter(tags=['mailers'])
 
 
 async def _build_detail(session: AsyncSession, m: MailerSection) -> MailerSectionDetailResponse:
@@ -49,7 +49,7 @@ async def _build_detail(session: AsyncSession, m: MailerSection) -> MailerSectio
     )
 
 
-@router.get("/api/mailers", response_model=MailerSectionListResponse)
+@router.get('/api/mailers', response_model=MailerSectionListResponse)
 async def api_list_mailers(session: DBSession) -> MailerSectionListResponse:
     """List all mailer sections."""
 
@@ -59,18 +59,18 @@ async def api_list_mailers(session: DBSession) -> MailerSectionListResponse:
     return MailerSectionListResponse(count=len(result), items=result)
 
 
-@router.get("/api/mailers/{mailer_id}", response_model=MailerSectionDetailResponse)
+@router.get('/api/mailers/{mailer_id}', response_model=MailerSectionDetailResponse)
 async def api_get_mailer(mailer_id: int, session: DBSession) -> MailerSectionDetailResponse:
     """Retrieve a single mailer section by ID."""
 
     m = await get_mailer_section(session, mailer_id)
     if not m:
-        raise HTTPException(status_code=404, detail="Mailer section not found")
+        raise HTTPException(status_code=404, detail='Mailer section not found')
 
     return await _build_detail(session, m)
 
 
-@router.post("/api/mailers", response_model=MailerSectionDetailResponse, status_code=201)
+@router.post('/api/mailers', response_model=MailerSectionDetailResponse, status_code=201)
 async def api_create_mailer(body: MailerSectionCreate, session: DBSession) -> MailerSectionDetailResponse:
     """Create a new mailer section."""
 
@@ -82,7 +82,7 @@ async def api_create_mailer(body: MailerSectionCreate, session: DBSession) -> Ma
     return await _build_detail(session, m)
 
 
-@router.put("/api/mailers/{mailer_id}", response_model=MailerSectionDetailResponse)
+@router.put('/api/mailers/{mailer_id}', response_model=MailerSectionDetailResponse)
 async def api_update_mailer(
     mailer_id: int,
     body: MailerSectionUpdate,
@@ -92,7 +92,7 @@ async def api_update_mailer(
 
     m = await get_mailer_section(session, mailer_id)
     if not m:
-        raise HTTPException(status_code=404, detail="Mailer section not found")
+        raise HTTPException(status_code=404, detail='Mailer section not found')
 
     if body.name is not None and body.name != m.name:
         conflict = await get_mailer_section_by_name(session, body.name)
@@ -103,31 +103,31 @@ async def api_update_mailer(
     return await _build_detail(session, m)
 
 
-@router.delete("/api/mailers/{mailer_id}", response_model=MessageResponse)
+@router.delete('/api/mailers/{mailer_id}', response_model=MessageResponse)
 async def api_delete_mailer(mailer_id: int, session: DBSession) -> MessageResponse:
     """Delete a mailer section."""
 
     m = await get_mailer_section(session, mailer_id)
     if not m:
-        raise HTTPException(status_code=404, detail="Mailer section not found")
+        raise HTTPException(status_code=404, detail='Mailer section not found')
 
     await delete_mailer_section(session, m)
-    return MessageResponse(detail="Mailer section deleted")
+    return MessageResponse(detail='Mailer section deleted')
 
 
-@router.post("/api/mailers/{mailer_id}/entries", response_model=MailerEntryResponse, status_code=201)
+@router.post('/api/mailers/{mailer_id}/entries', response_model=MailerEntryResponse, status_code=201)
 async def api_add_mailer_entry(mailer_id: int, body: MailerEntryCreate, session: DBSession) -> MailerEntryResponse:
     """Add an entry to a mailer section."""
 
     m = await get_mailer_section(session, mailer_id)
     if not m:
-        raise HTTPException(status_code=404, detail="Mailer section not found")
+        raise HTTPException(status_code=404, detail='Mailer section not found')
 
     e = await create_mailer_entry(session, mailer_section_id=mailer_id, **body.model_dump(exclude_unset=True))
     return MailerEntryResponse.model_validate(e)
 
 
-@router.put("/api/mailers/{mailer_id}/entries/{entry_id}", response_model=MailerEntryResponse)
+@router.put('/api/mailers/{mailer_id}/entries/{entry_id}', response_model=MailerEntryResponse)
 async def api_update_mailer_entry(
     mailer_id: int,
     entry_id: int,
@@ -138,19 +138,19 @@ async def api_update_mailer_entry(
 
     e = await get_mailer_entry(session, entry_id)
     if not e or e.mailer_section_id != mailer_id:
-        raise HTTPException(status_code=404, detail="Mailer entry not found")
+        raise HTTPException(status_code=404, detail='Mailer entry not found')
 
     e = await update_mailer_entry(session, e, **body.model_dump(exclude_unset=True))
     return MailerEntryResponse.model_validate(e)
 
 
-@router.delete("/api/mailers/{mailer_id}/entries/{entry_id}", response_model=MessageResponse)
+@router.delete('/api/mailers/{mailer_id}/entries/{entry_id}', response_model=MessageResponse)
 async def api_delete_mailer_entry(mailer_id: int, entry_id: int, session: DBSession) -> MessageResponse:
     """Remove a mailer entry from a section."""
 
     e = await get_mailer_entry(session, entry_id)
     if not e or e.mailer_section_id != mailer_id:
-        raise HTTPException(status_code=404, detail="Mailer entry not found")
+        raise HTTPException(status_code=404, detail='Mailer entry not found')
 
     await delete_mailer_entry(session, e)
-    return MessageResponse(detail="Mailer entry deleted")
+    return MessageResponse(detail='Mailer entry deleted')

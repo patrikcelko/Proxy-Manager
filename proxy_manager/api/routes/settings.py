@@ -28,10 +28,10 @@ from proxy_manager.database.models.global_setting import (
     update_global_setting,
 )
 
-router = APIRouter(tags=["settings"])
+router = APIRouter(tags=['settings'])
 
 
-@router.get("/api/global-settings", response_model=SettingListResponse)
+@router.get('/api/global-settings', response_model=SettingListResponse)
 async def api_list_global_settings(session: DBSession) -> SettingListResponse:
     """List all global settings."""
 
@@ -39,7 +39,7 @@ async def api_list_global_settings(session: DBSession) -> SettingListResponse:
     return SettingListResponse(count=len(rows), items=[SettingResponse.model_validate(r) for r in rows])
 
 
-@router.post("/api/global-settings", response_model=SettingResponse, status_code=201)
+@router.post('/api/global-settings', response_model=SettingResponse, status_code=201)
 async def api_create_global_setting(body: SettingCreate, session: DBSession) -> SettingResponse:
     """Create a new global setting."""
 
@@ -47,13 +47,13 @@ async def api_create_global_setting(body: SettingCreate, session: DBSession) -> 
     return SettingResponse.model_validate(row)
 
 
-@router.put("/api/global-settings/{setting_id}", response_model=SettingResponse)
+@router.put('/api/global-settings/{setting_id}', response_model=SettingResponse)
 async def api_update_global_setting(setting_id: int, body: SettingUpdate, session: DBSession) -> SettingResponse:
     """Update a global setting."""
 
     row = await get_global_setting(session, setting_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Setting not found")
+        raise HTTPException(status_code=404, detail='Setting not found')
 
     updated = await update_global_setting(
         session,
@@ -67,19 +67,19 @@ async def api_update_global_setting(setting_id: int, body: SettingUpdate, sessio
     return SettingResponse.model_validate(updated)
 
 
-@router.delete("/api/global-settings/{setting_id}", response_model=MessageResponse)
+@router.delete('/api/global-settings/{setting_id}', response_model=MessageResponse)
 async def api_delete_global_setting(setting_id: int, session: DBSession) -> MessageResponse:
     """Delete a global setting."""
 
     row = await get_global_setting(session, setting_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Setting not found")
+        raise HTTPException(status_code=404, detail='Setting not found')
 
     await delete_global_setting(session, row)
-    return MessageResponse(detail="Setting deleted")
+    return MessageResponse(detail='Setting deleted')
 
 
-@router.get("/api/default-settings", response_model=SettingListResponse)
+@router.get('/api/default-settings', response_model=SettingListResponse)
 async def api_list_default_settings(session: DBSession) -> SettingListResponse:
     """List all default settings."""
 
@@ -87,7 +87,7 @@ async def api_list_default_settings(session: DBSession) -> SettingListResponse:
     return SettingListResponse(count=len(rows), items=[SettingResponse.model_validate(r) for r in rows])
 
 
-@router.post("/api/default-settings", response_model=SettingResponse, status_code=201)
+@router.post('/api/default-settings', response_model=SettingResponse, status_code=201)
 async def api_create_default_setting(body: SettingCreate, session: DBSession) -> SettingResponse:
     """Create a new default setting."""
 
@@ -95,13 +95,13 @@ async def api_create_default_setting(body: SettingCreate, session: DBSession) ->
     return SettingResponse.model_validate(row)
 
 
-@router.put("/api/default-settings/{setting_id}", response_model=SettingResponse)
+@router.put('/api/default-settings/{setting_id}', response_model=SettingResponse)
 async def api_update_default_setting(setting_id: int, body: SettingUpdate, session: DBSession) -> SettingResponse:
     """Update a default setting."""
 
     row = await get_default_setting(session, setting_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Setting not found")
+        raise HTTPException(status_code=404, detail='Setting not found')
 
     updated = await update_default_setting(
         session,
@@ -115,13 +115,13 @@ async def api_update_default_setting(setting_id: int, body: SettingUpdate, sessi
     return SettingResponse.model_validate(updated)
 
 
-@router.delete("/api/default-settings/{setting_id}", response_model=MessageResponse)
+@router.delete('/api/default-settings/{setting_id}', response_model=MessageResponse)
 async def api_delete_default_setting(setting_id: int, session: DBSession) -> MessageResponse:
     """Delete a default setting."""
 
     row = await get_default_setting(session, setting_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Setting not found")
+        raise HTTPException(status_code=404, detail='Setting not found')
 
     await delete_default_setting(session, row)
-    return MessageResponse(detail="Setting deleted")
+    return MessageResponse(detail='Setting deleted')

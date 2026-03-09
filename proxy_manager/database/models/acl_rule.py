@@ -13,21 +13,21 @@ from proxy_manager.database.models.base import Base
 class AclRule(Base):
     """Domain-to-backend routing rule in a frontend."""
 
-    __tablename__ = "acl_rules"
+    __tablename__ = 'acl_rules'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    frontend_id: Mapped[int | None] = mapped_column(ForeignKey("frontends.id", ondelete="CASCADE"), nullable=True, index=True)
+    frontend_id: Mapped[int | None] = mapped_column(ForeignKey('frontends.id', ondelete='CASCADE'), nullable=True, index=True)
     """Foreign key to the parent frontend."""
 
     domain: Mapped[str] = mapped_column(String(500), nullable=False)
     """Domain pattern for ACL matching."""
 
-    backend_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    backend_name: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     """Target backend name for matched requests."""
 
-    acl_match_type: Mapped[str] = mapped_column(String(50), nullable=False, default="hdr_dom")
+    acl_match_type: Mapped[str] = mapped_column(String(50), nullable=False, default='hdr_dom')
     """ACL match function (`hdr`, `hdr_dom`, etc.)."""
 
     is_redirect: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -51,7 +51,7 @@ class AclRule(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<AclRule(id={self.id}, domain={self.domain!r}, backend={self.backend_name!r})>"
+        return f'<AclRule(id={self.id}, domain={self.domain!r}, backend={self.backend_name!r})>'
 
 
 async def list_acl_rules(session: AsyncSession, frontend_id: int) -> list[AclRule]:
@@ -83,8 +83,8 @@ async def create_acl_rule(
     *,
     frontend_id: int | None = None,
     domain: str,
-    backend_name: str = "",
-    acl_match_type: str = "hdr_dom",
+    backend_name: str = '',
+    acl_match_type: str = 'hdr_dom',
     is_redirect: bool = False,
     redirect_target: str | None = None,
     redirect_code: int = 308,
@@ -132,7 +132,7 @@ async def update_acl_rule(
 ) -> AclRule:
     """Update an existing ACL rule with the given field values."""
 
-    if fields_set and "frontend_id" in fields_set or frontend_id is not None:
+    if fields_set and 'frontend_id' in fields_set or frontend_id is not None:
         rule.frontend_id = frontend_id
 
     if domain is not None:
@@ -147,13 +147,13 @@ async def update_acl_rule(
     if is_redirect is not None:
         rule.is_redirect = is_redirect
 
-    if fields_set and "redirect_target" in fields_set or redirect_target is not None:
+    if fields_set and 'redirect_target' in fields_set or redirect_target is not None:
         rule.redirect_target = redirect_target
 
     if redirect_code is not None:
         rule.redirect_code = redirect_code
 
-    if fields_set and "comment" in fields_set or comment is not None:
+    if fields_set and 'comment' in fields_set or comment is not None:
         rule.comment = comment
 
     if sort_order is not None:

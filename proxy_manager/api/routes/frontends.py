@@ -52,7 +52,7 @@ from proxy_manager.database.models.frontend import (
     update_frontend_option,
 )
 
-router = APIRouter(tags=["frontends"])
+router = APIRouter(tags=['frontends'])
 
 
 async def _build_detail(session: AsyncSession, fe: Frontend) -> FrontendDetailResponse:
@@ -80,7 +80,7 @@ async def _build_detail(session: AsyncSession, fe: Frontend) -> FrontendDetailRe
     )
 
 
-@router.get("/api/frontends", response_model=FrontendListResponse)
+@router.get('/api/frontends', response_model=FrontendListResponse)
 async def api_list_frontends(session: DBSession) -> FrontendListResponse:
     """List all frontends with binds and options."""
 
@@ -90,18 +90,18 @@ async def api_list_frontends(session: DBSession) -> FrontendListResponse:
     return FrontendListResponse(count=len(items), items=items)
 
 
-@router.get("/api/frontends/{frontend_id}", response_model=FrontendDetailResponse)
+@router.get('/api/frontends/{frontend_id}', response_model=FrontendDetailResponse)
 async def api_get_frontend(frontend_id: int, session: DBSession) -> FrontendDetailResponse:
     """Get a single frontend by ID."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     return await _build_detail(session, fe)
 
 
-@router.post("/api/frontends", response_model=FrontendDetailResponse, status_code=201)
+@router.post('/api/frontends', response_model=FrontendDetailResponse, status_code=201)
 async def api_create_frontend(body: FrontendCreate, session: DBSession) -> FrontendDetailResponse:
     """Create a new frontend."""
 
@@ -128,13 +128,13 @@ async def api_create_frontend(body: FrontendCreate, session: DBSession) -> Front
     return await _build_detail(session, row)
 
 
-@router.put("/api/frontends/{frontend_id}", response_model=FrontendDetailResponse)
+@router.put('/api/frontends/{frontend_id}', response_model=FrontendDetailResponse)
 async def api_update_frontend(frontend_id: int, body: FrontendUpdate, session: DBSession) -> FrontendDetailResponse:
     """Update an existing frontend."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     if body.name is not None and body.name != fe.name:
         existing = await get_frontend_by_name(session, body.name)
@@ -162,25 +162,25 @@ async def api_update_frontend(frontend_id: int, body: FrontendUpdate, session: D
     return await _build_detail(session, updated)
 
 
-@router.delete("/api/frontends/{frontend_id}", response_model=MessageResponse)
+@router.delete('/api/frontends/{frontend_id}', response_model=MessageResponse)
 async def api_delete_frontend(frontend_id: int, session: DBSession) -> MessageResponse:
     """Delete a frontend and its binds/options."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     await delete_frontend(session, fe)
     return MessageResponse(detail=f"Frontend '{fe.name}' deleted")
 
 
-@router.post("/api/frontends/{frontend_id}/binds", response_model=FrontendBindResponse, status_code=201)
+@router.post('/api/frontends/{frontend_id}/binds', response_model=FrontendBindResponse, status_code=201)
 async def api_create_bind(frontend_id: int, body: FrontendBindCreate, session: DBSession) -> FrontendBindResponse:
     """Add a bind directive to a frontend."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     bind = await create_frontend_bind(
         session,
@@ -192,7 +192,7 @@ async def api_create_bind(frontend_id: int, body: FrontendBindCreate, session: D
     return FrontendBindResponse.model_validate(bind)
 
 
-@router.put("/api/frontends/{frontend_id}/binds/{bind_id}", response_model=FrontendBindResponse)
+@router.put('/api/frontends/{frontend_id}/binds/{bind_id}', response_model=FrontendBindResponse)
 async def api_update_bind(
     frontend_id: int,
     bind_id: int,
@@ -203,31 +203,31 @@ async def api_update_bind(
 
     bind = await get_frontend_bind(session, bind_id)
     if not bind or bind.frontend_id != frontend_id:
-        raise HTTPException(status_code=404, detail="Bind not found")
+        raise HTTPException(status_code=404, detail='Bind not found')
 
     updated = await update_frontend_bind(session, bind, bind_line=body.bind_line, sort_order=body.sort_order)
     return FrontendBindResponse.model_validate(updated)
 
 
-@router.delete("/api/frontends/{frontend_id}/binds/{bind_id}", response_model=MessageResponse)
+@router.delete('/api/frontends/{frontend_id}/binds/{bind_id}', response_model=MessageResponse)
 async def api_delete_bind(frontend_id: int, bind_id: int, session: DBSession) -> MessageResponse:
     """Remove a bind directive from a frontend."""
 
     bind = await get_frontend_bind(session, bind_id)
     if not bind or bind.frontend_id != frontend_id:
-        raise HTTPException(status_code=404, detail="Bind not found")
+        raise HTTPException(status_code=404, detail='Bind not found')
 
     await delete_frontend_bind(session, bind)
-    return MessageResponse(detail="Bind deleted")
+    return MessageResponse(detail='Bind deleted')
 
 
-@router.post("/api/frontends/{frontend_id}/options", response_model=FrontendOptionResponse, status_code=201)
+@router.post('/api/frontends/{frontend_id}/options', response_model=FrontendOptionResponse, status_code=201)
 async def api_create_option(frontend_id: int, body: FrontendOptionCreate, session: DBSession) -> FrontendOptionResponse:
     """Add an option directive to a frontend."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     opt = await create_frontend_option(
         session,
@@ -240,7 +240,7 @@ async def api_create_option(frontend_id: int, body: FrontendOptionCreate, sessio
     return FrontendOptionResponse.model_validate(opt)
 
 
-@router.put("/api/frontends/{frontend_id}/options/{option_id}", response_model=FrontendOptionResponse)
+@router.put('/api/frontends/{frontend_id}/options/{option_id}', response_model=FrontendOptionResponse)
 async def api_update_option(
     frontend_id: int,
     option_id: int,
@@ -251,7 +251,7 @@ async def api_update_option(
 
     opt = await get_frontend_option(session, option_id)
     if not opt or opt.frontend_id != frontend_id:
-        raise HTTPException(status_code=404, detail="Option not found")
+        raise HTTPException(status_code=404, detail='Option not found')
 
     updated = await update_frontend_option(
         session,
@@ -264,19 +264,19 @@ async def api_update_option(
     return FrontendOptionResponse.model_validate(updated)
 
 
-@router.delete("/api/frontends/{frontend_id}/options/{option_id}", response_model=MessageResponse)
+@router.delete('/api/frontends/{frontend_id}/options/{option_id}', response_model=MessageResponse)
 async def api_delete_option(frontend_id: int, option_id: int, session: DBSession) -> MessageResponse:
     """Remove an option directive from a frontend."""
 
     opt = await get_frontend_option(session, option_id)
     if not opt or opt.frontend_id != frontend_id:
-        raise HTTPException(status_code=404, detail="Option not found")
+        raise HTTPException(status_code=404, detail='Option not found')
 
     await delete_frontend_option(session, opt)
-    return MessageResponse(detail="Option deleted")
+    return MessageResponse(detail='Option deleted')
 
 
-@router.get("/api/acl-rules", response_model=AclRuleListResponse)
+@router.get('/api/acl-rules', response_model=AclRuleListResponse)
 async def api_list_all_acl_rules(session: DBSession) -> AclRuleListResponse:
     """List all ACL rules across all frontends."""
 
@@ -284,32 +284,32 @@ async def api_list_all_acl_rules(session: DBSession) -> AclRuleListResponse:
     return AclRuleListResponse(count=len(rows), items=[AclRuleResponse.model_validate(r) for r in rows])
 
 
-@router.get("/api/frontends/{frontend_id}/acl-rules", response_model=AclRuleListResponse)
+@router.get('/api/frontends/{frontend_id}/acl-rules', response_model=AclRuleListResponse)
 async def api_list_acl_rules(frontend_id: int, session: DBSession) -> AclRuleListResponse:
     """List ACL rules for a specific frontend."""
 
     fe = await get_frontend(session, frontend_id)
     if not fe:
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail='Frontend not found')
 
     rows = await list_acl_rules(session, frontend_id)
     return AclRuleListResponse(count=len(rows), items=[AclRuleResponse.model_validate(r) for r in rows])
 
 
-@router.post("/api/acl-rules", response_model=AclRuleResponse, status_code=201)
+@router.post('/api/acl-rules', response_model=AclRuleResponse, status_code=201)
 async def api_create_acl_rule(body: AclRuleCreate, session: DBSession) -> AclRuleResponse:
     """Create a new ACL rule."""
 
     if body.frontend_id:
         fe = await get_frontend(session, body.frontend_id)
         if not fe:
-            raise HTTPException(status_code=404, detail="Frontend not found")
+            raise HTTPException(status_code=404, detail='Frontend not found')
 
     row = await create_acl_rule(
         session,
         frontend_id=body.frontend_id,
         domain=body.domain,
-        backend_name=body.backend_name or "",
+        backend_name=body.backend_name or '',
         acl_match_type=body.acl_match_type,
         is_redirect=body.is_redirect,
         redirect_target=body.redirect_target,
@@ -321,13 +321,13 @@ async def api_create_acl_rule(body: AclRuleCreate, session: DBSession) -> AclRul
     return AclRuleResponse.model_validate(row)
 
 
-@router.put("/api/acl-rules/{rule_id}", response_model=AclRuleResponse)
+@router.put('/api/acl-rules/{rule_id}', response_model=AclRuleResponse)
 async def api_update_acl_rule(rule_id: int, body: AclRuleUpdate, session: DBSession) -> AclRuleResponse:
     """Update an existing ACL rule."""
 
     row = await get_acl_rule(session, rule_id)
     if not row:
-        raise HTTPException(status_code=404, detail="ACL rule not found")
+        raise HTTPException(status_code=404, detail='ACL rule not found')
 
     updated = await update_acl_rule(
         session,
@@ -348,13 +348,13 @@ async def api_update_acl_rule(rule_id: int, body: AclRuleUpdate, session: DBSess
     return AclRuleResponse.model_validate(updated)
 
 
-@router.delete("/api/acl-rules/{rule_id}", response_model=MessageResponse)
+@router.delete('/api/acl-rules/{rule_id}', response_model=MessageResponse)
 async def api_delete_acl_rule(rule_id: int, session: DBSession) -> MessageResponse:
     """Delete an ACL rule."""
 
     row = await get_acl_rule(session, rule_id)
     if not row:
-        raise HTTPException(status_code=404, detail="ACL rule not found")
+        raise HTTPException(status_code=404, detail='ACL rule not found')
 
     await delete_acl_rule(session, row)
-    return MessageResponse(detail="ACL rule deleted")
+    return MessageResponse(detail='ACL rule deleted')

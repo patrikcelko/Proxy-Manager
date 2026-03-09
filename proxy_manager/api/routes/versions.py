@@ -39,10 +39,10 @@ from proxy_manager.database.models.config_version import (
     list_versions,
 )
 
-router = APIRouter(tags=["versions"])
+router = APIRouter(tags=['versions'])
 
 
-@router.get("/api/versions/status", response_model=VersionStatusResponse)
+@router.get('/api/versions/status', response_model=VersionStatusResponse)
 async def api_version_status(session: DBSession) -> VersionStatusResponse:
     """Check initialization status and pending change summary."""
 
@@ -67,27 +67,27 @@ async def api_version_status(session: DBSession) -> VersionStatusResponse:
     )
 
 
-@router.post("/api/versions/init/empty", response_model=MessageResponse)
+@router.post('/api/versions/init/empty', response_model=MessageResponse)
 async def api_init_empty(session: DBSession, user: CurrentUser) -> MessageResponse:
     """Initialize with an empty configuration (first-time setup)."""
 
     existing = await get_latest_version(session)
     if existing is not None:
-        raise HTTPException(status_code=409, detail="Already initialized")
+        raise HTTPException(status_code=409, detail='Already initialized')
 
     snapshot = await take_snapshot(session)
     await create_version(
         session,
         snapshot_data=snapshot,
-        message="Initial configuration",
+        message='Initial configuration',
         user_id=user.id,
         user_name=user.name or user.email,
     )
 
-    return MessageResponse(detail="Initialized with empty configuration")
+    return MessageResponse(detail='Initialized with empty configuration')
 
 
-@router.post("/api/versions/init/import", response_model=MessageResponse)
+@router.post('/api/versions/init/import', response_model=MessageResponse)
 async def api_init_import(
     body: VersionInitImportRequest,
     session: DBSession,
@@ -97,12 +97,12 @@ async def api_init_import(
 
     existing = await get_latest_version(session)
     if existing is not None:
-        raise HTTPException(status_code=409, detail="Already initialized")
+        raise HTTPException(status_code=409, detail='Already initialized')
 
     try:
         parse_config(body.config_text)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Parse error: {e}") from e
+        raise HTTPException(status_code=400, detail=f'Parse error: {e}') from e
 
     # Use the existing import logic from config_io
     from proxy_manager.api.routes.config_io import api_import_config
@@ -115,15 +115,15 @@ async def api_init_import(
     await create_version(
         session,
         snapshot_data=snapshot,
-        message="Imported configuration",
+        message='Imported configuration',
         user_id=user.id,
         user_name=user.name or user.email,
     )
 
-    return MessageResponse(detail="Initialized with imported configuration")
+    return MessageResponse(detail='Initialized with imported configuration')
 
 
-@router.get("/api/versions/pending", response_model=PendingChangesResponse)
+@router.get('/api/versions/pending', response_model=PendingChangesResponse)
 async def api_pending_changes(session: DBSession) -> PendingChangesResponse:
     """Get detailed pending changes compared to last committed version."""
 
@@ -145,7 +145,7 @@ async def api_pending_changes(session: DBSession) -> PendingChangesResponse:
     )
 
 
-@router.post("/api/versions/save", response_model=VersionSummary)
+@router.post('/api/versions/save', response_model=VersionSummary)
 async def api_save_version(
     body: VersionSaveRequest,
     session: DBSession,
@@ -155,7 +155,7 @@ async def api_save_version(
 
     latest = await get_latest_version(session)
     if latest is None:
-        raise HTTPException(status_code=409, detail="Not initialized. Use init endpoint first.")
+        raise HTTPException(status_code=409, detail='Not initialized. Use init endpoint first.')
 
     current_snapshot = await take_snapshot(session)
     parent_hash = latest.hash
@@ -178,21 +178,21 @@ async def api_save_version(
     )
 
 
-@router.post("/api/versions/discard", response_model=MessageResponse)
+@router.post('/api/versions/discard', response_model=MessageResponse)
 async def api_discard_changes(session: DBSession, _user: CurrentUser) -> MessageResponse:
     """Discard all pending changes by restoring the last committed version."""
 
     latest = await get_latest_version(session)
     if latest is None:
-        raise HTTPException(status_code=409, detail="Not initialized")
+        raise HTTPException(status_code=409, detail='Not initialized')
 
     committed_snapshot = json.loads(latest.snapshot)
     await restore_snapshot(session, committed_snapshot)
 
-    return MessageResponse(detail="All pending changes discarded")
+    return MessageResponse(detail='All pending changes discarded')
 
 
-@router.get("/api/versions", response_model=VersionListResponse)
+@router.get('/api/versions', response_model=VersionListResponse)
 async def api_list_versions(session: DBSession, limit: int = 50, offset: int = 0) -> VersionListResponse:
     """List committed versions (newest first)."""
 
@@ -214,13 +214,13 @@ async def api_list_versions(session: DBSession, limit: int = 50, offset: int = 0
     )
 
 
-@router.get("/api/versions/{version_hash}", response_model=VersionDetail)
+@router.get('/api/versions/{version_hash}', response_model=VersionDetail)
 async def api_version_detail(version_hash: str, session: DBSession) -> VersionDetail:
     """Get version details including diff from parent."""
 
     version = await get_version_by_hash(session, version_hash)
     if version is None:
-        raise HTTPException(status_code=404, detail="Version not found")
+        raise HTTPException(status_code=404, detail='Version not found')
 
     version_snapshot = json.loads(version.snapshot)
 
@@ -246,7 +246,7 @@ async def api_version_detail(version_hash: str, session: DBSession) -> VersionDe
     )
 
 
-@router.post("/api/versions/{version_hash}/rollback", response_model=VersionSummary)
+@router.post('/api/versions/{version_hash}/rollback', response_model=VersionSummary)
 async def api_rollback_version(
     version_hash: str,
     session: DBSession,
@@ -256,7 +256,7 @@ async def api_rollback_version(
 
     target = await get_version_by_hash(session, version_hash)
     if target is None:
-        raise HTTPException(status_code=404, detail="Version not found")
+        raise HTTPException(status_code=404, detail='Version not found')
 
     latest = await get_latest_version(session)
     parent_hash = latest.hash if latest else None
@@ -269,7 +269,7 @@ async def api_rollback_version(
     version = await create_version(
         session,
         snapshot_data=fresh_snapshot,
-        message=f"Rollback to {target.hash[:8]}: {target.message}",
+        message=f'Rollback to {target.hash[:8]}: {target.message}',
         user_id=user.id,
         user_name=user.name or user.email,
         parent_hash=parent_hash,
@@ -284,16 +284,16 @@ async def api_rollback_version(
     )
 
 
-@router.post("/api/versions/revert-section", response_model=MessageResponse)
+@router.post('/api/versions/revert-section', response_model=MessageResponse)
 async def api_revert_section(body: SectionRevertRequest, session: DBSession, _user: CurrentUser) -> MessageResponse:
     """Revert a specific section to its last committed state."""
 
     if body.section not in SECTION_SIDEBAR_MAP:
-        raise HTTPException(status_code=400, detail=f"Unknown section: {body.section}")
+        raise HTTPException(status_code=400, detail=f'Unknown section: {body.section}')
 
     latest = await get_latest_version(session)
     if latest is None:
-        raise HTTPException(status_code=409, detail="Not initialized")
+        raise HTTPException(status_code=409, detail='Not initialized')
 
     committed_snapshot = json.loads(latest.snapshot)
     current_snapshot = await take_snapshot(session)

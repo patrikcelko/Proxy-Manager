@@ -44,6 +44,9 @@ proxy_manager = ["static/**/*", "templates/**/*"]
 target-version = "py313"
 line-length = 180
 
+[tool.ruff.format]
+quote-style = "single"
+
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "S", "SIM"]
 ignore = ["S101"]

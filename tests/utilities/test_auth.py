@@ -14,7 +14,7 @@ from proxy_manager.utilities.auth import (
 def test_hash_and_verify() -> None:
     """Hash and verify."""
 
-    password = "myStrongPassword123!"
+    password = 'myStrongPassword123!'
     hashed = hash_password(password)
 
     assert hashed != password
@@ -24,15 +24,15 @@ def test_hash_and_verify() -> None:
 def test_wrong_password() -> None:
     """Wrong password."""
 
-    hashed = hash_password("correct")
-    assert verify_password("wrong", hashed) is False
+    hashed = hash_password('correct')
+    assert verify_password('wrong', hashed) is False
 
 
 def test_hash_is_unique() -> None:
     """Hash is unique."""
 
-    h1 = hash_password("same")
-    h2 = hash_password("same")
+    h1 = hash_password('same')
+    h2 = hash_password('same')
     assert h1 != h2
 
 
@@ -48,7 +48,7 @@ def test_create_and_decode() -> None:
 def test_invalid_token() -> None:
     """Invalid token."""
 
-    result = decode_access_token("not.a.valid.token")
+    result = decode_access_token('not.a.valid.token')
     assert result is None
 
 

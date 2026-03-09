@@ -4,11 +4,12 @@ Proxy Manager
 
 HAProxy configuration management service with web UI.
 """
+
 import logging
 import os
 from pathlib import Path
 
-__version__: str = "1.5.3"
+__version__: str = '1.5.3'
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,30 +23,30 @@ _BASE_DIR = Path(__file__).parent
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(levelname)s:     %(name)s - %(message)s",
+    format='%(levelname)s:     %(name)s - %(message)s',
 )
 
 app = FastAPI(
-    title="Proxy Manager",
+    title='Proxy Manager',
     version=__version__,
-    description="HAProxy configuration management service with web UI.",
+    description='HAProxy configuration management service with web UI.',
     lifespan=lifespan,
 )
 
 app.state.limiter = limiter
 
-_cors_origins_raw = os.environ.get("PM_CORS_ORIGINS", "*")
-_cors_origins: list[str] = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+_cors_origins_raw = os.environ.get('PM_CORS_ORIGINS', '*')
+_cors_origins: list[str] = [o.strip() for o in _cors_origins_raw.split(',') if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials="*" not in _cors_origins,
-    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_credentials='*' not in _cors_origins,
+    allow_methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allow_headers=['*'],
 )
 
-app.mount("/static", StaticFiles(directory=str(_BASE_DIR / "static")), name="static")
+app.mount('/static', StaticFiles(directory=str(_BASE_DIR / 'static')), name='static')
 app.include_router(router)
 
-__all__ = ["app", "__version__"]
+__all__ = ['app', '__version__']

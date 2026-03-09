@@ -22,10 +22,10 @@ class SslCertificateCreate(BaseModel):
     email: str | None = None
     """Unique email address."""
 
-    provider: str = Field(default="certbot", pattern=r"^(certbot|manual|self-signed)$")
+    provider: str = Field(default='certbot', pattern=r'^(certbot|manual|self-signed)$')
     """Certificate provider (`certbot`, `manual`, `self-signed`)."""
 
-    status: str = Field(default="pending", pattern=r"^(pending|active|expired|revoked|error)$")
+    status: str = Field(default='pending', pattern=r'^(pending|active|expired|revoked|error)$')
     """Certificate status (`pending`, `active`, `expired`, etc.)."""
 
     cert_path: str | None = None
@@ -46,7 +46,7 @@ class SslCertificateCreate(BaseModel):
     auto_renew: bool = True
     """Enable automatic renewal."""
 
-    challenge_type: str = Field(default="http-01", pattern=r"^(http-01|dns-01|standalone)$")
+    challenge_type: str = Field(default='http-01', pattern=r'^(http-01|dns-01|standalone)$')
     """ACME challenge type (`http-01`, `dns-01`)."""
 
     dns_plugin: str | None = None
@@ -68,10 +68,10 @@ class SslCertificateUpdate(BaseModel):
     email: str | None = None
     """Unique email address."""
 
-    provider: str | None = Field(default=None, pattern=r"^(certbot|manual|self-signed)$")
+    provider: str | None = Field(default=None, pattern=r'^(certbot|manual|self-signed)$')
     """Certificate provider (`certbot`, `manual`, `self-signed`)."""
 
-    status: str | None = Field(default=None, pattern=r"^(pending|active|expired|revoked|error)$")
+    status: str | None = Field(default=None, pattern=r'^(pending|active|expired|revoked|error)$')
     """Certificate status (`pending`, `active`, `expired`, etc`)."""
 
     cert_path: str | None = None
@@ -92,7 +92,7 @@ class SslCertificateUpdate(BaseModel):
     auto_renew: bool | None = None
     """Enable automatic renewal."""
 
-    challenge_type: str | None = Field(default=None, pattern=r"^(http-01|dns-01|standalone)$")
+    challenge_type: str | None = Field(default=None, pattern=r'^(http-01|dns-01|standalone)$')
     """ACME challenge type (`http-01`, `dns-01`)."""
 
     dns_plugin: str | None = None

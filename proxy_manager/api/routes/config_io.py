@@ -96,10 +96,10 @@ from proxy_manager.database.models.userlist import (
     list_userlists,
 )
 
-router = APIRouter(tags=["config"])
+router = APIRouter(tags=['config'])
 
 
-@router.get("/api/overview", response_model=OverviewResponse)
+@router.get('/api/overview', response_model=OverviewResponse)
 async def api_overview(session: DBSession) -> OverviewResponse:
     """Return a summary of all configured sections."""
 
@@ -140,14 +140,14 @@ async def api_overview(session: DBSession) -> OverviewResponse:
     )
 
 
-@router.post("/api/config/import", response_model=MessageResponse)
+@router.post('/api/config/import', response_model=MessageResponse)
 async def api_import_config(body: ConfigImportRequest, session: DBSession) -> MessageResponse:
     """Import an HAProxy configuration from text."""
 
     try:
         parsed = parse_config(body.config_text)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Parse error: {e}") from e
+        raise HTTPException(status_code=400, detail=f'Parse error: {e}') from e
 
     if not body.merge:
         # Clear everything
@@ -458,17 +458,17 @@ async def api_import_config(body: ConfigImportRequest, session: DBSession) -> Me
         ssl_imported += 1
 
     counts = (
-        f"{len(parsed.global_settings)} global, {len(parsed.default_settings)} defaults, "
-        f"{len(parsed.userlists)} userlists, {len(parsed.frontends)} frontends, "
-        f"{len(parsed.backends)} backends, {len(parsed.listen_blocks)} listen blocks, "
-        f"{len(parsed.resolvers)} resolvers, {len(parsed.peers)} peers, "
-        f"{len(parsed.mailers)} mailers, {len(parsed.http_errors)} http-errors, "
-        f"{len(parsed.caches)} caches, {ssl_imported} ssl certificates"
+        f'{len(parsed.global_settings)} global, {len(parsed.default_settings)} defaults, '
+        f'{len(parsed.userlists)} userlists, {len(parsed.frontends)} frontends, '
+        f'{len(parsed.backends)} backends, {len(parsed.listen_blocks)} listen blocks, '
+        f'{len(parsed.resolvers)} resolvers, {len(parsed.peers)} peers, '
+        f'{len(parsed.mailers)} mailers, {len(parsed.http_errors)} http-errors, '
+        f'{len(parsed.caches)} caches, {ssl_imported} ssl certificates'
     )
-    return MessageResponse(detail=f"Config imported: {counts}")
+    return MessageResponse(detail=f'Config imported: {counts}')
 
 
-@router.get("/api/config/export", response_model=ConfigExportResponse)
+@router.get('/api/config/export', response_model=ConfigExportResponse)
 async def api_export_config(session: DBSession) -> ConfigExportResponse:
     """Export the current HAProxy configuration as text."""
 
@@ -548,13 +548,13 @@ async def api_export_config(session: DBSession) -> ConfigExportResponse:
     return ConfigExportResponse(config_text=config_text)
 
 
-@router.post("/api/config/validate")
+@router.post('/api/config/validate')
 async def api_validate_config(body: ConfigImportRequest) -> dict[str, bool | str]:
     """Validate HAProxy configuration text without importing it."""
 
     try:
         parse_config(body.config_text)
     except Exception as e:
-        return {"valid": False, "error": f"Parse error: {e}"}
+        return {'valid': False, 'error': f'Parse error: {e}'}
 
-    return {"valid": True, "error": ""}
+    return {'valid': True, 'error': ''}

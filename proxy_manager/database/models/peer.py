@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class PeerSection(Base):
     """HAProxy 'peers' section."""
 
-    __tablename__ = "peer_sections"
+    __tablename__ = 'peer_sections'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -38,21 +38,21 @@ class PeerSection(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<PeerSection(id={self.id}, name={self.name!r})>"
+        return f'<PeerSection(id={self.id}, name={self.name!r})>'
 
 
 class PeerEntry(Base):
     """A peer entry within a peers section."""
 
-    __tablename__ = "peer_entries"
-    __table_args__ = (UniqueConstraint("peer_section_id", "name", name="uq_peer_entry_name"),)
+    __tablename__ = 'peer_entries'
+    __table_args__ = (UniqueConstraint('peer_section_id', 'name', name='uq_peer_entry_name'),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
     peer_section_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("peer_sections.id", ondelete="CASCADE"),
+        ForeignKey('peer_sections.id', ondelete='CASCADE'),
         nullable=False,
         index=True,
     )
@@ -73,7 +73,7 @@ class PeerEntry(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<PeerEntry(id={self.id}, name={self.name!r})>"
+        return f'<PeerEntry(id={self.id}, name={self.name!r})>'
 
 
 async def list_peer_sections(session: AsyncSession) -> list[PeerSection]:
@@ -111,10 +111,10 @@ async def create_peer_section(session: AsyncSession, **kwargs: object) -> PeerSe
 async def update_peer_section(session: AsyncSession, obj: PeerSection, **kwargs: object) -> PeerSection:
     """Update an existing peer section with the given field values."""
 
-    allowed = {c.name for c in PeerSection.__table__.columns} - {"id"}
+    allowed = {c.name for c in PeerSection.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_peer_section: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_peer_section: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -169,10 +169,10 @@ async def create_peer_entry(session: AsyncSession, **kwargs: object) -> PeerEntr
 async def update_peer_entry(session: AsyncSession, obj: PeerEntry, **kwargs: object) -> PeerEntry:
     """Update an existing peer entry."""
 
-    allowed = {c.name for c in PeerEntry.__table__.columns} - {"id", "peer_section_id"}
+    allowed = {c.name for c in PeerEntry.__table__.columns} - {'id', 'peer_section_id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_peer_entry: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_peer_entry: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

@@ -29,7 +29,7 @@ from proxy_manager.database.models.ssl_certificate import (
     update_ssl_certificate,
 )
 
-router = APIRouter(tags=["ssl-certificates"])
+router = APIRouter(tags=['ssl-certificates'])
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -47,77 +47,77 @@ def _parse_dt(value: str | None) -> datetime | None:
 def _build_certbot_command(cert: SslCertificate) -> str:
     """Build the certbot CLI command for a certificate record."""
 
-    parts: list[str] = ["certbot", "certonly"]
+    parts: list[str] = ['certbot', 'certonly']
 
     # Challenge type
-    if cert.challenge_type == "standalone":
-        parts.append("--standalone")
-    elif cert.challenge_type == "dns-01":
+    if cert.challenge_type == 'standalone':
+        parts.append('--standalone')
+    elif cert.challenge_type == 'dns-01':
         if cert.dns_plugin:
-            parts.extend(["--dns-" + cert.dns_plugin])
+            parts.extend(['--dns-' + cert.dns_plugin])
         else:
-            parts.append("--manual")
-            parts.append("--preferred-challenges=dns")
+            parts.append('--manual')
+            parts.append('--preferred-challenges=dns')
     else:
-        parts.append("--webroot")
-        parts.extend(["-w", "/var/lib/letsencrypt"])
+        parts.append('--webroot')
+        parts.extend(['-w', '/var/lib/letsencrypt'])
 
     # Domains
-    parts.extend(["-d", cert.domain])
+    parts.extend(['-d', cert.domain])
     if cert.alt_domains:
-        for alt in cert.alt_domains.split(","):
+        for alt in cert.alt_domains.split(','):
             alt = alt.strip()
             if alt:
-                parts.extend(["-d", alt])
+                parts.extend(['-d', alt])
 
     # Email / agree TOS
     if cert.email:
-        parts.extend(["--email", cert.email])
+        parts.extend(['--email', cert.email])
     else:
-        parts.append("--register-unsafely-without-email")
-    parts.append("--agree-tos")
-    parts.append("--non-interactive")
+        parts.append('--register-unsafely-without-email')
+    parts.append('--agree-tos')
+    parts.append('--non-interactive')
 
     # Cert paths (overrides)
     if cert.cert_path:
-        parts.extend(["--cert-path", cert.cert_path])
+        parts.extend(['--cert-path', cert.cert_path])
     if cert.key_path:
-        parts.extend(["--key-path", cert.key_path])
+        parts.extend(['--key-path', cert.key_path])
     if cert.fullchain_path:
-        parts.extend(["--fullchain-path", cert.fullchain_path])
+        parts.extend(['--fullchain-path', cert.fullchain_path])
 
-    return " ".join(shlex.quote(p) for p in parts)
+    return ' '.join(shlex.quote(p) for p in parts)
 
 
 def _build_renew_command(cert: SslCertificate) -> str:
     """Build the certbot renew command for a specific certificate."""
 
     parts: list[str] = [
-        "certbot",
-        "renew",
-        "--cert-name",
+        'certbot',
+        'renew',
+        '--cert-name',
         cert.domain,
-        "--non-interactive",
+        '--non-interactive',
     ]
-    return " ".join(shlex.quote(p) for p in parts)
+    return ' '.join(shlex.quote(p) for p in parts)
 
 
 def _build_revoke_command(cert: SslCertificate) -> str:
     """Build the certbot revoke command."""
 
-    cert_file = cert.fullchain_path or f"/etc/letsencrypt/live/{cert.domain}/fullchain.pem"
+    cert_file = cert.fullchain_path or f'/etc/letsencrypt/live/{cert.domain}/fullchain.pem'
     parts: list[str] = [
-        "certbot",
-        "revoke",
-        "--cert-path",
+        'certbot',
+        'revoke',
+        '--cert-path',
         cert_file,
-        "--non-interactive",
+        '--non-interactive',
     ]
 
-    return " ".join(shlex.quote(p) for p in parts)
+    return ' '.join(shlex.quote(p) for p in parts)
 
 
-@router.get("/api/ssl-certificates/acl-domains")
+@router.get('/api/ssl-certificates/acl-domains')
 async def api_acl_domains(session: DBSession) -> dict[str, list[str]]:
     """Return unique domains from ACL rules for the domain picker."""
 
@@ -126,10 +126,10 @@ async def api_acl_domains(session: DBSession) -> dict[str, list[str]]:
     )
     domains = [row[0] for row in result.all() if row[0]]
 
-    return {"domains": domains}
+    return {'domains': domains}
 
 
-@router.get("/api/ssl-certificates", response_model=SslCertificateListResponse)
+@router.get('/api/ssl-certificates', response_model=SslCertificateListResponse)
 async def api_list_ssl_certificates(session: DBSession) -> SslCertificateListResponse:
     """List all SSL certificate records."""
 
@@ -140,18 +140,18 @@ async def api_list_ssl_certificates(session: DBSession) -> SslCertificateListRes
     )
 
 
-@router.get("/api/ssl-certificates/{cert_id}", response_model=SslCertificateResponse)
+@router.get('/api/ssl-certificates/{cert_id}', response_model=SslCertificateResponse)
 async def api_get_ssl_certificate(cert_id: int, session: DBSession) -> SslCertificateResponse:
     """Get a single SSL certificate by ID."""
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     return SslCertificateResponse.model_validate(c)
 
 
-@router.post("/api/ssl-certificates", response_model=SslCertificateResponse, status_code=201)
+@router.post('/api/ssl-certificates', response_model=SslCertificateResponse, status_code=201)
 async def api_create_ssl_certificate(
     body: SslCertificateCreate,
     session: DBSession,
@@ -166,7 +166,7 @@ async def api_create_ssl_certificate(
         )
 
     data = body.model_dump(exclude_unset=True)
-    for dt_field in ("issued_at", "expires_at"):
+    for dt_field in ('issued_at', 'expires_at'):
         if dt_field in data:
             data[dt_field] = _parse_dt(data[dt_field])
     c = await create_ssl_certificate(session, **data)
@@ -174,7 +174,7 @@ async def api_create_ssl_certificate(
     return SslCertificateResponse.model_validate(c)
 
 
-@router.put("/api/ssl-certificates/{cert_id}", response_model=SslCertificateResponse)
+@router.put('/api/ssl-certificates/{cert_id}', response_model=SslCertificateResponse)
 async def api_update_ssl_certificate(
     cert_id: int,
     body: SslCertificateUpdate,
@@ -184,7 +184,7 @@ async def api_update_ssl_certificate(
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     if body.domain is not None and body.domain != c.domain:
         conflict = await get_ssl_certificate_by_domain(session, body.domain)
@@ -195,7 +195,7 @@ async def api_update_ssl_certificate(
             )
 
     data = body.model_dump(exclude_unset=True)
-    for dt_field in ("issued_at", "expires_at", "last_renewal_at"):
+    for dt_field in ('issued_at', 'expires_at', 'last_renewal_at'):
         if dt_field in data:
             data[dt_field] = _parse_dt(data[dt_field])
 
@@ -203,20 +203,20 @@ async def api_update_ssl_certificate(
     return SslCertificateResponse.model_validate(c)
 
 
-@router.delete("/api/ssl-certificates/{cert_id}", response_model=MessageResponse)
+@router.delete('/api/ssl-certificates/{cert_id}', response_model=MessageResponse)
 async def api_delete_ssl_certificate(cert_id: int, session: DBSession) -> MessageResponse:
     """Delete an SSL certificate record."""
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     await delete_ssl_certificate(session, c)
-    return MessageResponse(detail="SSL certificate deleted")
+    return MessageResponse(detail='SSL certificate deleted')
 
 
 @router.get(
-    "/api/ssl-certificates/{cert_id}/certbot-command",
+    '/api/ssl-certificates/{cert_id}/certbot-command',
     response_model=CertbotCommandResponse,
 )
 async def api_certbot_command(cert_id: int, session: DBSession) -> CertbotCommandResponse:
@@ -224,17 +224,17 @@ async def api_certbot_command(cert_id: int, session: DBSession) -> CertbotComman
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     cmd = _build_certbot_command(c)
     return CertbotCommandResponse(
         command=cmd,
-        description=f"Certbot command to obtain certificate for {c.domain}",
+        description=f'Certbot command to obtain certificate for {c.domain}',
     )
 
 
 @router.get(
-    "/api/ssl-certificates/{cert_id}/renew-command",
+    '/api/ssl-certificates/{cert_id}/renew-command',
     response_model=CertbotCommandResponse,
 )
 async def api_renew_command(cert_id: int, session: DBSession) -> CertbotCommandResponse:
@@ -242,17 +242,17 @@ async def api_renew_command(cert_id: int, session: DBSession) -> CertbotCommandR
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     cmd = _build_renew_command(c)
     return CertbotCommandResponse(
         command=cmd,
-        description=f"Certbot renewal command for {c.domain}",
+        description=f'Certbot renewal command for {c.domain}',
     )
 
 
 @router.get(
-    "/api/ssl-certificates/{cert_id}/revoke-command",
+    '/api/ssl-certificates/{cert_id}/revoke-command',
     response_model=CertbotCommandResponse,
 )
 async def api_revoke_command(cert_id: int, session: DBSession) -> CertbotCommandResponse:
@@ -260,10 +260,10 @@ async def api_revoke_command(cert_id: int, session: DBSession) -> CertbotCommand
 
     c = await get_ssl_certificate(session, cert_id)
     if not c:
-        raise HTTPException(status_code=404, detail="SSL certificate not found")
+        raise HTTPException(status_code=404, detail='SSL certificate not found')
 
     cmd = _build_revoke_command(c)
     return CertbotCommandResponse(
         command=cmd,
-        description=f"Certbot revoke command for {c.domain}",
+        description=f'Certbot revoke command for {c.domain}',
     )

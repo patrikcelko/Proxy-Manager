@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class ListenBlock(Base):
     """HAProxy 'listen' section (e.g. stats)."""
 
-    __tablename__ = "listen_blocks"
+    __tablename__ = 'listen_blocks'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -23,7 +23,7 @@ class ListenBlock(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     """Unique name identifier."""
 
-    mode: Mapped[str] = mapped_column(String(50), nullable=False, default="http")
+    mode: Mapped[str] = mapped_column(String(50), nullable=False, default='http')
     """Proxy mode (`http` or `tcp`)."""
 
     balance: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
@@ -65,18 +65,18 @@ class ListenBlock(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<ListenBlock(id={self.id}, name={self.name!r})>"
+        return f'<ListenBlock(id={self.id}, name={self.name!r})>'
 
 
 class ListenBlockBind(Base):
     """A bind directive for a listen block."""
 
-    __tablename__ = "listen_block_binds"
+    __tablename__ = 'listen_block_binds'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    listen_block_id: Mapped[int] = mapped_column(ForeignKey("listen_blocks.id", ondelete="CASCADE"), nullable=False, index=True)
+    listen_block_id: Mapped[int] = mapped_column(ForeignKey('listen_blocks.id', ondelete='CASCADE'), nullable=False, index=True)
     """Foreign key to the parent listen block."""
 
     bind_line: Mapped[str] = mapped_column(Text, nullable=False)
@@ -88,7 +88,7 @@ class ListenBlockBind(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<ListenBlockBind(id={self.id}, bind_line={self.bind_line!r})>"
+        return f'<ListenBlockBind(id={self.id}, bind_line={self.bind_line!r})>'
 
 
 async def list_listen_blocks(session: AsyncSession) -> list[ListenBlock]:
@@ -117,7 +117,7 @@ async def create_listen_block(
     session: AsyncSession,
     *,
     name: str,
-    mode: str = "http",
+    mode: str = 'http',
     balance: str | None = None,
     maxconn: int | None = None,
     timeout_client: str | None = None,
@@ -162,10 +162,10 @@ async def update_listen_block(
 ) -> ListenBlock:
     """Update an existing listen block with the given field values."""
 
-    allowed = {c.name for c in ListenBlock.__table__.columns} - {"id"}
+    allowed = {c.name for c in ListenBlock.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_listen_block: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_listen_block: ignoring unknown fields: %s', unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(block, key, val)

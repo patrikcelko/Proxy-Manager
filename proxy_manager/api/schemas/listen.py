@@ -14,7 +14,7 @@ class ListenBlockCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     """Unique name identifier."""
 
-    mode: str = "http"
+    mode: str = 'http'
     """Proxy mode (`http` or `tcp`)."""
 
     balance: str | None = None
@@ -60,7 +60,7 @@ class ListenBlockUpdate(BaseModel):
     name: str | None = None
     """Unique name identifier."""
 
-    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
+    mode: str | None = Field(default=None, pattern=r'^(http|tcp)$')
     """Proxy mode (`http` or `tcp`)."""
 
     balance: str | None = None

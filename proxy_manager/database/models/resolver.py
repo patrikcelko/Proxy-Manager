@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class Resolver(Base):
     """HAProxy 'resolvers' section."""
 
-    __tablename__ = "resolvers"
+    __tablename__ = 'resolvers'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -68,21 +68,21 @@ class Resolver(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<Resolver(id={self.id}, name={self.name!r})>"
+        return f'<Resolver(id={self.id}, name={self.name!r})>'
 
 
 class ResolverNameserver(Base):
     """A nameserver entry within a resolver."""
 
-    __tablename__ = "resolver_nameservers"
-    __table_args__ = (UniqueConstraint("resolver_id", "name", name="uq_resolver_nameserver_name"),)
+    __tablename__ = 'resolver_nameservers'
+    __table_args__ = (UniqueConstraint('resolver_id', 'name', name='uq_resolver_nameserver_name'),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
     resolver_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("resolvers.id", ondelete="CASCADE"),
+        ForeignKey('resolvers.id', ondelete='CASCADE'),
         nullable=False,
         index=True,
     )
@@ -103,7 +103,7 @@ class ResolverNameserver(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<ResolverNameserver(id={self.id}, name={self.name!r})>"
+        return f'<ResolverNameserver(id={self.id}, name={self.name!r})>'
 
 
 async def list_resolvers(session: AsyncSession) -> list[Resolver]:
@@ -141,10 +141,10 @@ async def create_resolver(session: AsyncSession, **kwargs: object) -> Resolver:
 async def update_resolver(session: AsyncSession, obj: Resolver, **kwargs: object) -> Resolver:
     """Update an existing resolver with the given field values."""
 
-    allowed = {c.name for c in Resolver.__table__.columns} - {"id"}
+    allowed = {c.name for c in Resolver.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_resolver: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_resolver: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -203,10 +203,10 @@ async def update_resolver_nameserver(
 ) -> ResolverNameserver:
     """Update an existing resolver nameserver."""
 
-    allowed = {c.name for c in ResolverNameserver.__table__.columns} - {"id", "resolver_id"}
+    allowed = {c.name for c in ResolverNameserver.__table__.columns} - {'id', 'resolver_id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_resolver_nameserver: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_resolver_nameserver: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

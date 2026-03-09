@@ -15,7 +15,7 @@ class ParsedDirective:
     """A single directive line."""
 
     directive: str
-    value: str = ""
+    value: str = ''
     comment: str | None = None
     order: int = 0
 
@@ -57,8 +57,8 @@ class ParsedAcl:
     """An ACL + use_backend / redirect pair."""
 
     domain: str
-    backend_name: str = ""
-    acl_match_type: str = "hdr_dom"
+    backend_name: str = ''
+    acl_match_type: str = 'hdr_dom'
     is_redirect: bool = False
     redirect_target: str | None = None
     redirect_code: int = 308
@@ -124,7 +124,7 @@ class ParsedFrontend:
 
     name: str
     default_backend: str | None = None
-    mode: str = "http"
+    mode: str = 'http'
     comment: str | None = None
     binds: list[str] = field(default_factory=list)
     options: list[ParsedDirective] = field(default_factory=list)
@@ -147,7 +147,7 @@ class ParsedListenBlock:
 
     name: str
     binds: list[str] = field(default_factory=list)
-    mode: str = "http"
+    mode: str = 'http'
     balance: str | None = None
     maxconn: int | None = None
     timeout_client: str | None = None
@@ -246,8 +246,8 @@ class ParsedHttpErrorEntry:
     """An error entry in an http-errors block."""
 
     status_code: int
-    type: str = "errorfile"
-    value: str = ""
+    type: str = 'errorfile'
+    value: str = ''
     order: int = 0
 
 
@@ -283,9 +283,9 @@ class ParsedSslCertificate:
     cert_path: str | None = None
     key_path: str | None = None
     fullchain_path: str | None = None
-    provider: str = "manual"  # imported certs are manual
-    status: str = "active"
-    challenge_type: str = "http-01"
+    provider: str = 'manual'  # imported certs are manual
+    status: str = 'active'
+    challenge_type: str = 'http-01'
     auto_renew: bool = False
     alt_domains: str | None = None
     comment: str | None = None
@@ -311,19 +311,19 @@ class ParsedConfig:
 
 # Regex patterns
 _SECTION_RE = re.compile(
-    r"^(global|defaults|frontend|backend|listen|userlist|resolvers|peers|mailers|http-errors|cache)\s*(.*?)\s*$",
+    r'^(global|defaults|frontend|backend|listen|userlist|resolvers|peers|mailers|http-errors|cache)\s*(.*?)\s*$',
     re.IGNORECASE,
 )
-_SERVER_RE = re.compile(r"^server\s+(\S+)\s+(\S+):(\d+)\s*(.*)?$", re.IGNORECASE)
+_SERVER_RE = re.compile(r'^server\s+(\S+)\s+(\S+):(\d+)\s*(.*)?$', re.IGNORECASE)
 _ACL_HDR_RE = re.compile(
-    r"^acl\s+\S+\s+(hdr_dom|hdr)\(Host\)\s+-i\s+(\S+)$",
+    r'^acl\s+\S+\s+(hdr_dom|hdr)\(Host\)\s+-i\s+(\S+)$',
     re.IGNORECASE,
 )
-_USE_BACKEND_RE = re.compile(r"^use_backend\s+(\S+)\s+if\s+", re.IGNORECASE)
-_REDIRECT_RE = re.compile(r"^redirect\s+prefix\s+(\S+)\s+code\s+(\d+)\s+if\s+", re.IGNORECASE)
-_BIND_RE = re.compile(r"^bind\s+", re.IGNORECASE)
+_USE_BACKEND_RE = re.compile(r'^use_backend\s+(\S+)\s+if\s+', re.IGNORECASE)
+_REDIRECT_RE = re.compile(r'^redirect\s+prefix\s+(\S+)\s+code\s+(\d+)\s+if\s+', re.IGNORECASE)
+_BIND_RE = re.compile(r'^bind\s+', re.IGNORECASE)
 _SSL_CRT_RE = re.compile(r'\bssl\b.*?\bcrt\s+(?:"([^"]+)"|\'([^\']+)\'|(\S+))', re.IGNORECASE)
-_COMMENT_BLOCK_RE = re.compile(r"^\s*#\s*(.*)")
+_COMMENT_BLOCK_RE = re.compile(r'^\s*#\s*(.*)')
 
 
 def _strip_inline_comment(line: str) -> tuple[str, str | None]:
@@ -336,7 +336,7 @@ def _strip_inline_comment(line: str) -> tuple[str, str | None]:
                 quote_char = None
         elif ch in ('"', "'"):
             quote_char = ch
-        elif ch == "#" and i > 0:
+        elif ch == '#' and i > 0:
             return line[:i].rstrip(), line[i + 1 :].strip()
 
     return line, None
@@ -352,7 +352,7 @@ def _parse_server_line(text: str) -> ParsedServer | None:
     name = m.group(1)
     address = m.group(2)
     port = int(m.group(3))
-    rest = (m.group(4) or "").strip()
+    rest = (m.group(4) or '').strip()
 
     check_enabled = False
     maxconn = None
@@ -382,91 +382,91 @@ def _parse_server_line(text: str) -> ParsedServer | None:
         tok = tokens[i]
         tok_lower = tok.lower()
 
-        if tok_lower == "check":
+        if tok_lower == 'check':
             check_enabled = True
             i += 1
-        elif tok_lower == "maxconn" and i + 1 < len(tokens):
+        elif tok_lower == 'maxconn' and i + 1 < len(tokens):
             try:
                 maxconn = int(tokens[i + 1])
             except ValueError:
                 extra_parts.append(tok)
                 extra_parts.append(tokens[i + 1])
             i += 2
-        elif tok_lower == "maxqueue" and i + 1 < len(tokens):
+        elif tok_lower == 'maxqueue' and i + 1 < len(tokens):
             try:
                 maxqueue = int(tokens[i + 1])
             except ValueError:
                 extra_parts.append(tok)
                 extra_parts.append(tokens[i + 1])
             i += 2
-        elif tok_lower == "weight" and i + 1 < len(tokens):
+        elif tok_lower == 'weight' and i + 1 < len(tokens):
             try:
                 weight = int(tokens[i + 1])
             except ValueError:
                 extra_parts.append(tok)
                 extra_parts.append(tokens[i + 1])
             i += 2
-        elif tok_lower == "ssl":
+        elif tok_lower == 'ssl':
             ssl_enabled = True
             i += 1
-        elif tok_lower == "verify" and i + 1 < len(tokens):
+        elif tok_lower == 'verify' and i + 1 < len(tokens):
             ssl_verify = tokens[i + 1]
             i += 2
-        elif tok_lower == "backup":
+        elif tok_lower == 'backup':
             backup = True
             i += 1
-        elif tok_lower == "inter" and i + 1 < len(tokens):
+        elif tok_lower == 'inter' and i + 1 < len(tokens):
             inter = tokens[i + 1]
             i += 2
-        elif tok_lower == "fastinter" and i + 1 < len(tokens):
+        elif tok_lower == 'fastinter' and i + 1 < len(tokens):
             fastinter = tokens[i + 1]
             i += 2
-        elif tok_lower == "downinter" and i + 1 < len(tokens):
+        elif tok_lower == 'downinter' and i + 1 < len(tokens):
             downinter = tokens[i + 1]
             i += 2
-        elif tok_lower == "rise" and i + 1 < len(tokens):
+        elif tok_lower == 'rise' and i + 1 < len(tokens):
             try:
                 rise = int(tokens[i + 1])
             except ValueError:
                 extra_parts.append(tok)
                 extra_parts.append(tokens[i + 1])
             i += 2
-        elif tok_lower == "fall" and i + 1 < len(tokens):
+        elif tok_lower == 'fall' and i + 1 < len(tokens):
             try:
                 fall = int(tokens[i + 1])
             except ValueError:
                 extra_parts.append(tok)
                 extra_parts.append(tokens[i + 1])
             i += 2
-        elif tok_lower == "cookie" and i + 1 < len(tokens):
+        elif tok_lower == 'cookie' and i + 1 < len(tokens):
             cookie_value = tokens[i + 1]
             i += 2
-        elif tok_lower == "send-proxy-v2":
+        elif tok_lower == 'send-proxy-v2':
             send_proxy_v2 = True
             i += 1
-        elif tok_lower == "send-proxy":
+        elif tok_lower == 'send-proxy':
             send_proxy = True
             i += 1
-        elif tok_lower == "slowstart" and i + 1 < len(tokens):
+        elif tok_lower == 'slowstart' and i + 1 < len(tokens):
             slowstart = tokens[i + 1]
             i += 2
-        elif tok_lower == "resolve-prefer" and i + 1 < len(tokens):
+        elif tok_lower == 'resolve-prefer' and i + 1 < len(tokens):
             resolve_prefer = tokens[i + 1]
             i += 2
-        elif tok_lower == "resolvers" and i + 1 < len(tokens):
+        elif tok_lower == 'resolvers' and i + 1 < len(tokens):
             resolvers_ref = tokens[i + 1]
             i += 2
-        elif tok_lower == "on-marked-down" and i + 1 < len(tokens):
+        elif tok_lower == 'on-marked-down' and i + 1 < len(tokens):
             on_marked_down = tokens[i + 1]
             i += 2
-        elif tok_lower == "disabled":
+        elif tok_lower == 'disabled':
             disabled = True
             i += 1
         else:
             extra_parts.append(tok)
             i += 1
 
-    extra = " ".join(extra_parts) if extra_parts else None
+    extra = ' '.join(extra_parts) if extra_parts else None
     return ParsedServer(
         name=name,
         address=address,
@@ -504,14 +504,14 @@ def parse_config(config_text: str) -> ParsedConfig:
     # Split into sections
     sections: list[tuple[str, str, list[str]]] = []
     current_type: str | None = None
-    current_name: str = ""
+    current_name: str = ''
     current_lines: list[str] = []
 
     for line in lines:
         stripped = line.strip()
         if not stripped:
             if current_type is not None:
-                current_lines.append("")
+                current_lines.append('')
             continue
 
         m = _SECTION_RE.match(stripped)
@@ -530,27 +530,27 @@ def parse_config(config_text: str) -> ParsedConfig:
 
     # Process each section
     for sec_type, sec_name, sec_lines in sections:
-        if sec_type == "global":
+        if sec_type == 'global':
             _parse_global(result, sec_lines)
-        elif sec_type == "defaults":
+        elif sec_type == 'defaults':
             _parse_defaults(result, sec_lines)
-        elif sec_type == "userlist":
+        elif sec_type == 'userlist':
             _parse_userlist(result, sec_name, sec_lines)
-        elif sec_type == "frontend":
+        elif sec_type == 'frontend':
             _parse_frontend(result, sec_name, sec_lines)
-        elif sec_type == "backend":
+        elif sec_type == 'backend':
             _parse_backend(result, sec_name, sec_lines)
-        elif sec_type == "listen":
+        elif sec_type == 'listen':
             _parse_listen(result, sec_name, sec_lines)
-        elif sec_type == "resolvers":
+        elif sec_type == 'resolvers':
             _parse_resolvers(result, sec_name, sec_lines)
-        elif sec_type == "peers":
+        elif sec_type == 'peers':
             _parse_peers(result, sec_name, sec_lines)
-        elif sec_type == "mailers":
+        elif sec_type == 'mailers':
             _parse_mailers(result, sec_name, sec_lines)
-        elif sec_type == "http-errors":
+        elif sec_type == 'http-errors':
             _parse_http_errors(result, sec_name, sec_lines)
-        elif sec_type == "cache":
+        elif sec_type == 'cache':
             _parse_cache(result, sec_name, sec_lines)
 
     # Extract SSL certificates from bind lines in frontends and listen blocks
@@ -583,16 +583,16 @@ def _extract_ssl_certificates(result: ParsedConfig) -> None:
         # e.g. /etc/nethostssl -> nethostssl (directory-based cert bundle)
         import os
 
-        parts = crt_path.split("/")
+        parts = crt_path.split('/')
         domain = None
 
         # Check for letsencrypt-style path: /etc/letsencrypt/live/<domain>/...
-        if "letsencrypt" in crt_path and "live" in parts:
+        if 'letsencrypt' in crt_path and 'live' in parts:
             try:
-                live_idx = parts.index("live")
+                live_idx = parts.index('live')
                 if live_idx + 1 < len(parts):
                     candidate = parts[live_idx + 1]
-                    if "." in candidate:
+                    if '.' in candidate:
                         domain = candidate
             except (ValueError, IndexError):
                 pass
@@ -600,10 +600,10 @@ def _extract_ssl_certificates(result: ParsedConfig) -> None:
         if not domain:
             # Try to extract from filename or directory
             basename = os.path.basename(crt_path)
-            if basename and "." in basename:
+            if basename and '.' in basename:
                 name_part = os.path.splitext(basename)[0]
                 # If it looks like a real domain name (has a dot and a TLD-like part)
-                domain = name_part if "." in name_part and name_part not in ("fullchain", "cert", "privkey", "chain") else basename
+                domain = name_part if '.' in name_part and name_part not in ('fullchain', 'cert', 'privkey', 'chain') else basename
             elif basename:
                 # No extension - likely a directory path, use the last component
                 domain = basename
@@ -621,9 +621,9 @@ def _extract_ssl_certificates(result: ParsedConfig) -> None:
                 domain=domain,
                 cert_path=cert_path,
                 fullchain_path=fullchain_path,
-                comment=f"Imported from {source_name} bind line",
-                provider="manual",
-                status="active",
+                comment=f'Imported from {source_name} bind line',
+                provider='manual',
+                status='active',
                 auto_renew=False,
             )
         )
@@ -631,12 +631,12 @@ def _extract_ssl_certificates(result: ParsedConfig) -> None:
     # Scan frontend binds
     for fe in result.frontends:
         for bind_line in fe.binds:
-            _process_bind_line(bind_line, f"frontend {fe.name}")
+            _process_bind_line(bind_line, f'frontend {fe.name}')
 
     # Scan listen block binds
     for lb in result.listen_blocks:
         for bind_line in lb.binds:
-            _process_bind_line(bind_line, f"listen {lb.name}")
+            _process_bind_line(bind_line, f'listen {lb.name}')
 
 
 def _parse_settings_section(lines: list[str]) -> list[ParsedDirective]:
@@ -649,7 +649,7 @@ def _parse_settings_section(lines: list[str]) -> list[ParsedDirective]:
         if not line:
             continue
         cm = _COMMENT_BLOCK_RE.match(line)
-        if line.startswith("#"):
+        if line.startswith('#'):
             comment_buf.append(cm.group(1) if cm else line[1:])
             continue
         content, inline_comment = _strip_inline_comment(line)
@@ -657,8 +657,8 @@ def _parse_settings_section(lines: list[str]) -> list[ParsedDirective]:
             continue
         parts = content.split(None, 1)
         directive = parts[0]
-        value = parts[1] if len(parts) > 1 else ""
-        comment = "\n".join(comment_buf) if comment_buf else inline_comment
+        value = parts[1] if len(parts) > 1 else ''
+        comment = '\n'.join(comment_buf) if comment_buf else inline_comment
         comment_buf = []
         directives.append(ParsedDirective(directive=directive, value=value, comment=comment, order=order))
         order += 1
@@ -683,13 +683,13 @@ def _parse_userlist(result: ParsedConfig, name: str, lines: list[str]) -> None:
     ul = ParsedUserlist(name=name)
     order = 0
     for line in lines:
-        if not line or line.startswith("#"):
+        if not line or line.startswith('#'):
             continue
         content, _ = _strip_inline_comment(line)
         if not content:
             continue
         parts = content.split()
-        if parts[0].lower() == "user" and len(parts) >= 4 and parts[2].lower() == "password":
+        if parts[0].lower() == 'user' and len(parts) >= 4 and parts[2].lower() == 'password':
             ul.entries.append(
                 ParsedUserlistEntry(
                     username=parts[1],
@@ -722,7 +722,7 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
         if not line:
             continue
 
-        if line.startswith("#"):
+        if line.startswith('#'):
             cm = _COMMENT_BLOCK_RE.match(line)
             comment_buf.append(cm.group(1) if cm else line[1:])
             continue
@@ -733,7 +733,7 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
 
         # Capture initial comment block as section-level comment
         if comment_buf and not fe.comment and not seen_content:
-            fe.comment = "\n".join(comment_buf)
+            fe.comment = '\n'.join(comment_buf)
             comment_buf = []
         seen_content = True
 
@@ -745,53 +745,53 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         # Mode
-        if content.lower().startswith("mode "):
+        if content.lower().startswith('mode '):
             fe.mode = content.split(None, 1)[1].strip()
             comment_buf = []
             continue
 
         # Default backend
-        if content.lower().startswith("default_backend "):
+        if content.lower().startswith('default_backend '):
             fe.default_backend = content.split(None, 1)[1].strip()
             comment_buf = []
             continue
 
         # Typed frontend fields
         lower_content = content.lower()
-        if lower_content.startswith("timeout client "):
+        if lower_content.startswith('timeout client '):
             fe.timeout_client = content.split()[-1]
             comment_buf = []
             continue
-        if lower_content.startswith("timeout http-request "):
+        if lower_content.startswith('timeout http-request '):
             fe.timeout_http_request = content.split()[-1]
             comment_buf = []
             continue
-        if lower_content.startswith("timeout http-keep-alive "):
+        if lower_content.startswith('timeout http-keep-alive '):
             fe.timeout_http_keep_alive = content.split()[-1]
             comment_buf = []
             continue
-        if lower_content.startswith("maxconn "):
+        if lower_content.startswith('maxconn '):
             with contextlib.suppress(ValueError, IndexError):
                 fe.maxconn = int(content.split(None, 1)[1])
             comment_buf = []
             continue
-        if lower_content == "option httplog":
+        if lower_content == 'option httplog':
             fe.option_httplog = True
             comment_buf = []
             continue
-        if lower_content == "option tcplog":
+        if lower_content == 'option tcplog':
             fe.option_tcplog = True
             comment_buf = []
             continue
-        if lower_content == "option forwardfor":
+        if lower_content == 'option forwardfor':
             fe.option_forwardfor = True
             comment_buf = []
             continue
-        if lower_content.startswith("compression algo "):
+        if lower_content.startswith('compression algo '):
             fe.compression_algo = content.split(None, 2)[2].strip()
             comment_buf = []
             continue
-        if lower_content.startswith("compression type "):
+        if lower_content.startswith('compression type '):
             fe.compression_type = content.split(None, 2)[2].strip()
             comment_buf = []
             continue
@@ -803,7 +803,7 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
             match_type = acl_m.group(1)
             domain = acl_m.group(2)
             acl_domains[acl_name] = (match_type, domain)
-            comment_text = "\n".join(comment_buf) if comment_buf else None
+            comment_text = '\n'.join(comment_buf) if comment_buf else None
             pending_acls[acl_name] = comment_text
             comment_buf = []
             continue
@@ -813,7 +813,7 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
         if ub_m:
             backend_name = ub_m.group(1)
             # Find the ACL name referenced
-            acl_name_match = re.search(r"if\s+(\S+)", content)
+            acl_name_match = re.search(r'if\s+(\S+)', content)
             if acl_name_match:
                 ref = acl_name_match.group(1)
                 if ref in acl_domains:
@@ -833,12 +833,12 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         # Redirect
-        if content.lower().startswith("redirect "):
+        if content.lower().startswith('redirect '):
             redir_m = _REDIRECT_RE.match(content)
             if redir_m:
                 target = redir_m.group(1)
                 code = int(redir_m.group(2))
-                acl_name_match = re.search(r"if\s+(\S+)", content)
+                acl_name_match = re.search(r'if\s+(\S+)', content)
                 if acl_name_match:
                     ref = acl_name_match.group(1)
                     if ref in acl_domains:
@@ -860,11 +860,11 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
 
             # Non-ACL redirects are options
             opt_parts = content.split(None, 1)
-            opt_comment = "\n".join(comment_buf) if comment_buf else None
+            opt_comment = '\n'.join(comment_buf) if comment_buf else None
             fe.options.append(
                 ParsedDirective(
                     directive=opt_parts[0],
-                    value=opt_parts[1] if len(opt_parts) > 1 else "",
+                    value=opt_parts[1] if len(opt_parts) > 1 else '',
                     comment=opt_comment,
                     order=option_order,
                 )
@@ -874,13 +874,13 @@ def _parse_frontend(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         # Everything else is an option
-        opt_comment = "\n".join(comment_buf) if comment_buf else None
+        opt_comment = '\n'.join(comment_buf) if comment_buf else None
         comment_buf = []
         opt_parts = content.split(None, 1)
         fe.options.append(
             ParsedDirective(
                 directive=opt_parts[0],
-                value=opt_parts[1] if len(opt_parts) > 1 else "",
+                value=opt_parts[1] if len(opt_parts) > 1 else '',
                 comment=opt_comment,
                 order=option_order,
             )
@@ -901,7 +901,7 @@ def _parse_backend(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             cm = _COMMENT_BLOCK_RE.match(line)
             comment_text = cm.group(1) if cm else line[1:]
             if not be.comment:
@@ -915,7 +915,7 @@ def _parse_backend(result: ParsedConfig, name: str, lines: list[str]) -> None:
         lower = content.lower()
 
         if comment_buf and not be.comment:
-            be.comment = "\n".join(comment_buf)
+            be.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         # Server line
@@ -927,69 +927,69 @@ def _parse_backend(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         # Known directives
-        if lower.startswith("mode "):
+        if lower.startswith('mode '):
             be.mode = content.split(None, 1)[1].strip()
-        elif lower.startswith("balance "):
+        elif lower.startswith('balance '):
             be.balance = content.split(None, 1)[1].strip()
-        elif lower == "option forwardfor":
+        elif lower == 'option forwardfor':
             be.option_forwardfor = True
-        elif lower.startswith("option redispatch"):
+        elif lower.startswith('option redispatch'):
             be.option_redispatch = True
-        elif lower == "option httplog":
+        elif lower == 'option httplog':
             be.option_httplog = True
-        elif lower == "option tcplog":
+        elif lower == 'option tcplog':
             be.option_tcplog = True
-        elif lower.startswith("retries "):
+        elif lower.startswith('retries '):
             try:
                 be.retries = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("retry-on "):
+        elif lower.startswith('retry-on '):
             be.retry_on = content.split(None, 1)[1].strip()
-        elif lower.startswith("option httpchk"):
+        elif lower.startswith('option httpchk'):
             be.health_check_enabled = True
-        elif lower.startswith("http-check send"):
+        elif lower.startswith('http-check send'):
             parts = content.split()
             for j, tok in enumerate(parts):
-                if tok.lower() == "meth" and j + 1 < len(parts):
+                if tok.lower() == 'meth' and j + 1 < len(parts):
                     be.health_check_method = parts[j + 1]
-                if tok.lower() == "uri" and j + 1 < len(parts):
+                if tok.lower() == 'uri' and j + 1 < len(parts):
                     be.health_check_uri = parts[j + 1]
-        elif lower.startswith("http-check expect"):
+        elif lower.startswith('http-check expect'):
             be.http_check_expect = content.split(None, 2)[2].strip() if len(content.split(None, 2)) > 2 else content
-        elif lower.startswith("errorfile "):
+        elif lower.startswith('errorfile '):
             be.errorfile = content.split(None, 1)[1].strip()
-        elif lower.startswith("cookie "):
+        elif lower.startswith('cookie '):
             be.cookie = content.split(None, 1)[1].strip()
-        elif lower.startswith("timeout server "):
+        elif lower.startswith('timeout server '):
             be.timeout_server = content.split()[-1]
-        elif lower.startswith("timeout connect "):
+        elif lower.startswith('timeout connect '):
             be.timeout_connect = content.split()[-1]
-        elif lower.startswith("timeout queue "):
+        elif lower.startswith('timeout queue '):
             be.timeout_queue = content.split()[-1]
-        elif lower.startswith("default-server "):
+        elif lower.startswith('default-server '):
             be.default_server_options = content.split(None, 1)[1].strip()
-        elif lower.startswith("http-reuse "):
+        elif lower.startswith('http-reuse '):
             be.http_reuse = content.split(None, 1)[1].strip()
-        elif lower.startswith("hash-type "):
+        elif lower.startswith('hash-type '):
             be.hash_type = content.split(None, 1)[1].strip()
-        elif lower.startswith("compression algo "):
+        elif lower.startswith('compression algo '):
             be.compression_algo = content.split(None, 2)[2].strip()
-        elif lower.startswith("compression type "):
+        elif lower.startswith('compression type '):
             be.compression_type = content.split(None, 2)[2].strip()
-        elif lower.startswith("acl authorized http_auth"):
-            m = re.match(r"acl\s+authorized\s+http_auth\((\S+)\)", content, re.IGNORECASE)
+        elif lower.startswith('acl authorized http_auth'):
+            m = re.match(r'acl\s+authorized\s+http_auth\((\S+)\)', content, re.IGNORECASE)
             if m:
                 be.auth_userlist = m.group(1)
-        elif lower.startswith("http-request auth"):
+        elif lower.startswith('http-request auth'):
             pass  # Already handled by auth_userlist
-        elif lower.startswith("http-check connect"):
+        elif lower.startswith('http-check connect'):
             pass  # Handled by health_check_enabled
         else:
             extra_lines.append(content)
 
     if extra_lines:
-        be.extra_options = "\n".join(extra_lines)
+        be.extra_options = '\n'.join(extra_lines)
 
     result.backends.append(be)
 
@@ -998,7 +998,7 @@ def _parse_listen(result: ParsedConfig, name: str, lines: list[str]) -> None:
     """Parse a `listen` section with bind entries."""
 
     binds: list[str] = []
-    mode = "http"
+    mode = 'http'
     balance: str | None = None
     maxconn: int | None = None
     timeout_client: str | None = None
@@ -1014,7 +1014,7 @@ def _parse_listen(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             comment_buf.append(line[1:].strip())
             continue
 
@@ -1023,35 +1023,35 @@ def _parse_listen(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         lower = content.lower()
-        if lower.startswith("bind "):
+        if lower.startswith('bind '):
             binds.append(content[5:].strip())
-        elif lower.startswith("mode "):
+        elif lower.startswith('mode '):
             mode = content.split(None, 1)[1].strip()
-        elif lower.startswith("balance "):
+        elif lower.startswith('balance '):
             balance = content.split(None, 1)[1].strip()
-        elif lower.startswith("maxconn "):
+        elif lower.startswith('maxconn '):
             try:
                 maxconn = int(content.split(None, 1)[1].strip())
             except (ValueError, IndexError):
                 content_lines.append(content)
-        elif lower.startswith("timeout client "):
+        elif lower.startswith('timeout client '):
             timeout_client = content.split(None, 2)[2].strip()
-        elif lower.startswith("timeout server "):
+        elif lower.startswith('timeout server '):
             timeout_server = content.split(None, 2)[2].strip()
-        elif lower.startswith("timeout connect "):
+        elif lower.startswith('timeout connect '):
             timeout_connect = content.split(None, 2)[2].strip()
-        elif lower.startswith("default-server "):
+        elif lower.startswith('default-server '):
             default_server_params = content.split(None, 1)[1].strip()
-        elif lower.strip() == "option httplog":
+        elif lower.strip() == 'option httplog':
             option_httplog = True
-        elif lower.strip() == "option tcplog":
+        elif lower.strip() == 'option tcplog':
             option_tcplog = True
-        elif lower.strip() == "option forwardfor":
+        elif lower.strip() == 'option forwardfor':
             option_forwardfor = True
         else:
             content_lines.append(content)
 
-    comment = "\n".join(comment_buf) if comment_buf else None
+    comment = '\n'.join(comment_buf) if comment_buf else None
     result.listen_blocks.append(
         ParsedListenBlock(
             name=name,
@@ -1066,16 +1066,16 @@ def _parse_listen(result: ParsedConfig, name: str, lines: list[str]) -> None:
             option_httplog=option_httplog,
             option_tcplog=option_tcplog,
             option_forwardfor=option_forwardfor,
-            content="\n".join(content_lines) if content_lines else None,
+            content='\n'.join(content_lines) if content_lines else None,
             comment=comment,
         )
     )
 
 
-_NS_RE = re.compile(r"^nameserver\s+(\S+)\s+(\S+):(\d+)", re.IGNORECASE)
-_PEER_RE = re.compile(r"^peer\s+(\S+)\s+(\S+):(\d+)", re.IGNORECASE)
-_MAILER_RE = re.compile(r"^mailer\s+(\S+)\s+(\S+):(\d+)", re.IGNORECASE)
-_ERRORFILE_RE = re.compile(r"^(errorfile|errorloc302|errorloc303|errorloc)\s+(\d+)\s+(\S+)", re.IGNORECASE)
+_NS_RE = re.compile(r'^nameserver\s+(\S+)\s+(\S+):(\d+)', re.IGNORECASE)
+_PEER_RE = re.compile(r'^peer\s+(\S+)\s+(\S+):(\d+)', re.IGNORECASE)
+_MAILER_RE = re.compile(r'^mailer\s+(\S+)\s+(\S+):(\d+)', re.IGNORECASE)
+_ERRORFILE_RE = re.compile(r'^(errorfile|errorloc302|errorloc303|errorloc)\s+(\d+)\s+(\S+)', re.IGNORECASE)
 
 
 def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
@@ -1089,7 +1089,7 @@ def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             if not r.comment:
                 cm = _COMMENT_BLOCK_RE.match(line)
                 comment_buf.append(cm.group(1) if cm else line[1:].strip())
@@ -1099,7 +1099,7 @@ def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         if comment_buf and not r.comment:
-            r.comment = "\n".join(comment_buf)
+            r.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         lower = content.lower()
@@ -1110,41 +1110,41 @@ def _parse_resolvers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             ns_order += 1
             continue
 
-        if lower.startswith("resolve_retries "):
+        if lower.startswith('resolve_retries '):
             try:
                 r.resolve_retries = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("timeout resolve "):
+        elif lower.startswith('timeout resolve '):
             r.timeout_resolve = content.split()[-1]
-        elif lower.startswith("timeout retry "):
+        elif lower.startswith('timeout retry '):
             r.timeout_retry = content.split()[-1]
-        elif lower.startswith("hold valid "):
+        elif lower.startswith('hold valid '):
             r.hold_valid = content.split()[-1]
-        elif lower.startswith("hold other "):
+        elif lower.startswith('hold other '):
             r.hold_other = content.split()[-1]
-        elif lower.startswith("hold refused "):
+        elif lower.startswith('hold refused '):
             r.hold_refused = content.split()[-1]
-        elif lower.startswith("hold timeout "):
+        elif lower.startswith('hold timeout '):
             r.hold_timeout = content.split()[-1]
-        elif lower.startswith("hold obsolete "):
+        elif lower.startswith('hold obsolete '):
             r.hold_obsolete = content.split()[-1]
-        elif lower.startswith("hold nx "):
+        elif lower.startswith('hold nx '):
             r.hold_nx = content.split()[-1]
-        elif lower.startswith("hold aa "):
+        elif lower.startswith('hold aa '):
             r.hold_aa = content.split()[-1]
-        elif lower.startswith("accepted_payload_size "):
+        elif lower.startswith('accepted_payload_size '):
             try:
                 r.accepted_payload_size = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.strip() == "parse-resolv-conf":
+        elif lower.strip() == 'parse-resolv-conf':
             r.parse_resolv_conf = 1
         else:
             extra_lines.append(content)
 
     if extra_lines:
-        r.extra_options = "\n".join(extra_lines)
+        r.extra_options = '\n'.join(extra_lines)
     result.resolvers.append(r)
 
 
@@ -1159,7 +1159,7 @@ def _parse_peers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             if not ps.comment:
                 cm = _COMMENT_BLOCK_RE.match(line)
                 comment_buf.append(cm.group(1) if cm else line[1:].strip())
@@ -1169,7 +1169,7 @@ def _parse_peers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         if comment_buf and not ps.comment:
-            ps.comment = "\n".join(comment_buf)
+            ps.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         lower = content.lower()
@@ -1180,27 +1180,27 @@ def _parse_peers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             entry_order += 1
             continue
 
-        if lower.startswith("bind "):
-            ps.default_bind = content.split(None, 1)[1] if len(content.split(None, 1)) > 1 else ""
+        if lower.startswith('bind '):
+            ps.default_bind = content.split(None, 1)[1] if len(content.split(None, 1)) > 1 else ''
             continue
-        if lower.startswith("default-server "):
-            ps.default_server_options = content.split(None, 1)[1] if len(content.split(None, 1)) > 1 else ""
+        if lower.startswith('default-server '):
+            ps.default_server_options = content.split(None, 1)[1] if len(content.split(None, 1)) > 1 else ''
             continue
 
         extra_lines.append(content)
 
     if extra_lines:
-        ps.extra_options = "\n".join(extra_lines)
+        ps.extra_options = '\n'.join(extra_lines)
     result.peers.append(ps)
 
 
 _PM_MAILER_AUTH_RE = re.compile(
-    r"^#\s*_pm_mailer_auth\s+(?P<mailer>\S+)"
-    r"\s+smtp_auth=(?P<smtp_auth>\S+)"
-    r"\s+smtp_user=(?P<smtp_user>\S*)"
-    r"\s+smtp_password=(?P<smtp_password>\S*)"
-    r"\s+use_tls=(?P<use_tls>\S+)"
-    r"\s+use_starttls=(?P<use_starttls>\S+)",
+    r'^#\s*_pm_mailer_auth\s+(?P<mailer>\S+)'
+    r'\s+smtp_auth=(?P<smtp_auth>\S+)'
+    r'\s+smtp_user=(?P<smtp_user>\S*)'
+    r'\s+smtp_password=(?P<smtp_password>\S*)'
+    r'\s+use_tls=(?P<use_tls>\S+)'
+    r'\s+use_starttls=(?P<use_starttls>\S+)',
     re.IGNORECASE,
 )
 
@@ -1222,9 +1222,9 @@ def _parse_mailers(result: ParsedConfig, name: str, lines: list[str]) -> None:
         stripped = line.strip()
         am = _PM_MAILER_AUTH_RE.match(stripped)
         if am:
-            auth_meta[am.group("mailer")] = am.groupdict()
+            auth_meta[am.group('mailer')] = am.groupdict()
             continue
-        if stripped.startswith("#"):
+        if stripped.startswith('#'):
             if not ms.comment:
                 cm = _COMMENT_BLOCK_RE.match(stripped)
                 comment_buf.append(cm.group(1) if cm else stripped[1:].strip())
@@ -1234,12 +1234,12 @@ def _parse_mailers(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         if comment_buf and not ms.comment:
-            ms.comment = "\n".join(comment_buf)
+            ms.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         lower = content.lower()
 
-        if lower.startswith("timeout mail "):
+        if lower.startswith('timeout mail '):
             ms.timeout_mail = content.split()[-1]
             continue
 
@@ -1262,14 +1262,14 @@ def _parse_mailers(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for entry in ms.entries:
         meta = auth_meta.get(entry.name)
         if meta:
-            entry.smtp_auth = meta.get("smtp_auth", "").lower() in ("true", "1", "yes")
-            entry.smtp_user = meta.get("smtp_user") or None
-            entry.smtp_password = meta.get("smtp_password") or None
-            entry.use_tls = meta.get("use_tls", "").lower() in ("true", "1", "yes")
-            entry.use_starttls = meta.get("use_starttls", "").lower() in ("true", "1", "yes")
+            entry.smtp_auth = meta.get('smtp_auth', '').lower() in ('true', '1', 'yes')
+            entry.smtp_user = meta.get('smtp_user') or None
+            entry.smtp_password = meta.get('smtp_password') or None
+            entry.use_tls = meta.get('use_tls', '').lower() in ('true', '1', 'yes')
+            entry.use_starttls = meta.get('use_starttls', '').lower() in ('true', '1', 'yes')
 
     if extra_lines:
-        ms.extra_options = "\n".join(extra_lines)
+        ms.extra_options = '\n'.join(extra_lines)
     result.mailers.append(ms)
 
 
@@ -1284,7 +1284,7 @@ def _parse_http_errors(result: ParsedConfig, name: str, lines: list[str]) -> Non
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             if not sec.comment:
                 cm = _COMMENT_BLOCK_RE.match(line)
                 comment_buf.append(cm.group(1) if cm else line[1:].strip())
@@ -1294,7 +1294,7 @@ def _parse_http_errors(result: ParsedConfig, name: str, lines: list[str]) -> Non
             continue
 
         if comment_buf and not sec.comment:
-            sec.comment = "\n".join(comment_buf)
+            sec.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         m = _ERRORFILE_RE.match(content)
@@ -1313,7 +1313,7 @@ def _parse_http_errors(result: ParsedConfig, name: str, lines: list[str]) -> Non
         extra_lines.append(content)
 
     if extra_lines:
-        sec.extra_options = "\n".join(extra_lines)
+        sec.extra_options = '\n'.join(extra_lines)
     result.http_errors.append(sec)
 
 
@@ -1327,7 +1327,7 @@ def _parse_cache(result: ParsedConfig, name: str, lines: list[str]) -> None:
     for line in lines:
         if not line:
             continue
-        if line.startswith("#"):
+        if line.startswith('#'):
             if not c.comment:
                 cm = _COMMENT_BLOCK_RE.match(line)
                 comment_buf.append(cm.group(1) if cm else line[1:].strip())
@@ -1337,32 +1337,32 @@ def _parse_cache(result: ParsedConfig, name: str, lines: list[str]) -> None:
             continue
 
         if comment_buf and not c.comment:
-            c.comment = "\n".join(comment_buf)
+            c.comment = '\n'.join(comment_buf)
             comment_buf = []
 
         lower = content.lower()
 
-        if lower.startswith("total-max-size "):
+        if lower.startswith('total-max-size '):
             try:
                 c.total_max_size = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("max-object-size "):
+        elif lower.startswith('max-object-size '):
             try:
                 c.max_object_size = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("max-age "):
+        elif lower.startswith('max-age '):
             try:
                 c.max_age = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("max-secondary-entries "):
+        elif lower.startswith('max-secondary-entries '):
             try:
                 c.max_secondary_entries = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
                 extra_lines.append(content)
-        elif lower.startswith("process-vary "):
+        elif lower.startswith('process-vary '):
             try:
                 c.process_vary = int(content.split(None, 1)[1])
             except (ValueError, IndexError):
@@ -1371,5 +1371,5 @@ def _parse_cache(result: ParsedConfig, name: str, lines: list[str]) -> None:
             extra_lines.append(content)
 
     if extra_lines:
-        c.extra_options = "\n".join(extra_lines)
+        c.extra_options = '\n'.join(extra_lines)
     result.caches.append(c)

@@ -17,7 +17,7 @@ class FrontendCreate(BaseModel):
     default_backend: str | None = None
     """Default backend when no ACL matches."""
 
-    mode: str = "http"
+    mode: str = 'http'
     """Proxy mode (`http` or `tcp`)."""
 
     comment: str | None = None
@@ -60,7 +60,7 @@ class FrontendUpdate(BaseModel):
     default_backend: str | None = None
     """Default backend when no ACL matches."""
 
-    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
+    mode: str | None = Field(default=None, pattern=r'^(http|tcp)$')
     """Proxy mode (`http` or `tcp`)."""
 
     comment: str | None = None
@@ -137,7 +137,7 @@ class FrontendOptionCreate(BaseModel):
     directive: str = Field(..., min_length=1)
     """HAProxy directive name."""
 
-    value: str = ""
+    value: str = ''
     """Directive value."""
 
     comment: str | None = None
@@ -258,10 +258,10 @@ class AclRuleCreate(BaseModel):
     domain: str = Field(..., min_length=1, max_length=500)
     """Domain pattern for ACL matching."""
 
-    backend_name: str | None = ""
+    backend_name: str | None = ''
     """Target backend name for matched requests."""
 
-    acl_match_type: str = "hdr"
+    acl_match_type: str = 'hdr'
     """ACL match function (`hdr`, `hdr_dom`, etc.)."""
 
     is_redirect: bool = False

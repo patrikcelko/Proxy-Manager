@@ -13,7 +13,7 @@ from proxy_manager.database.models.base import Base
 class Userlist(Base):
     """HAProxy userlist definition."""
 
-    __tablename__ = "userlists"
+    __tablename__ = 'userlists'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -24,19 +24,19 @@ class Userlist(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<Userlist(id={self.id}, name={self.name!r})>"
+        return f'<Userlist(id={self.id}, name={self.name!r})>'
 
 
 class UserlistEntry(Base):
     """A user entry within a HAProxy userlist."""
 
-    __tablename__ = "userlist_entries"
-    __table_args__ = (UniqueConstraint("userlist_id", "username", name="uq_userlist_entry_username"),)
+    __tablename__ = 'userlist_entries'
+    __table_args__ = (UniqueConstraint('userlist_id', 'username', name='uq_userlist_entry_username'),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    userlist_id: Mapped[int] = mapped_column(ForeignKey("userlists.id", ondelete="CASCADE"), nullable=False, index=True)
+    userlist_id: Mapped[int] = mapped_column(ForeignKey('userlists.id', ondelete='CASCADE'), nullable=False, index=True)
     """Foreign key to the parent userlist."""
 
     username: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -51,7 +51,7 @@ class UserlistEntry(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<UserlistEntry(id={self.id}, username={self.username!r})>"
+        return f'<UserlistEntry(id={self.id}, username={self.username!r})>'
 
 
 async def list_userlists(session: AsyncSession) -> list[Userlist]:

@@ -13,11 +13,11 @@ def _get_env(key: str, default: str) -> str:
 
 
 DATABASE_URL: str = _get_env(
-    "DATABASE_URL",
-    "postgresql+asyncpg://proxy_manager:proxy_manager@localhost:5432/proxy_manager",
+    'DATABASE_URL',
+    'postgresql+asyncpg://proxy_manager:proxy_manager@localhost:5432/proxy_manager',
 )
 
 DATABASE_URL_SYNC: str = _get_env(
-    "DATABASE_URL_SYNC",
-    "postgresql+psycopg2://proxy_manager:proxy_manager@localhost:5432/proxy_manager",
+    'DATABASE_URL_SYNC',
+    'postgresql+psycopg2://proxy_manager:proxy_manager@localhost:5432/proxy_manager',
 )

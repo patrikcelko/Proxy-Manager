@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 
 from proxy_manager.utilities.settings import DATABASE_URL
 
-__all__ = ["async_session_factory", "engine", "get_session"]
+__all__ = ['async_session_factory', 'engine', 'get_session']
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 

@@ -13,7 +13,7 @@ from proxy_manager.database.models.base import Base
 class Frontend(Base):
     """HAProxy frontend definition."""
 
-    __tablename__ = "frontends"
+    __tablename__ = 'frontends'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -24,7 +24,7 @@ class Frontend(Base):
     default_backend: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     """Default backend when no ACL matches."""
 
-    mode: Mapped[str] = mapped_column(String(50), nullable=False, default="http")
+    mode: Mapped[str] = mapped_column(String(50), nullable=False, default='http')
     """Proxy mode (`http` or `tcp`)."""
 
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
@@ -60,18 +60,18 @@ class Frontend(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<Frontend(id={self.id}, name={self.name!r})>"
+        return f'<Frontend(id={self.id}, name={self.name!r})>'
 
 
 class FrontendBind(Base):
     """A bind directive for a frontend."""
 
-    __tablename__ = "frontend_binds"
+    __tablename__ = 'frontend_binds'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    frontend_id: Mapped[int] = mapped_column(ForeignKey("frontends.id", ondelete="CASCADE"), nullable=False, index=True)
+    frontend_id: Mapped[int] = mapped_column(ForeignKey('frontends.id', ondelete='CASCADE'), nullable=False, index=True)
     """Foreign key to the parent frontend."""
 
     bind_line: Mapped[str] = mapped_column(Text, nullable=False)
@@ -83,24 +83,24 @@ class FrontendBind(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<FrontendBind(id={self.id}, bind_line={self.bind_line!r})>"
+        return f'<FrontendBind(id={self.id}, bind_line={self.bind_line!r})>'
 
 
 class FrontendOption(Base):
     """An option/directive within a frontend (headers, DDoS rules, etc.)."""
 
-    __tablename__ = "frontend_options"
+    __tablename__ = 'frontend_options'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    frontend_id: Mapped[int] = mapped_column(ForeignKey("frontends.id", ondelete="CASCADE"), nullable=False, index=True)
+    frontend_id: Mapped[int] = mapped_column(ForeignKey('frontends.id', ondelete='CASCADE'), nullable=False, index=True)
     """Foreign key to the parent frontend."""
 
     directive: Mapped[str] = mapped_column(Text, nullable=False)
     """HAProxy directive name."""
 
-    value: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    value: Mapped[str] = mapped_column(Text, nullable=False, default='')
     """Directive value."""
 
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
@@ -112,7 +112,7 @@ class FrontendOption(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<FrontendOption(id={self.id}, directive={self.directive!r})>"
+        return f'<FrontendOption(id={self.id}, directive={self.directive!r})>'
 
 
 async def list_frontends(session: AsyncSession) -> list[Frontend]:
@@ -144,7 +144,7 @@ async def create_frontend(
     *,
     name: str,
     default_backend: str | None = None,
-    mode: str = "http",
+    mode: str = 'http',
     comment: str | None = None,
     timeout_client: str | None = None,
     timeout_http_request: str | None = None,
@@ -203,19 +203,19 @@ async def update_frontend(
     """Update an existing frontend with the given field values."""
 
     direct_fields = {
-        "name": name,
-        "mode": mode,
-        "option_httplog": option_httplog,
-        "option_tcplog": option_tcplog,
-        "option_forwardfor": option_forwardfor,
-        "timeout_client": timeout_client,
-        "timeout_http_request": timeout_http_request,
-        "timeout_http_keep_alive": timeout_http_keep_alive,
-        "maxconn": maxconn,
-        "compression_algo": compression_algo,
-        "compression_type": compression_type,
-        "default_backend": default_backend,
-        "comment": comment,
+        'name': name,
+        'mode': mode,
+        'option_httplog': option_httplog,
+        'option_tcplog': option_tcplog,
+        'option_forwardfor': option_forwardfor,
+        'timeout_client': timeout_client,
+        'timeout_http_request': timeout_http_request,
+        'timeout_http_keep_alive': timeout_http_keep_alive,
+        'maxconn': maxconn,
+        'compression_algo': compression_algo,
+        'compression_type': compression_type,
+        'default_backend': default_backend,
+        'comment': comment,
     }
 
     for field_name, value in direct_fields.items():
@@ -307,7 +307,7 @@ async def create_frontend_option(
     *,
     frontend_id: int,
     directive: str,
-    value: str = "",
+    value: str = '',
     comment: str | None = None,
     sort_order: int = 0,
 ) -> FrontendOption:
@@ -353,7 +353,7 @@ async def update_frontend_option(
     if value is not None:
         opt.value = value
 
-    if fields_set and "comment" in fields_set or comment is not None:
+    if fields_set and 'comment' in fields_set or comment is not None:
         opt.comment = comment
 
     if sort_order is not None:

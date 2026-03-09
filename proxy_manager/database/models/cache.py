@@ -16,7 +16,7 @@ from proxy_manager.database.models.base import Base
 class CacheSection(Base):
     """HAProxy 'cache' section."""
 
-    __tablename__ = "cache_sections"
+    __tablename__ = 'cache_sections'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -48,7 +48,7 @@ class CacheSection(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<CacheSection(id={self.id}, name={self.name!r})>"
+        return f'<CacheSection(id={self.id}, name={self.name!r})>'
 
 
 async def list_cache_sections(session: AsyncSession) -> list[CacheSection]:
@@ -86,10 +86,10 @@ async def create_cache_section(session: AsyncSession, **kwargs: object) -> Cache
 async def update_cache_section(session: AsyncSession, obj: CacheSection, **kwargs: object) -> CacheSection:
     """Update an existing cache section."""
 
-    allowed = {c.name for c in CacheSection.__table__.columns} - {"id"}
+    allowed = {c.name for c in CacheSection.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_cache_section: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_cache_section: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

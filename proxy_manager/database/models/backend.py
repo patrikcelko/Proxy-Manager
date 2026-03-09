@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class Backend(Base):
     """HAProxy backend definition."""
 
-    __tablename__ = "backends"
+    __tablename__ = 'backends'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -102,19 +102,19 @@ class Backend(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<Backend(id={self.id}, name={self.name!r})>"
+        return f'<Backend(id={self.id}, name={self.name!r})>'
 
 
 class BackendServer(Base):
     """A server entry within a backend."""
 
-    __tablename__ = "backend_servers"
-    __table_args__ = (UniqueConstraint("backend_id", "name", name="uq_backend_server_name"),)
+    __tablename__ = 'backend_servers'
+    __table_args__ = (UniqueConstraint('backend_id', 'name', name='uq_backend_server_name'),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
-    backend_id: Mapped[int] = mapped_column(ForeignKey("backends.id", ondelete="CASCADE"), nullable=False, index=True)
+    backend_id: Mapped[int] = mapped_column(ForeignKey('backends.id', ondelete='CASCADE'), nullable=False, index=True)
     """Foreign key to the parent backend."""
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -196,7 +196,7 @@ class BackendServer(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<BackendServer(id={self.id}, name={self.name!r}, address={self.address}:{self.port})>"
+        return f'<BackendServer(id={self.id}, name={self.name!r}, address={self.address}:{self.port})>'
 
 
 async def list_backends(session: AsyncSession) -> list[Backend]:
@@ -298,10 +298,10 @@ async def update_backend(
 ) -> Backend:
     """Update an existing backend with the given field values."""
 
-    allowed = {c.name for c in Backend.__table__.columns} - {"id"}
+    allowed = {c.name for c in Backend.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_backend: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_backend: ignoring unknown fields: %s', unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(be, key, val)
@@ -409,10 +409,10 @@ async def update_backend_server(
 ) -> BackendServer:
     """Update an existing backend server with the given field values."""
 
-    allowed = {c.name for c in BackendServer.__table__.columns} - {"id", "backend_id"}
+    allowed = {c.name for c in BackendServer.__table__.columns} - {'id', 'backend_id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_backend_server: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_backend_server: ignoring unknown fields: %s', unknown)
     for key, val in kwargs.items():
         if key in allowed:
             setattr(srv, key, val)

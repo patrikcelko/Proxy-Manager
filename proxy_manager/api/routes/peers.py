@@ -32,7 +32,7 @@ from proxy_manager.database.models.peer import (
     update_peer_section,
 )
 
-router = APIRouter(tags=["peers"])
+router = APIRouter(tags=['peers'])
 
 
 async def _build_detail(session: AsyncSession, p: PeerSection) -> PeerSectionDetailResponse:
@@ -50,7 +50,7 @@ async def _build_detail(session: AsyncSession, p: PeerSection) -> PeerSectionDet
     )
 
 
-@router.get("/api/peers", response_model=PeerSectionListResponse)
+@router.get('/api/peers', response_model=PeerSectionListResponse)
 async def api_list_peers(session: DBSession) -> PeerSectionListResponse:
     """List all peer sections."""
 
@@ -60,18 +60,18 @@ async def api_list_peers(session: DBSession) -> PeerSectionListResponse:
     return PeerSectionListResponse(count=len(result), items=result)
 
 
-@router.get("/api/peers/{peer_id}", response_model=PeerSectionDetailResponse)
+@router.get('/api/peers/{peer_id}', response_model=PeerSectionDetailResponse)
 async def api_get_peer(peer_id: int, session: DBSession) -> PeerSectionDetailResponse:
     """Retrieve a single peer section by ID."""
 
     p = await get_peer_section(session, peer_id)
     if not p:
-        raise HTTPException(status_code=404, detail="Peer section not found")
+        raise HTTPException(status_code=404, detail='Peer section not found')
 
     return await _build_detail(session, p)
 
 
-@router.post("/api/peers", response_model=PeerSectionDetailResponse, status_code=201)
+@router.post('/api/peers', response_model=PeerSectionDetailResponse, status_code=201)
 async def api_create_peer(body: PeerSectionCreate, session: DBSession) -> PeerSectionDetailResponse:
     """Create a new peer section."""
 
@@ -83,13 +83,13 @@ async def api_create_peer(body: PeerSectionCreate, session: DBSession) -> PeerSe
     return await _build_detail(session, p)
 
 
-@router.put("/api/peers/{peer_id}", response_model=PeerSectionDetailResponse)
+@router.put('/api/peers/{peer_id}', response_model=PeerSectionDetailResponse)
 async def api_update_peer(peer_id: int, body: PeerSectionUpdate, session: DBSession) -> PeerSectionDetailResponse:
     """Update an existing peer section."""
 
     p = await get_peer_section(session, peer_id)
     if not p:
-        raise HTTPException(status_code=404, detail="Peer section not found")
+        raise HTTPException(status_code=404, detail='Peer section not found')
 
     if body.name is not None and body.name != p.name:
         conflict = await get_peer_section_by_name(session, body.name)
@@ -100,31 +100,31 @@ async def api_update_peer(peer_id: int, body: PeerSectionUpdate, session: DBSess
     return await _build_detail(session, p)
 
 
-@router.delete("/api/peers/{peer_id}", response_model=MessageResponse)
+@router.delete('/api/peers/{peer_id}', response_model=MessageResponse)
 async def api_delete_peer(peer_id: int, session: DBSession) -> MessageResponse:
     """Delete a peer section."""
 
     p = await get_peer_section(session, peer_id)
     if not p:
-        raise HTTPException(status_code=404, detail="Peer section not found")
+        raise HTTPException(status_code=404, detail='Peer section not found')
 
     await delete_peer_section(session, p)
-    return MessageResponse(detail="Peer section deleted")
+    return MessageResponse(detail='Peer section deleted')
 
 
-@router.post("/api/peers/{peer_id}/entries", response_model=PeerEntryResponse, status_code=201)
+@router.post('/api/peers/{peer_id}/entries', response_model=PeerEntryResponse, status_code=201)
 async def api_add_peer_entry(peer_id: int, body: PeerEntryCreate, session: DBSession) -> PeerEntryResponse:
     """Add an entry to a peer section."""
 
     p = await get_peer_section(session, peer_id)
     if not p:
-        raise HTTPException(status_code=404, detail="Peer section not found")
+        raise HTTPException(status_code=404, detail='Peer section not found')
 
     e = await create_peer_entry(session, peer_section_id=peer_id, **body.model_dump(exclude_unset=True))
     return PeerEntryResponse.model_validate(e)
 
 
-@router.put("/api/peers/{peer_id}/entries/{entry_id}", response_model=PeerEntryResponse)
+@router.put('/api/peers/{peer_id}/entries/{entry_id}', response_model=PeerEntryResponse)
 async def api_update_peer_entry(
     peer_id: int,
     entry_id: int,
@@ -135,19 +135,19 @@ async def api_update_peer_entry(
 
     e = await get_peer_entry(session, entry_id)
     if not e or e.peer_section_id != peer_id:
-        raise HTTPException(status_code=404, detail="Peer entry not found")
+        raise HTTPException(status_code=404, detail='Peer entry not found')
 
     e = await update_peer_entry(session, e, **body.model_dump(exclude_unset=True))
     return PeerEntryResponse.model_validate(e)
 
 
-@router.delete("/api/peers/{peer_id}/entries/{entry_id}", response_model=MessageResponse)
+@router.delete('/api/peers/{peer_id}/entries/{entry_id}', response_model=MessageResponse)
 async def api_delete_peer_entry(peer_id: int, entry_id: int, session: DBSession) -> MessageResponse:
     """Remove a peer entry from a section."""
 
     e = await get_peer_entry(session, entry_id)
     if not e or e.peer_section_id != peer_id:
-        raise HTTPException(status_code=404, detail="Peer entry not found")
+        raise HTTPException(status_code=404, detail='Peer entry not found')
 
     await delete_peer_entry(session, e)
-    return MessageResponse(detail="Peer entry deleted")
+    return MessageResponse(detail='Peer entry deleted')

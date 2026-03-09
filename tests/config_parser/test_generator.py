@@ -28,17 +28,17 @@ def _empty_gen(**overrides: Any) -> str:
     """Call `generate_config` with all-empty defaults, overridden by *overrides*."""
 
     defaults: dict[str, Any] = {
-        "global_settings": [],
-        "default_settings": [],
-        "listen_blocks": [],
-        "userlists": [],
-        "frontends": [],
-        "backends": [],
-        "resolvers": [],
-        "peers": [],
-        "mailers": [],
-        "http_errors": [],
-        "caches": [],
+        'global_settings': [],
+        'default_settings': [],
+        'listen_blocks': [],
+        'userlists': [],
+        'frontends': [],
+        'backends': [],
+        'resolvers': [],
+        'peers': [],
+        'mailers': [],
+        'http_errors': [],
+        'caches': [],
     }
     defaults.update(overrides)
 
@@ -54,11 +54,11 @@ def _mock(spec: type, **attrs: Any) -> MagicMock:
     m = MagicMock(spec=spec)
 
     # Reset all mapped-column attributes to None/False
-    for col in getattr(spec, "__table__", MagicMock()).columns:  # pyright: ignore[reportAttributeAccessIssue]
+    for col in getattr(spec, '__table__', MagicMock()).columns:  # pyright: ignore[reportAttributeAccessIssue]
         col_type = str(col.type)
-        if "BOOLEAN" in col_type:
+        if 'BOOLEAN' in col_type:
             setattr(m, col.name, False)
-        elif "INTEGER" in col_type:
+        elif 'INTEGER' in col_type:
             setattr(m, col.name, None)
         else:
             setattr(m, col.name, None)
@@ -73,48 +73,48 @@ def test_empty_config() -> None:
     """Empty inputs produce an empty string."""
 
     result = _empty_gen()
-    assert result.strip() == ""
+    assert result.strip() == ''
 
 
 def test_global_settings() -> None:
     """Global settings section is emitted."""
 
-    gs1 = _mock(GlobalSetting, directive="log", value="127.0.0.1 local0", comment=None)
-    gs2 = _mock(GlobalSetting, directive="maxconn", value="4096", comment=None)
+    gs1 = _mock(GlobalSetting, directive='log', value='127.0.0.1 local0', comment=None)
+    gs2 = _mock(GlobalSetting, directive='maxconn', value='4096', comment=None)
 
     result = _empty_gen(global_settings=[gs1, gs2])
-    assert "global" in result
-    assert "log 127.0.0.1 local0" in result
-    assert "maxconn 4096" in result
+    assert 'global' in result
+    assert 'log 127.0.0.1 local0' in result
+    assert 'maxconn 4096' in result
 
 
 def test_global_with_comment() -> None:
     """Comment is emitted after `#`."""
 
-    gs = _mock(GlobalSetting, directive="maxconn", value="4096", comment="max conns")
+    gs = _mock(GlobalSetting, directive='maxconn', value='4096', comment='max conns')
     result = _empty_gen(global_settings=[gs])
 
-    assert "# max conns" in result
+    assert '# max conns' in result
 
 
 def test_global_no_value() -> None:
     """Directive without value (e.g. `daemon`)."""
 
-    gs = _mock(GlobalSetting, directive="daemon", value="", comment=None)
+    gs = _mock(GlobalSetting, directive='daemon', value='', comment=None)
     result = _empty_gen(global_settings=[gs])
-    assert "daemon" in result
+    assert 'daemon' in result
 
 
 def test_default_settings() -> None:
     """Defaults section is emitted."""
 
-    ds1 = _mock(DefaultSetting, directive="mode", value="http", comment=None)
-    ds2 = _mock(DefaultSetting, directive="timeout connect", value="5000", comment=None)
+    ds1 = _mock(DefaultSetting, directive='mode', value='http', comment=None)
+    ds2 = _mock(DefaultSetting, directive='timeout connect', value='5000', comment=None)
 
     result = _empty_gen(default_settings=[ds1, ds2])
-    assert "defaults" in result
-    assert "mode http" in result
-    assert "timeout connect 5000" in result
+    assert 'defaults' in result
+    assert 'mode http' in result
+    assert 'timeout connect 5000' in result
 
 
 def test_frontend_basic() -> None:
@@ -122,50 +122,50 @@ def test_frontend_basic() -> None:
 
     fe = _mock(
         Frontend,
-        name="fe_http",
-        mode="http",
-        default_backend="be_web",
+        name='fe_http',
+        mode='http',
+        default_backend='be_web',
     )
-    bind = _mock(FrontendBind, bind_line="*:80")
+    bind = _mock(FrontendBind, bind_line='*:80')
 
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "frontend fe_http" in result
-    assert "bind *:80" in result
-    assert "mode http" in result
-    assert "default_backend be_web" in result
+    assert 'frontend fe_http' in result
+    assert 'bind *:80' in result
+    assert 'mode http' in result
+    assert 'default_backend be_web' in result
 
 
 def test_frontend_with_options() -> None:
     """Frontend options are emitted."""
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
-    opt = _mock(FrontendOption, directive="http-request", value="set-header X-A val", comment=None)
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
+    opt = _mock(FrontendOption, directive='http-request', value='set-header X-A val', comment=None)
 
     result = _empty_gen(frontends=[(fe, [bind], [opt], [])])
-    assert "http-request set-header X-A val" in result
+    assert 'http-request set-header X-A val' in result
 
 
 def test_frontend_option_with_comment() -> None:
     """Frontend option comment is appended."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
-    opt = _mock(FrontendOption, directive="http-request", value="deny", comment="Block bad")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
+    opt = _mock(FrontendOption, directive='http-request', value='deny', comment='Block bad')
 
     result = _empty_gen(frontends=[(fe, [bind], [opt], [])])
-    assert "# Block bad" in result
+    assert '# Block bad' in result
 
 
 def test_frontend_acl_use_backend() -> None:
     """ACL + `use_backend` is emitted."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
     acl = _mock(
         AclRule,
-        domain="example.com",
-        backend_name="be_example",
-        acl_match_type="hdr",
+        domain='example.com',
+        backend_name='be_example',
+        acl_match_type='hdr',
         is_redirect=False,
         redirect_target=None,
         redirect_code=None,
@@ -174,41 +174,41 @@ def test_frontend_acl_use_backend() -> None:
     )
 
     result = _empty_gen(frontends=[(fe, [bind], [], [acl])])
-    assert "acl ACL_example_com hdr(Host) -i example.com" in result
-    assert "use_backend be_example if ACL_example_com" in result
+    assert 'acl ACL_example_com hdr(Host) -i example.com' in result
+    assert 'use_backend be_example if ACL_example_com' in result
 
 
 def test_frontend_acl_redirect() -> None:
     """ACL redirect is emitted."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
     acl = _mock(
         AclRule,
-        domain="old.com",
+        domain='old.com',
         backend_name=None,
-        acl_match_type="hdr",
+        acl_match_type='hdr',
         is_redirect=True,
-        redirect_target="https://new.com",
+        redirect_target='https://new.com',
         redirect_code=301,
         comment=None,
         enabled=True,
     )
 
     result = _empty_gen(frontends=[(fe, [bind], [], [acl])])
-    assert "redirect prefix https://new.com code 301" in result
+    assert 'redirect prefix https://new.com code 301' in result
 
 
 def test_frontend_acl_disabled() -> None:
     """Disabled ACL is commented out."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
     acl = _mock(
         AclRule,
-        domain="disabled.com",
-        backend_name="be_x",
-        acl_match_type="hdr",
+        domain='disabled.com',
+        backend_name='be_x',
+        acl_match_type='hdr',
         is_redirect=False,
         redirect_target=None,
         redirect_code=None,
@@ -217,31 +217,31 @@ def test_frontend_acl_disabled() -> None:
     )
 
     result = _empty_gen(frontends=[(fe, [bind], [], [acl])])
-    assert "# DISABLED:" in result
-    assert "#acl ACL_disabled_com" in result
-    assert "#use_backend be_x" in result
+    assert '# DISABLED:' in result
+    assert '#acl ACL_disabled_com' in result
+    assert '#use_backend be_x' in result
 
 
 def test_frontend_acl_redirect_disabled() -> None:
     """Disabled redirect ACL is commented out."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
     acl = _mock(
         AclRule,
-        domain="old.com",
+        domain='old.com',
         backend_name=None,
-        acl_match_type="hdr",
+        acl_match_type='hdr',
         is_redirect=True,
-        redirect_target="https://new.com",
+        redirect_target='https://new.com',
         redirect_code=301,
         comment=None,
         enabled=False,
     )
 
     result = _empty_gen(frontends=[(fe, [bind], [], [acl])])
-    assert "# DISABLED:" in result
-    assert "#redirect prefix https://new.com" in result
+    assert '# DISABLED:' in result
+    assert '#redirect prefix https://new.com' in result
 
 
 def test_frontend_timeout_fields() -> None:
@@ -249,28 +249,28 @@ def test_frontend_timeout_fields() -> None:
 
     fe = _mock(
         Frontend,
-        name="fe",
-        mode="http",
-        default_backend="be",
-        timeout_client="30s",
-        timeout_http_request="10s",
-        timeout_http_keep_alive="5s",
+        name='fe',
+        mode='http',
+        default_backend='be',
+        timeout_client='30s',
+        timeout_http_request='10s',
+        timeout_http_keep_alive='5s',
     )
 
-    bind = _mock(FrontendBind, bind_line="*:80")
+    bind = _mock(FrontendBind, bind_line='*:80')
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "timeout client 30s" in result
-    assert "timeout http-request 10s" in result
-    assert "timeout http-keep-alive 5s" in result
+    assert 'timeout client 30s' in result
+    assert 'timeout http-request 10s' in result
+    assert 'timeout http-keep-alive 5s' in result
 
 
 def test_frontend_maxconn() -> None:
     """Frontend maxconn is emitted."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be", maxconn=10000)
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be', maxconn=10000)
+    bind = _mock(FrontendBind, bind_line='*:80')
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "maxconn 10000" in result
+    assert 'maxconn 10000' in result
 
 
 def test_frontend_option_flags() -> None:
@@ -278,19 +278,19 @@ def test_frontend_option_flags() -> None:
 
     fe = _mock(
         Frontend,
-        name="fe",
-        mode="http",
-        default_backend="be",
+        name='fe',
+        mode='http',
+        default_backend='be',
         option_httplog=True,
         option_tcplog=True,
         option_forwardfor=True,
     )
-    bind = _mock(FrontendBind, bind_line="*:80")
+    bind = _mock(FrontendBind, bind_line='*:80')
 
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "option httplog" in result
-    assert "option tcplog" in result
-    assert "option forwardfor" in result
+    assert 'option httplog' in result
+    assert 'option tcplog' in result
+    assert 'option forwardfor' in result
 
 
 def test_frontend_compression() -> None:
@@ -298,50 +298,50 @@ def test_frontend_compression() -> None:
 
     fe = _mock(
         Frontend,
-        name="fe",
-        mode="http",
-        default_backend="be",
-        compression_algo="gzip",
-        compression_type="text/html text/css",
+        name='fe',
+        mode='http',
+        default_backend='be',
+        compression_algo='gzip',
+        compression_type='text/html text/css',
     )
 
-    bind = _mock(FrontendBind, bind_line="*:80")
+    bind = _mock(FrontendBind, bind_line='*:80')
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "compression algo gzip" in result
-    assert "compression type text/html text/css" in result
+    assert 'compression algo gzip' in result
+    assert 'compression type text/html text/css' in result
 
 
 def test_gen_frontend_option_tcplog() -> None:
     """`option tcplog` in generated frontend."""
 
-    fe = _mock(Frontend, name="fe", mode="tcp", default_backend="be", option_tcplog=True)
-    bind = _mock(FrontendBind, bind_line="*:3306")
+    fe = _mock(Frontend, name='fe', mode='tcp', default_backend='be', option_tcplog=True)
+    bind = _mock(FrontendBind, bind_line='*:3306')
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "option tcplog" in result
+    assert 'option tcplog' in result
 
 
 def test_backend_basic() -> None:
     """Basic backend with a server."""
 
-    be = _mock(Backend, name="be_web", mode="http", balance="roundrobin")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80, check_enabled=True)
+    be = _mock(Backend, name='be_web', mode='http', balance='roundrobin')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80, check_enabled=True)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "backend be_web" in result
-    assert "mode http" in result
-    assert "balance roundrobin" in result
-    assert "server s1 10.0.0.1:80" in result
-    assert "check" in result
+    assert 'backend be_web' in result
+    assert 'mode http' in result
+    assert 'balance roundrobin' in result
+    assert 'server s1 10.0.0.1:80' in result
+    assert 'check' in result
 
 
 def test_backend_comment() -> None:
     """Backend comment is emitted inside the section."""
 
-    be = _mock(Backend, name="be", mode="http", comment="Main backend")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', comment='Main backend')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "# Main backend" in result
+    assert '# Main backend' in result
 
 
 def test_backend_health_check() -> None:
@@ -349,17 +349,17 @@ def test_backend_health_check() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
+        name='be',
+        mode='http',
         health_check_enabled=True,
-        health_check_method="GET",
-        health_check_uri="/health",
+        health_check_method='GET',
+        health_check_uri='/health',
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "option httpchk" in result
-    assert "http-check send meth GET uri /health" in result
+    assert 'option httpchk' in result
+    assert 'http-check send meth GET uri /health' in result
 
 
 def test_backend_http_check_expect() -> None:
@@ -367,36 +367,36 @@ def test_backend_http_check_expect() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
+        name='be',
+        mode='http',
         health_check_enabled=True,
-        http_check_expect="status 200",
+        http_check_expect='status 200',
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "option httpchk" in result
-    assert "http-check expect status 200" in result
+    assert 'option httpchk' in result
+    assert 'http-check expect status 200' in result
 
 
 def test_backend_http_check_expect_requires_health_check() -> None:
     """`http-check expect` is NOT emitted when health check is disabled."""
 
-    be = _mock(Backend, name="be", mode="http", http_check_expect="status 200")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', http_check_expect='status 200')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "http-check expect" not in result
+    assert 'http-check expect' not in result
 
 
 def test_backend_cookie() -> None:
     """`cookie` directive is emitted."""
 
-    be = _mock(Backend, name="be", mode="http", cookie="SRVID insert indirect nocache")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', cookie='SRVID insert indirect nocache')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "cookie SRVID insert indirect nocache" in result
+    assert 'cookie SRVID insert indirect nocache' in result
 
 
 def test_backend_timeouts() -> None:
@@ -404,39 +404,39 @@ def test_backend_timeouts() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
-        timeout_server="30s",
-        timeout_connect="5s",
-        timeout_queue="60s",
+        name='be',
+        mode='http',
+        timeout_server='30s',
+        timeout_connect='5s',
+        timeout_queue='60s',
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "timeout server 30s" in result
-    assert "timeout connect 5s" in result
-    assert "timeout queue 60s" in result
+    assert 'timeout server 30s' in result
+    assert 'timeout connect 5s' in result
+    assert 'timeout queue 60s' in result
 
 
 def test_backend_default_server_options() -> None:
     """`default-server` directive is emitted."""
 
-    be = _mock(Backend, name="be", mode="http", default_server_options="inter 3s fall 3 rise 2")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', default_server_options='inter 3s fall 3 rise 2')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "default-server inter 3s fall 3 rise 2" in result
+    assert 'default-server inter 3s fall 3 rise 2' in result
 
 
 def test_backend_http_reuse_hash_type() -> None:
     """`http-reuse` and `hash-type` are emitted."""
 
-    be = _mock(Backend, name="be", mode="http", http_reuse="aggressive", hash_type="consistent sdbm")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', http_reuse='aggressive', hash_type='consistent sdbm')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "http-reuse aggressive" in result
-    assert "hash-type consistent sdbm" in result
+    assert 'http-reuse aggressive' in result
+    assert 'hash-type consistent sdbm' in result
 
 
 def test_backend_compression() -> None:
@@ -444,16 +444,16 @@ def test_backend_compression() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
-        compression_algo="gzip deflate",
-        compression_type="text/html text/css",
+        name='be',
+        mode='http',
+        compression_algo='gzip deflate',
+        compression_type='text/html text/css',
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "compression algo gzip deflate" in result
-    assert "compression type text/html text/css" in result
+    assert 'compression algo gzip deflate' in result
+    assert 'compression type text/html text/css' in result
 
 
 def test_backend_option_flags() -> None:
@@ -461,18 +461,18 @@ def test_backend_option_flags() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
+        name='be',
+        mode='http',
         option_forwardfor=True,
         option_httplog=True,
         option_tcplog=True,
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "option forwardfor" in result
-    assert "option httplog" in result
-    assert "option tcplog" in result
+    assert 'option forwardfor' in result
+    assert 'option httplog' in result
+    assert 'option tcplog' in result
 
 
 def test_backend_retry_redispatch() -> None:
@@ -480,186 +480,186 @@ def test_backend_retry_redispatch() -> None:
 
     be = _mock(
         Backend,
-        name="be",
-        mode="http",
-        retry_on="conn-failure empty-response",
+        name='be',
+        mode='http',
+        retry_on='conn-failure empty-response',
         option_redispatch=True,
         retries=3,
     )
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "retry-on conn-failure empty-response" in result
-    assert "option redispatch 1" in result
-    assert "retries 3" in result
+    assert 'retry-on conn-failure empty-response' in result
+    assert 'option redispatch 1' in result
+    assert 'retries 3' in result
 
 
 def test_backend_errorfile() -> None:
     """`errorfile` directive is emitted."""
 
-    be = _mock(Backend, name="be", mode="http", errorfile="503 /errors/503.http")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', errorfile='503 /errors/503.http')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "errorfile 503 /errors/503.http" in result
+    assert 'errorfile 503 /errors/503.http' in result
 
 
 def test_backend_extra_options() -> None:
     """`extra_options` is emitted as-is."""
 
-    be = _mock(Backend, name="be", mode="http", extra_options="stick on src\nstick-table type ip size 1m")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', extra_options='stick on src\nstick-table type ip size 1m')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "stick on src" in result
-    assert "stick-table type ip size 1m" in result
+    assert 'stick on src' in result
+    assert 'stick-table type ip size 1m' in result
 
 
 def test_backend_auth_userlist() -> None:
     """`acl authorized http_auth(...)` is emitted."""
 
-    be = _mock(Backend, name="be", mode="http", auth_userlist="admins")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='http', auth_userlist='admins')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "acl authorized http_auth(admins)" in result
-    assert "http-request auth realm Login unless authorized" in result
+    assert 'acl authorized http_auth(admins)' in result
+    assert 'http-request auth realm Login unless authorized' in result
 
 
 def test_gen_backend_option_tcplog() -> None:
     """`option tcplog` in generated backend."""
 
-    be = _mock(Backend, name="be", mode="tcp", option_tcplog=True)
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+    be = _mock(Backend, name='be', mode='tcp', option_tcplog=True)
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "option tcplog" in result
+    assert 'option tcplog' in result
 
 
 def test_server_all_fields() -> None:
     """Server with all tier-1/2 fields."""
 
-    be = _mock(Backend, name="be", mode="http")
+    be = _mock(Backend, name='be', mode='http')
     srv = _mock(
         BackendServer,
-        name="s1",
-        address="10.0.0.1",
+        name='s1',
+        address='10.0.0.1',
         port=80,
         weight=50,
-        cookie_value="srv1",
+        cookie_value='srv1',
         maxconn=100,
         maxqueue=50,
         ssl_enabled=True,
-        ssl_verify="none",
+        ssl_verify='none',
         check_enabled=True,
-        inter="3s",
-        fastinter="1s",
-        downinter="5s",
+        inter='3s',
+        fastinter='1s',
+        downinter='5s',
         rise=2,
         fall=3,
-        slowstart="60s",
+        slowstart='60s',
         backup=True,
         send_proxy=False,
         send_proxy_v2=True,
-        resolvers_ref="mydns",
-        resolve_prefer="ipv4",
-        on_marked_down="shutdown-sessions",
+        resolvers_ref='mydns',
+        resolve_prefer='ipv4',
+        on_marked_down='shutdown-sessions',
         disabled=True,
         extra_params=None,
     )
 
     result = _empty_gen(backends=[(be, [srv])])
-    line = [ln for ln in result.splitlines() if "server s1" in ln][0]
-    assert "weight 50" in line
-    assert "cookie srv1" in line
-    assert "maxconn 100" in line
-    assert "maxqueue 50" in line
-    assert "ssl" in line
-    assert "verify none" in line
-    assert "check" in line
-    assert "inter 3s" in line
-    assert "fastinter 1s" in line
-    assert "downinter 5s" in line
-    assert "rise 2" in line
-    assert "fall 3" in line
-    assert "slowstart 60s" in line
-    assert "backup" in line
-    assert "send-proxy-v2" in line
-    assert "send-proxy " not in line  # v2 takes precedence
-    assert "resolvers mydns" in line
-    assert "resolve-prefer ipv4" in line
-    assert "on-marked-down shutdown-sessions" in line
-    assert "disabled" in line
+    line = [ln for ln in result.splitlines() if 'server s1' in ln][0]
+    assert 'weight 50' in line
+    assert 'cookie srv1' in line
+    assert 'maxconn 100' in line
+    assert 'maxqueue 50' in line
+    assert 'ssl' in line
+    assert 'verify none' in line
+    assert 'check' in line
+    assert 'inter 3s' in line
+    assert 'fastinter 1s' in line
+    assert 'downinter 5s' in line
+    assert 'rise 2' in line
+    assert 'fall 3' in line
+    assert 'slowstart 60s' in line
+    assert 'backup' in line
+    assert 'send-proxy-v2' in line
+    assert 'send-proxy ' not in line  # v2 takes precedence
+    assert 'resolvers mydns' in line
+    assert 'resolve-prefer ipv4' in line
+    assert 'on-marked-down shutdown-sessions' in line
+    assert 'disabled' in line
 
 
 def test_server_send_proxy_v1() -> None:
     """`send-proxy` (v1) is emitted when v2 is False."""
 
-    be = _mock(Backend, name="be", mode="http")
+    be = _mock(Backend, name='be', mode='http')
     srv = _mock(
         BackendServer,
-        name="s1",
-        address="10.0.0.1",
+        name='s1',
+        address='10.0.0.1',
         port=80,
         send_proxy=True,
         send_proxy_v2=False,
     )
 
     result = _empty_gen(backends=[(be, [srv])])
-    line = [ln for ln in result.splitlines() if "server s1" in ln][0]
-    assert "send-proxy" in line
-    assert "send-proxy-v2" not in line
+    line = [ln for ln in result.splitlines() if 'server s1' in ln][0]
+    assert 'send-proxy' in line
+    assert 'send-proxy-v2' not in line
 
 
 def test_server_extra_params() -> None:
     """`extra_params` appended to server line."""
 
-    be = _mock(Backend, name="be", mode="http")
+    be = _mock(Backend, name='be', mode='http')
     srv = _mock(
         BackendServer,
-        name="s1",
-        address="10.0.0.1",
+        name='s1',
+        address='10.0.0.1',
         port=80,
-        extra_params="ca-file /etc/ssl/ca.pem sni str(example.com)",
+        extra_params='ca-file /etc/ssl/ca.pem sni str(example.com)',
     )
 
     result = _empty_gen(backends=[(be, [srv])])
-    line = [ln for ln in result.splitlines() if "server s1" in ln][0]
-    assert "ca-file /etc/ssl/ca.pem sni str(example.com)" in line
+    line = [ln for ln in result.splitlines() if 'server s1' in ln][0]
+    assert 'ca-file /etc/ssl/ca.pem sni str(example.com)' in line
 
 
 def test_server_maxconn_maxqueue() -> None:
     """`maxconn` and `maxqueue` are emitted."""
 
-    be = _mock(Backend, name="be", mode="http")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80, maxconn=200, maxqueue=100)
+    be = _mock(Backend, name='be', mode='http')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80, maxconn=200, maxqueue=100)
 
     result = _empty_gen(backends=[(be, [srv])])
-    line = [ln for ln in result.splitlines() if "server s1" in ln][0]
-    assert "maxconn 200" in line
-    assert "maxqueue 100" in line
+    line = [ln for ln in result.splitlines() if 'server s1' in ln][0]
+    assert 'maxconn 200' in line
+    assert 'maxqueue 100' in line
 
 
 def test_server_downinter_fastinter() -> None:
     """`downinter` and `fastinter` are emitted."""
 
-    be = _mock(Backend, name="be", mode="http")
+    be = _mock(Backend, name='be', mode='http')
     srv = _mock(
         BackendServer,
-        name="s1",
-        address="10.0.0.1",
+        name='s1',
+        address='10.0.0.1',
         port=80,
         check_enabled=True,
-        inter="3s",
-        fastinter="1s",
-        downinter="5s",
+        inter='3s',
+        fastinter='1s',
+        downinter='5s',
     )
 
     result = _empty_gen(backends=[(be, [srv])])
-    line = [ln for ln in result.splitlines() if "server s1" in ln][0]
-    assert "inter 3s" in line
-    assert "fastinter 1s" in line
-    assert "downinter 5s" in line
+    line = [ln for ln in result.splitlines() if 'server s1' in ln][0]
+    assert 'inter 3s' in line
+    assert 'fastinter 1s' in line
+    assert 'downinter 5s' in line
 
 
 def test_listen_basic() -> None:
@@ -667,18 +667,18 @@ def test_listen_basic() -> None:
 
     lb = _mock(
         ListenBlock,
-        name="stats",
-        mode="http",
-        content="stats enable\nstats uri /stats",
+        name='stats',
+        mode='http',
+        content='stats enable\nstats uri /stats',
     )
-    lb_bind = _mock(ListenBlockBind, bind_line="*:8404")
+    lb_bind = _mock(ListenBlockBind, bind_line='*:8404')
 
     result = _empty_gen(listen_blocks=[(lb, [lb_bind])])
-    assert "listen stats" in result
-    assert "bind *:8404" in result
-    assert "mode http" in result
-    assert "stats enable" in result
-    assert "stats uri /stats" in result
+    assert 'listen stats' in result
+    assert 'bind *:8404' in result
+    assert 'mode http' in result
+    assert 'stats enable' in result
+    assert 'stats uri /stats' in result
 
 
 def test_listen_all_fields() -> None:
@@ -686,45 +686,45 @@ def test_listen_all_fields() -> None:
 
     lb = _mock(
         ListenBlock,
-        name="myproxy",
-        mode="tcp",
-        balance="roundrobin",
+        name='myproxy',
+        mode='tcp',
+        balance='roundrobin',
         maxconn=2000,
-        timeout_client="30s",
-        timeout_server="60s",
-        timeout_connect="5s",
-        default_server_params="inter 3s fall 3 rise 2",
+        timeout_client='30s',
+        timeout_server='60s',
+        timeout_connect='5s',
+        default_server_params='inter 3s fall 3 rise 2',
         option_httplog=False,
         option_tcplog=True,
         option_forwardfor=True,
-        content="server db1 10.0.0.1:3306 check",
+        content='server db1 10.0.0.1:3306 check',
     )
-    lb_bind = _mock(ListenBlockBind, bind_line="*:3306")
+    lb_bind = _mock(ListenBlockBind, bind_line='*:3306')
 
     result = _empty_gen(listen_blocks=[(lb, [lb_bind])])
-    assert "listen myproxy" in result
-    assert "mode tcp" in result
-    assert "balance roundrobin" in result
-    assert "maxconn 2000" in result
-    assert "timeout client 30s" in result
-    assert "timeout server 60s" in result
-    assert "timeout connect 5s" in result
-    assert "default-server inter 3s fall 3 rise 2" in result
-    assert "option tcplog" in result
-    assert "option forwardfor" in result
-    assert "option httplog" not in result
-    assert "server db1 10.0.0.1:3306 check" in result
+    assert 'listen myproxy' in result
+    assert 'mode tcp' in result
+    assert 'balance roundrobin' in result
+    assert 'maxconn 2000' in result
+    assert 'timeout client 30s' in result
+    assert 'timeout server 60s' in result
+    assert 'timeout connect 5s' in result
+    assert 'default-server inter 3s fall 3 rise 2' in result
+    assert 'option tcplog' in result
+    assert 'option forwardfor' in result
+    assert 'option httplog' not in result
+    assert 'server db1 10.0.0.1:3306 check' in result
 
 
 def test_userlist_basic() -> None:
     """Basic userlist."""
 
-    ul = _mock(Userlist, name="admins")
-    entry = _mock(UserlistEntry, username="admin", password_hash="$6$hash")
+    ul = _mock(Userlist, name='admins')
+    entry = _mock(UserlistEntry, username='admin', password_hash='$6$hash')
 
     result = _empty_gen(userlists=[(ul, [entry])])
-    assert "userlist admins" in result
-    assert "user admin password $6$hash" in result
+    assert 'userlist admins' in result
+    assert 'user admin password $6$hash' in result
 
 
 def test_resolver_basic() -> None:
@@ -732,26 +732,26 @@ def test_resolver_basic() -> None:
 
     res = _mock(
         Resolver,
-        name="mydns",
+        name='mydns',
         resolve_retries=3,
-        timeout_resolve="1s",
-        timeout_retry="1s",
+        timeout_resolve='1s',
+        timeout_retry='1s',
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
     )
 
     # Reset hold_ fields
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     result = _empty_gen(resolvers=[(res, [ns])])
-    assert "resolvers mydns" in result
-    assert "nameserver dns1 8.8.8.8:53" in result
-    assert "resolve_retries 3" in result
-    assert "timeout resolve 1s" in result
+    assert 'resolvers mydns' in result
+    assert 'nameserver dns1 8.8.8.8:53' in result
+    assert 'resolve_retries 3' in result
+    assert 'timeout resolve 1s' in result
 
 
 def test_resolver_hold_timers() -> None:
@@ -759,27 +759,27 @@ def test_resolver_hold_timers() -> None:
 
     res = _mock(
         Resolver,
-        name="dns",
+        name='dns',
         resolve_retries=None,
         timeout_resolve=None,
         timeout_retry=None,
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
-        hold_valid="10s",
-        hold_other="30s",
-        hold_refused="30s",
-        hold_timeout="30s",
-        hold_obsolete="30s",
-        hold_nx="60s",
-        hold_aa="5s",
+        hold_valid='10s',
+        hold_other='30s',
+        hold_refused='30s',
+        hold_timeout='30s',
+        hold_obsolete='30s',
+        hold_nx='60s',
+        hold_aa='5s',
     )
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     result = _empty_gen(resolvers=[(res, [ns])])
-    assert "hold valid 10s" in result
-    assert "hold other 30s" in result
-    assert "hold nx 60s" in result
+    assert 'hold valid 10s' in result
+    assert 'hold other 30s' in result
+    assert 'hold nx 60s' in result
 
 
 def test_resolver_parse_resolv_conf() -> None:
@@ -787,7 +787,7 @@ def test_resolver_parse_resolv_conf() -> None:
 
     res = _mock(
         Resolver,
-        name="dns",
+        name='dns',
         parse_resolv_conf=1,
         resolve_retries=None,
         timeout_resolve=None,
@@ -796,13 +796,13 @@ def test_resolver_parse_resolv_conf() -> None:
         extra_options=None,
     )
 
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     result = _empty_gen(resolvers=[(res, [ns])])
-    assert "parse-resolv-conf" in result
+    assert 'parse-resolv-conf' in result
 
 
 def test_resolver_extra_options() -> None:
@@ -810,33 +810,33 @@ def test_resolver_extra_options() -> None:
 
     res = _mock(
         Resolver,
-        name="dns",
+        name='dns',
         resolve_retries=None,
         timeout_resolve=None,
         timeout_retry=None,
         parse_resolv_conf=None,
         accepted_payload_size=None,
-        extra_options="some-future-directive value",
+        extra_options='some-future-directive value',
     )
 
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     result = _empty_gen(resolvers=[(res, [ns])])
-    assert "some-future-directive value" in result
+    assert 'some-future-directive value' in result
 
 
 def test_peer_basic() -> None:
     """Basic peer section."""
 
-    ps = _mock(PeerSection, name="mypeers", default_bind=None, default_server_options=None, extra_options=None)
-    pe = _mock(PeerEntry, name="haproxy1", address="10.0.0.1", port=10000)
+    ps = _mock(PeerSection, name='mypeers', default_bind=None, default_server_options=None, extra_options=None)
+    pe = _mock(PeerEntry, name='haproxy1', address='10.0.0.1', port=10000)
 
     result = _empty_gen(peers=[(ps, [pe])])
-    assert "peers mypeers" in result
-    assert "peer haproxy1 10.0.0.1:10000" in result
+    assert 'peers mypeers' in result
+    assert 'peer haproxy1 10.0.0.1:10000' in result
 
 
 def test_peer_with_bind_and_default_server() -> None:
@@ -844,16 +844,16 @@ def test_peer_with_bind_and_default_server() -> None:
 
     ps = _mock(
         PeerSection,
-        name="cluster",
-        default_bind=":10000 ssl crt /etc/ssl/cert.pem",
-        default_server_options="ssl verify none",
+        name='cluster',
+        default_bind=':10000 ssl crt /etc/ssl/cert.pem',
+        default_server_options='ssl verify none',
         extra_options=None,
     )
-    pe = _mock(PeerEntry, name="node1", address="10.0.0.1", port=10000)
+    pe = _mock(PeerEntry, name='node1', address='10.0.0.1', port=10000)
 
     result = _empty_gen(peers=[(ps, [pe])])
-    assert "bind :10000 ssl crt /etc/ssl/cert.pem" in result
-    assert "default-server ssl verify none" in result
+    assert 'bind :10000 ssl crt /etc/ssl/cert.pem' in result
+    assert 'default-server ssl verify none' in result
 
 
 def test_peer_extra_options() -> None:
@@ -861,84 +861,84 @@ def test_peer_extra_options() -> None:
 
     ps = _mock(
         PeerSection,
-        name="mypeers",
+        name='mypeers',
         default_bind=None,
         default_server_options=None,
-        extra_options="table stick_table type ip size 1m",
+        extra_options='table stick_table type ip size 1m',
     )
-    pe = _mock(PeerEntry, name="node1", address="10.0.0.1", port=10000)
+    pe = _mock(PeerEntry, name='node1', address='10.0.0.1', port=10000)
 
     result = _empty_gen(peers=[(ps, [pe])])
-    assert "table stick_table type ip size 1m" in result
+    assert 'table stick_table type ip size 1m' in result
 
 
 def test_mailer_basic() -> None:
     """Basic mailer section."""
 
-    ms = _mock(MailerSection, name="mymailers", timeout_mail="10s", extra_options=None)
-    me = _mock(MailerEntry, name="smtp1", address="smtp.example.com", port=25, smtp_auth=False)
+    ms = _mock(MailerSection, name='mymailers', timeout_mail='10s', extra_options=None)
+    me = _mock(MailerEntry, name='smtp1', address='smtp.example.com', port=25, smtp_auth=False)
 
     result = _empty_gen(mailers=[(ms, [me])])
-    assert "mailers mymailers" in result
-    assert "timeout mail 10s" in result
-    assert "mailer smtp1 smtp.example.com:25" in result
+    assert 'mailers mymailers' in result
+    assert 'timeout mail 10s' in result
+    assert 'mailer smtp1 smtp.example.com:25' in result
 
 
 def test_mailer_smtp_auth() -> None:
     """SMTP auth comment is emitted."""
 
-    ms = _mock(MailerSection, name="auth", timeout_mail=None, extra_options=None)
+    ms = _mock(MailerSection, name='auth', timeout_mail=None, extra_options=None)
     me = _mock(
         MailerEntry,
-        name="smtp1",
-        address="smtp.gmail.com",
+        name='smtp1',
+        address='smtp.gmail.com',
         port=587,
         smtp_auth=True,
-        smtp_user="user@gmail.com",
-        smtp_password="app-pass",
+        smtp_user='user@gmail.com',
+        smtp_password='app-pass',
         use_tls=False,
         use_starttls=True,
     )
 
     result = _empty_gen(mailers=[(ms, [me])])
-    assert "# _pm_mailer_auth smtp1" in result
-    assert "smtp_auth=true" in result
-    assert "smtp_user=user@gmail.com" in result
-    assert "use_starttls=true" in result
+    assert '# _pm_mailer_auth smtp1' in result
+    assert 'smtp_auth=true' in result
+    assert 'smtp_user=user@gmail.com' in result
+    assert 'use_starttls=true' in result
 
 
 def test_mailer_extra_options() -> None:
     """Mailer `extra_options` are emitted."""
 
-    ms = _mock(MailerSection, name="m", timeout_mail=None, extra_options="log global\ncustom-directive value")
-    me = _mock(MailerEntry, name="smtp1", address="smtp.example.com", port=25, smtp_auth=False)
+    ms = _mock(MailerSection, name='m', timeout_mail=None, extra_options='log global\ncustom-directive value')
+    me = _mock(MailerEntry, name='smtp1', address='smtp.example.com', port=25, smtp_auth=False)
 
     result = _empty_gen(mailers=[(ms, [me])])
-    assert "log global" in result
-    assert "custom-directive value" in result
+    assert 'log global' in result
+    assert 'custom-directive value' in result
 
 
 def test_http_errors_basic() -> None:
     """Basic http-errors section."""
 
-    he_sec = _mock(HttpErrorsSection, name="custom-errors", extra_options=None)
-    e1 = _mock(HttpErrorEntry, type="errorfile", status_code=503, value="/errors/503.http")
-    e2 = _mock(HttpErrorEntry, type="errorloc302", status_code=504, value="https://sorry.example.com")
+    he_sec = _mock(HttpErrorsSection, name='custom-errors', extra_options=None)
+    e1 = _mock(HttpErrorEntry, type='errorfile', status_code=503, value='/errors/503.http')
+    e2 = _mock(HttpErrorEntry, type='errorloc302', status_code=504, value='https://sorry.example.com')
 
     result = _empty_gen(http_errors=[(he_sec, [e1, e2])])
-    assert "http-errors custom-errors" in result
-    assert "errorfile 503 /errors/503.http" in result
-    assert "errorloc302 504 https://sorry.example.com" in result
+    assert 'http-errors custom-errors' in result
+    assert 'errorfile 503 /errors/503.http' in result
+    assert 'errorloc302 504 https://sorry.example.com' in result
 
 
 def test_http_errors_extra_options() -> None:
     """Http-errors `extra_options` are emitted."""
 
-    he_sec = _mock(HttpErrorsSection, name="custom", extra_options="log global")
-    e1 = _mock(HttpErrorEntry, type="errorfile", status_code=503, value="/errors/503.http")
+    he_sec = _mock(HttpErrorsSection, name='custom', extra_options='log global')
+    e1 = _mock(HttpErrorEntry, type='errorfile', status_code=503, value='/errors/503.http')
 
     result = _empty_gen(http_errors=[(he_sec, [e1])])
-    assert "log global" in result
+    assert 'log global' in result
 
 
 def test_cache_basic() -> None:
@@ -946,7 +946,7 @@ def test_cache_basic() -> None:
 
     c = _mock(
         CacheSection,
-        name="my_cache",
+        name='my_cache',
         total_max_size=4,
         max_object_size=524288,
         max_age=60,
@@ -956,10 +956,10 @@ def test_cache_basic() -> None:
     )
 
     result = _empty_gen(caches=[c])
-    assert "cache my_cache" in result
-    assert "total-max-size 4" in result
-    assert "max-object-size 524288" in result
-    assert "max-age 60" in result
+    assert 'cache my_cache' in result
+    assert 'total-max-size 4' in result
+    assert 'max-object-size 524288' in result
+    assert 'max-age 60' in result
 
 
 def test_cache_all_fields() -> None:
@@ -967,7 +967,7 @@ def test_cache_all_fields() -> None:
 
     c = _mock(
         CacheSection,
-        name="full",
+        name='full',
         total_max_size=64,
         max_object_size=524288,
         max_age=3600,
@@ -977,8 +977,8 @@ def test_cache_all_fields() -> None:
     )
     result = _empty_gen(caches=[c])
 
-    assert "max-secondary-entries 10" in result
-    assert "process-vary 1" in result
+    assert 'max-secondary-entries 10' in result
+    assert 'process-vary 1' in result
 
 
 def test_cache_extra_options() -> None:
@@ -986,23 +986,23 @@ def test_cache_extra_options() -> None:
 
     c = _mock(
         CacheSection,
-        name="c",
+        name='c',
         total_max_size=4,
         max_object_size=None,
         max_age=None,
         max_secondary_entries=None,
         process_vary=None,
-        extra_options="some-future-directive value",
+        extra_options='some-future-directive value',
     )
     result = _empty_gen(caches=[c])
-    assert "some-future-directive value" in result
+    assert 'some-future-directive value' in result
 
 
 def test_roundtrip_global_defaults() -> None:
     """Global + defaults round-trip."""
 
-    gs = _mock(GlobalSetting, directive="log", value="127.0.0.1 local0", comment=None)
-    ds = _mock(DefaultSetting, directive="mode", value="http", comment=None)
+    gs = _mock(GlobalSetting, directive='log', value='127.0.0.1 local0', comment=None)
+    ds = _mock(DefaultSetting, directive='mode', value='http', comment=None)
     text = _empty_gen(global_settings=[gs], default_settings=[ds])
     parsed = parse_config(text)
 
@@ -1013,25 +1013,25 @@ def test_roundtrip_global_defaults() -> None:
 def test_roundtrip_frontend() -> None:
     """Frontend round-trip."""
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be_web")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be_web')
+    bind = _mock(FrontendBind, bind_line='*:80')
     text = _empty_gen(frontends=[(fe, [bind], [], [])])
     parsed = parse_config(text)
 
     assert len(parsed.frontends) == 1
-    assert parsed.frontends[0].name == "fe"
+    assert parsed.frontends[0].name == 'fe'
 
 
 def test_roundtrip_backend() -> None:
     """Backend round-trip."""
 
-    be = _mock(Backend, name="be_web", mode="http", balance="roundrobin")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80, check_enabled=True)
+    be = _mock(Backend, name='be_web', mode='http', balance='roundrobin')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80, check_enabled=True)
     text = _empty_gen(backends=[(be, [srv])])
     parsed = parse_config(text)
 
     assert len(parsed.backends) == 1
-    assert parsed.backends[0].name == "be_web"
+    assert parsed.backends[0].name == 'be_web'
     assert len(parsed.backends[0].servers) == 1
 
 
@@ -1040,42 +1040,42 @@ def test_roundtrip_resolver() -> None:
 
     res = _mock(
         Resolver,
-        name="mydns",
+        name='mydns',
         resolve_retries=3,
-        timeout_resolve="1s",
-        timeout_retry="1s",
+        timeout_resolve='1s',
+        timeout_retry='1s',
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
     )
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
     text = _empty_gen(resolvers=[(res, [ns])])
     parsed = parse_config(text)
 
     assert len(parsed.resolvers) == 1
-    assert parsed.resolvers[0].name == "mydns"
+    assert parsed.resolvers[0].name == 'mydns'
 
 
 def test_roundtrip_peers() -> None:
     """Peers round-trip."""
 
-    ps = _mock(PeerSection, name="cluster", default_bind=None, default_server_options=None, extra_options=None)
-    pe = _mock(PeerEntry, name="node1", address="10.0.0.1", port=10000)
+    ps = _mock(PeerSection, name='cluster', default_bind=None, default_server_options=None, extra_options=None)
+    pe = _mock(PeerEntry, name='node1', address='10.0.0.1', port=10000)
     text = _empty_gen(peers=[(ps, [pe])])
     parsed = parse_config(text)
 
     assert len(parsed.peers) == 1
-    assert parsed.peers[0].name == "cluster"
+    assert parsed.peers[0].name == 'cluster'
 
 
 def test_roundtrip_http_errors() -> None:
     """HTTP errors round-trip."""
 
-    he_sec = _mock(HttpErrorsSection, name="custom", extra_options=None)
-    e = _mock(HttpErrorEntry, type="errorfile", status_code=503, value="/errors/503.http")
+    he_sec = _mock(HttpErrorsSection, name='custom', extra_options=None)
+    e = _mock(HttpErrorEntry, type='errorfile', status_code=503, value='/errors/503.http')
     text = _empty_gen(http_errors=[(he_sec, [e])])
     parsed = parse_config(text)
 
@@ -1088,7 +1088,7 @@ def test_roundtrip_cache() -> None:
 
     c = _mock(
         CacheSection,
-        name="my_cache",
+        name='my_cache',
         total_max_size=64,
         max_object_size=524288,
         max_age=3600,
@@ -1106,32 +1106,32 @@ def test_roundtrip_cache() -> None:
 def test_roundtrip_mailers() -> None:
     """Mailers round-trip."""
 
-    ms = _mock(MailerSection, name="mymailers", timeout_mail="10s", extra_options=None)
-    me = _mock(MailerEntry, name="smtp1", address="smtp.example.com", port=25, smtp_auth=False)
+    ms = _mock(MailerSection, name='mymailers', timeout_mail='10s', extra_options=None)
+    me = _mock(MailerEntry, name='smtp1', address='smtp.example.com', port=25, smtp_auth=False)
     text = _empty_gen(mailers=[(ms, [me])])
     parsed = parse_config(text)
 
     assert len(parsed.mailers) == 1
-    assert parsed.mailers[0].entries[0].address == "smtp.example.com"
+    assert parsed.mailers[0].entries[0].address == 'smtp.example.com'
 
 
 def test_roundtrip_full_config() -> None:
     """Full config round-trip with all section types."""
 
-    gs = _mock(GlobalSetting, directive="log", value="127.0.0.1 local0", comment=None)
-    ds = _mock(DefaultSetting, directive="mode", value="http", comment=None)
+    gs = _mock(GlobalSetting, directive='log', value='127.0.0.1 local0', comment=None)
+    ds = _mock(DefaultSetting, directive='mode', value='http', comment=None)
 
-    fe = _mock(Frontend, name="fe", mode="http", default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe', mode='http', default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:80')
 
-    be = _mock(Backend, name="be", mode="http", balance="roundrobin")
-    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80, check_enabled=True)
+    be = _mock(Backend, name='be', mode='http', balance='roundrobin')
+    srv = _mock(BackendServer, name='s1', address='10.0.0.1', port=80, check_enabled=True)
 
-    lb = _mock(ListenBlock, name="stats", mode="http", content="stats enable")
-    lb_bind = _mock(ListenBlockBind, bind_line="*:8404")
+    lb = _mock(ListenBlock, name='stats', mode='http', content='stats enable')
+    lb_bind = _mock(ListenBlockBind, bind_line='*:8404')
 
-    ul = _mock(Userlist, name="admins")
-    ue = _mock(UserlistEntry, username="admin", password_hash="$6$hash")
+    ul = _mock(Userlist, name='admins')
+    ue = _mock(UserlistEntry, username='admin', password_hash='$6$hash')
 
     text = _empty_gen(
         global_settings=[gs],
@@ -1153,25 +1153,25 @@ def test_roundtrip_full_config() -> None:
 def test_frontend_mode_none_not_emitted() -> None:
     """Frontend with mode=None does NOT emit `mode None`."""
 
-    fe = _mock(Frontend, name="fe_tcp", mode=None, default_backend="be")
-    bind = _mock(FrontendBind, bind_line="*:443")
+    fe = _mock(Frontend, name='fe_tcp', mode=None, default_backend='be')
+    bind = _mock(FrontendBind, bind_line='*:443')
 
     result = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "frontend fe_tcp" in result
-    assert "mode None" not in result
-    assert "mode " not in result
+    assert 'frontend fe_tcp' in result
+    assert 'mode None' not in result
+    assert 'mode ' not in result
 
 
 def test_listen_mode_none_not_emitted() -> None:
     """Listen block with mode=None does NOT emit `mode None`."""
 
-    lb = _mock(ListenBlock, name="lb_raw", mode=None, content="server s1 10.0.0.1:80")
-    lb_bind = _mock(ListenBlockBind, bind_line="*:8080")
+    lb = _mock(ListenBlock, name='lb_raw', mode=None, content='server s1 10.0.0.1:80')
+    lb_bind = _mock(ListenBlockBind, bind_line='*:8080')
 
     result = _empty_gen(listen_blocks=[(lb, [lb_bind])])
-    assert "listen lb_raw" in result
-    assert "mode None" not in result
-    assert "mode " not in result
+    assert 'listen lb_raw' in result
+    assert 'mode None' not in result
+    assert 'mode ' not in result
 
 
 def test_resolver_comment_roundtrip() -> None:
@@ -1179,26 +1179,26 @@ def test_resolver_comment_roundtrip() -> None:
 
     res = _mock(
         Resolver,
-        name="opendns",
+        name='opendns',
         resolve_retries=3,
-        timeout_resolve="1s",
-        timeout_retry="1s",
-        comment="Cisco OpenDNS",
+        timeout_resolve='1s',
+        timeout_retry='1s',
+        comment='Cisco OpenDNS',
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
     )
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="208.67.222.222", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='208.67.222.222', port=53)
 
     text = _empty_gen(resolvers=[(res, [ns])])
-    assert "    # Cisco OpenDNS" in text
+    assert '    # Cisco OpenDNS' in text
 
     parsed = parse_config(text)
     assert len(parsed.resolvers) == 1
-    assert parsed.resolvers[0].comment == "Cisco OpenDNS"
+    assert parsed.resolvers[0].comment == 'Cisco OpenDNS'
 
 
 def test_resolver_multiline_comment_roundtrip() -> None:
@@ -1206,23 +1206,23 @@ def test_resolver_multiline_comment_roundtrip() -> None:
 
     res = _mock(
         Resolver,
-        name="mydns",
+        name='mydns',
         resolve_retries=3,
-        timeout_resolve="1s",
-        timeout_retry="1s",
-        comment="Primary DNS\nUsed for all lookups",
+        timeout_resolve='1s',
+        timeout_retry='1s',
+        comment='Primary DNS\nUsed for all lookups',
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
     )
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
 
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     text = _empty_gen(resolvers=[(res, [ns])])
     parsed = parse_config(text)
-    assert parsed.resolvers[0].comment == "Primary DNS\nUsed for all lookups"
+    assert parsed.resolvers[0].comment == 'Primary DNS\nUsed for all lookups'
 
 
 def test_peer_comment_roundtrip() -> None:
@@ -1230,20 +1230,20 @@ def test_peer_comment_roundtrip() -> None:
 
     ps = _mock(
         PeerSection,
-        name="mypeers",
-        comment="HA cluster peers",
+        name='mypeers',
+        comment='HA cluster peers',
         default_bind=None,
         default_server_options=None,
         extra_options=None,
     )
-    pe = _mock(PeerEntry, name="node1", address="10.0.0.1", port=10000)
+    pe = _mock(PeerEntry, name='node1', address='10.0.0.1', port=10000)
 
     text = _empty_gen(peers=[(ps, [pe])])
-    assert "    # HA cluster peers" in text
+    assert '    # HA cluster peers' in text
 
     parsed = parse_config(text)
     assert len(parsed.peers) == 1
-    assert parsed.peers[0].comment == "HA cluster peers"
+    assert parsed.peers[0].comment == 'HA cluster peers'
 
 
 def test_mailer_comment_roundtrip() -> None:
@@ -1251,25 +1251,25 @@ def test_mailer_comment_roundtrip() -> None:
 
     ms = _mock(
         MailerSection,
-        name="alerts",
-        timeout_mail="10s",
-        comment="Alert mailers",
+        name='alerts',
+        timeout_mail='10s',
+        comment='Alert mailers',
         extra_options=None,
     )
     me = _mock(
         MailerEntry,
-        name="smtp1",
-        address="smtp.example.com",
+        name='smtp1',
+        address='smtp.example.com',
         port=25,
         smtp_auth=False,
     )
 
     text = _empty_gen(mailers=[(ms, [me])])
-    assert "    # Alert mailers" in text
+    assert '    # Alert mailers' in text
 
     parsed = parse_config(text)
     assert len(parsed.mailers) == 1
-    assert parsed.mailers[0].comment == "Alert mailers"
+    assert parsed.mailers[0].comment == 'Alert mailers'
 
 
 def test_http_errors_comment_roundtrip() -> None:
@@ -1277,18 +1277,18 @@ def test_http_errors_comment_roundtrip() -> None:
 
     he_sec = _mock(
         HttpErrorsSection,
-        name="custom",
-        comment="Custom error pages",
+        name='custom',
+        comment='Custom error pages',
         extra_options=None,
     )
-    e1 = _mock(HttpErrorEntry, type="errorfile", status_code=503, value="/errors/503.http")
+    e1 = _mock(HttpErrorEntry, type='errorfile', status_code=503, value='/errors/503.http')
 
     text = _empty_gen(http_errors=[(he_sec, [e1])])
-    assert "    # Custom error pages" in text
+    assert '    # Custom error pages' in text
 
     parsed = parse_config(text)
     assert len(parsed.http_errors) == 1
-    assert parsed.http_errors[0].comment == "Custom error pages"
+    assert parsed.http_errors[0].comment == 'Custom error pages'
 
 
 def test_cache_comment_roundtrip() -> None:
@@ -1296,22 +1296,22 @@ def test_cache_comment_roundtrip() -> None:
 
     c = _mock(
         CacheSection,
-        name="my_cache",
+        name='my_cache',
         total_max_size=4,
         max_object_size=524288,
         max_age=60,
         max_secondary_entries=None,
         process_vary=None,
-        comment="Static asset cache",
+        comment='Static asset cache',
         extra_options=None,
     )
 
     text = _empty_gen(caches=[c])
-    assert "    # Static asset cache" in text
+    assert '    # Static asset cache' in text
 
     parsed = parse_config(text)
     assert len(parsed.caches) == 1
-    assert parsed.caches[0].comment == "Static asset cache"
+    assert parsed.caches[0].comment == 'Static asset cache'
 
 
 def test_listen_comment_roundtrip() -> None:
@@ -1319,47 +1319,47 @@ def test_listen_comment_roundtrip() -> None:
 
     lb = _mock(
         ListenBlock,
-        name="stats",
-        mode="http",
-        comment="Stats dashboard",
-        content="stats enable\nstats uri /stats",
+        name='stats',
+        mode='http',
+        comment='Stats dashboard',
+        content='stats enable\nstats uri /stats',
     )
-    lb_bind = _mock(ListenBlockBind, bind_line="*:8404")
+    lb_bind = _mock(ListenBlockBind, bind_line='*:8404')
 
     text = _empty_gen(listen_blocks=[(lb, [lb_bind])])
-    assert "    # Stats dashboard" in text
+    assert '    # Stats dashboard' in text
 
     parsed = parse_config(text)
     assert len(parsed.listen_blocks) == 1
-    assert parsed.listen_blocks[0].comment == "Stats dashboard"
+    assert parsed.listen_blocks[0].comment == 'Stats dashboard'
 
 
 def test_frontend_comment_roundtrip() -> None:
     """Frontend section comment survives round-trip."""
 
-    fe = _mock(Frontend, name="fe_web", mode="http", default_backend="be_web", comment="Main web frontend")
-    bind = _mock(FrontendBind, bind_line="*:80")
+    fe = _mock(Frontend, name='fe_web', mode='http', default_backend='be_web', comment='Main web frontend')
+    bind = _mock(FrontendBind, bind_line='*:80')
 
     text = _empty_gen(frontends=[(fe, [bind], [], [])])
-    assert "    # Main web frontend" in text
+    assert '    # Main web frontend' in text
 
     parsed = parse_config(text)
     assert len(parsed.frontends) == 1
-    assert parsed.frontends[0].comment == "Main web frontend"
+    assert parsed.frontends[0].comment == 'Main web frontend'
 
 
 def test_backend_comment_roundtrip() -> None:
     """Backend section comment survives round-trip."""
 
-    be = _mock(Backend, name="be_web", mode="http", comment="Application servers")
-    srv = _mock(BackendServer, name="web1", address="10.0.0.1", port=8080)
+    be = _mock(Backend, name='be_web', mode='http', comment='Application servers')
+    srv = _mock(BackendServer, name='web1', address='10.0.0.1', port=8080)
 
     text = _empty_gen(backends=[(be, [srv])])
-    assert "    # Application servers" in text
+    assert '    # Application servers' in text
 
     parsed = parse_config(text)
     assert len(parsed.backends) == 1
-    assert parsed.backends[0].comment == "Application servers"
+    assert parsed.backends[0].comment == 'Application servers'
 
 
 def test_no_comment_roundtrip() -> None:
@@ -1367,18 +1367,18 @@ def test_no_comment_roundtrip() -> None:
 
     res = _mock(
         Resolver,
-        name="dns",
+        name='dns',
         resolve_retries=3,
-        timeout_resolve="1s",
-        timeout_retry="1s",
+        timeout_resolve='1s',
+        timeout_retry='1s',
         comment=None,
         parse_resolv_conf=None,
         accepted_payload_size=None,
         extra_options=None,
     )
-    for hold in ("valid", "other", "refused", "timeout", "obsolete", "nx", "aa"):
-        setattr(res, f"hold_{hold}", None)
-    ns = _mock(ResolverNameserver, name="dns1", address="8.8.8.8", port=53)
+    for hold in ('valid', 'other', 'refused', 'timeout', 'obsolete', 'nx', 'aa'):
+        setattr(res, f'hold_{hold}', None)
+    ns = _mock(ResolverNameserver, name='dns1', address='8.8.8.8', port=53)
 
     text = _empty_gen(resolvers=[(res, [ns])])
     parsed = parse_config(text)

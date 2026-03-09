@@ -13,7 +13,7 @@ from proxy_manager.database.models.base import Base
 class DefaultSetting(Base):
     """A single directive in the HAProxy 'defaults' section."""
 
-    __tablename__ = "default_settings"
+    __tablename__ = 'default_settings'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -21,7 +21,7 @@ class DefaultSetting(Base):
     directive: Mapped[str] = mapped_column(String(255), nullable=False)
     """HAProxy directive name."""
 
-    value: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    value: Mapped[str] = mapped_column(Text, nullable=False, default='')
     """Directive value."""
 
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
@@ -33,7 +33,7 @@ class DefaultSetting(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<DefaultSetting(id={self.id}, directive={self.directive!r})>"
+        return f'<DefaultSetting(id={self.id}, directive={self.directive!r})>'
 
 
 async def list_default_settings(session: AsyncSession) -> list[DefaultSetting]:
@@ -81,7 +81,7 @@ async def update_default_setting(
     if value is not None:
         setting.value = value
 
-    if fields_set and "comment" in fields_set or comment is not None:
+    if fields_set and 'comment' in fields_set or comment is not None:
         setting.comment = comment
 
     if sort_order is not None:

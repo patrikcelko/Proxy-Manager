@@ -44,118 +44,118 @@ backend be_web
 async def test_overview_empty(client: AsyncClient) -> None:
     """Overview empty."""
 
-    resp = await client.get("/api/overview")
+    resp = await client.get('/api/overview')
     assert resp.status_code == 200
 
     data = resp.json()
-    assert data["global_settings"] == 0
-    assert data["default_settings"] == 0
-    assert data["userlists"] == 0
-    assert data["frontends"] == 0
-    assert data["acl_rules"] == 0
-    assert data["backends"] == 0
-    assert data["backend_servers"] == 0
-    assert data["listen_blocks"] == 0
+    assert data['global_settings'] == 0
+    assert data['default_settings'] == 0
+    assert data['userlists'] == 0
+    assert data['frontends'] == 0
+    assert data['acl_rules'] == 0
+    assert data['backends'] == 0
+    assert data['backend_servers'] == 0
+    assert data['listen_blocks'] == 0
 
 
 async def test_overview_after_import(client: AsyncClient) -> None:
     """Overview after import."""
 
-    await client.post("/api/config/import", json={"config_text": SAMPLE_CONFIG, "merge": False})
-    resp = await client.get("/api/overview")
+    await client.post('/api/config/import', json={'config_text': SAMPLE_CONFIG, 'merge': False})
+    resp = await client.get('/api/overview')
 
     data = resp.json()
-    assert data["global_settings"] >= 2  # log, maxconn, daemon
-    assert data["default_settings"] >= 3
-    assert data["userlists"] == 1
-    assert data["frontends"] == 1
-    assert data["backends"] == 1
-    assert data["backend_servers"] == 2
-    assert data["listen_blocks"] == 1
+    assert data['global_settings'] >= 2  # log, maxconn, daemon
+    assert data['default_settings'] >= 3
+    assert data['userlists'] == 1
+    assert data['frontends'] == 1
+    assert data['backends'] == 1
+    assert data['backend_servers'] == 2
+    assert data['listen_blocks'] == 1
 
 
 async def test_import_replace(client: AsyncClient) -> None:
     """Import replace."""
 
-    resp = await client.post("/api/config/import", json={"config_text": SAMPLE_CONFIG, "merge": False})
+    resp = await client.post('/api/config/import', json={'config_text': SAMPLE_CONFIG, 'merge': False})
     assert resp.status_code == 200
-    assert "imported" in resp.json()["detail"].lower() or "Config" in resp.json()["detail"]
+    assert 'imported' in resp.json()['detail'].lower() or 'Config' in resp.json()['detail']
 
 
 async def test_import_merge(client: AsyncClient) -> None:
     """Import merge."""
 
     # First import
-    await client.post("/api/config/import", json={"config_text": SAMPLE_CONFIG, "merge": False})
+    await client.post('/api/config/import', json={'config_text': SAMPLE_CONFIG, 'merge': False})
 
     # Get counts
-    ov1 = await client.get("/api/overview")
+    ov1 = await client.get('/api/overview')
 
     # Merge import
-    resp = await client.post("/api/config/import", json={"config_text": "global\n    log 127.0.0.1 local1\n", "merge": True})
+    resp = await client.post('/api/config/import', json={'config_text': 'global\n    log 127.0.0.1 local1\n', 'merge': True})
     assert resp.status_code == 200
 
     # Global settings should have grown
-    ov2 = await client.get("/api/overview")
-    assert ov2.json()["global_settings"] > ov1.json()["global_settings"]
+    ov2 = await client.get('/api/overview')
+    assert ov2.json()['global_settings'] > ov1.json()['global_settings']
 
 
 async def test_import_invalid_config(client: AsyncClient) -> None:
     """Import invalid config."""
 
     # An empty string should fail validation
-    resp = await client.post("/api/config/import", json={"config_text": "", "merge": False})
+    resp = await client.post('/api/config/import', json={'config_text': '', 'merge': False})
     assert resp.status_code == 422
 
 
 async def test_import_and_verify_data(client: AsyncClient) -> None:
     """Import and verify data."""
 
-    await client.post("/api/config/import", json={"config_text": SAMPLE_CONFIG, "merge": False})
+    await client.post('/api/config/import', json={'config_text': SAMPLE_CONFIG, 'merge': False})
 
     # Check backends created with servers
-    be_resp = await client.get("/api/backends")
-    backends = be_resp.json()["items"]
+    be_resp = await client.get('/api/backends')
+    backends = be_resp.json()['items']
     assert len(backends) >= 1
 
-    be_web = [b for b in backends if b["name"] == "be_web"]
+    be_web = [b for b in backends if b['name'] == 'be_web']
     assert len(be_web) == 1
-    assert len(be_web[0]["servers"]) == 2
+    assert len(be_web[0]['servers']) == 2
 
     # Check frontends created
-    fe_resp = await client.get("/api/frontends")
-    frontends = fe_resp.json()["items"]
+    fe_resp = await client.get('/api/frontends')
+    frontends = fe_resp.json()['items']
     assert len(frontends) >= 1
 
     # Check userlists created with entries
-    ul_resp = await client.get("/api/userlists")
-    userlists = ul_resp.json()["items"]
+    ul_resp = await client.get('/api/userlists')
+    userlists = ul_resp.json()['items']
     assert len(userlists) >= 1
 
 
 async def test_export_empty(client: AsyncClient) -> None:
     """Export empty."""
 
-    resp = await client.get("/api/config/export")
+    resp = await client.get('/api/config/export')
     assert resp.status_code == 200
-    assert "config_text" in resp.json()
+    assert 'config_text' in resp.json()
 
 
 async def test_roundtrip(client: AsyncClient) -> None:
     """Import config, export it, verify key content is preserved."""
 
-    await client.post("/api/config/import", json={"config_text": SAMPLE_CONFIG, "merge": False})
-    resp = await client.get("/api/config/export")
+    await client.post('/api/config/import', json={'config_text': SAMPLE_CONFIG, 'merge': False})
+    resp = await client.get('/api/config/export')
 
     assert resp.status_code == 200
-    exported = resp.json()["config_text"]
+    exported = resp.json()['config_text']
 
     # Key directives should survive the roundtrip
-    assert "global" in exported.lower()
-    assert "maxconn" in exported
-    assert "be_web" in exported
-    assert "fe_http" in exported
-    assert "stats" in exported
+    assert 'global' in exported.lower()
+    assert 'maxconn' in exported
+    assert 'be_web' in exported
+    assert 'fe_http' in exported
+    assert 'stats' in exported
 
 
 async def test_import_export_backend_fields(client: AsyncClient) -> None:
@@ -173,26 +173,26 @@ async def test_import_export_backend_fields(client: AsyncClient) -> None:
         server s1 10.0.0.1:80 weight 100 ssl verify none check inter 3s rise 2 fall 3 backup
     """)
 
-    r = await client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    r = await client.post('/api/config/import', json={'config_text': cfg, 'merge': False})
     assert r.status_code == 200
 
-    r = await client.get("/api/config/export")
+    r = await client.get('/api/config/export')
     assert r.status_code == 200
-    exported = r.json()["config_text"]
+    exported = r.json()['config_text']
 
-    assert "cookie SRVID insert indirect nocache" in exported
-    assert "timeout server 30s" in exported
-    assert "timeout connect 5s" in exported
-    assert "http-reuse aggressive" in exported
-    assert "option httplog" in exported
-    assert "weight 100" in exported
-    assert "ssl" in exported
-    assert "verify none" in exported
-    assert "check" in exported
-    assert "inter 3s" in exported
-    assert "rise 2" in exported
-    assert "fall 3" in exported
-    assert "backup" in exported
+    assert 'cookie SRVID insert indirect nocache' in exported
+    assert 'timeout server 30s' in exported
+    assert 'timeout connect 5s' in exported
+    assert 'http-reuse aggressive' in exported
+    assert 'option httplog' in exported
+    assert 'weight 100' in exported
+    assert 'ssl' in exported
+    assert 'verify none' in exported
+    assert 'check' in exported
+    assert 'inter 3s' in exported
+    assert 'rise 2' in exported
+    assert 'fall 3' in exported
+    assert 'backup' in exported
 
 
 async def test_import_export_frontend_fields(client: AsyncClient) -> None:
@@ -211,20 +211,20 @@ async def test_import_export_frontend_fields(client: AsyncClient) -> None:
         compression type text/html text/css
     """)
 
-    r = await client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    r = await client.post('/api/config/import', json={'config_text': cfg, 'merge': False})
     assert r.status_code == 200
 
-    r = await client.get("/api/config/export")
+    r = await client.get('/api/config/export')
     assert r.status_code == 200
-    exported = r.json()["config_text"]
+    exported = r.json()['config_text']
 
-    assert "maxconn 5000" in exported
-    assert "timeout client 30s" in exported
-    assert "timeout http-request 10s" in exported
-    assert "option httplog" in exported
-    assert "option forwardfor" in exported
-    assert "compression algo gzip" in exported
-    assert "compression type text/html text/css" in exported
+    assert 'maxconn 5000' in exported
+    assert 'timeout client 30s' in exported
+    assert 'timeout http-request 10s' in exported
+    assert 'option httplog' in exported
+    assert 'option forwardfor' in exported
+    assert 'compression algo gzip' in exported
+    assert 'compression type text/html text/css' in exported
 
 
 async def test_import_export_resolver_new_fields(client: AsyncClient) -> None:
@@ -244,24 +244,24 @@ async def test_import_export_resolver_new_fields(client: AsyncClient) -> None:
         accepted_payload_size 8192
     """)
 
-    r = await client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    r = await client.post('/api/config/import', json={'config_text': cfg, 'merge': False})
     assert r.status_code == 200
 
-    r = await client.get("/api/config/export")
+    r = await client.get('/api/config/export')
     assert r.status_code == 200
-    exported = r.json()["config_text"]
+    exported = r.json()['config_text']
 
-    assert "resolvers mydns" in exported
-    assert "parse-resolv-conf" in exported
-    assert "nameserver dns1 8.8.8.8:53" in exported
-    assert "nameserver dns2 1.1.1.1:53" in exported
-    assert "resolve_retries 3" in exported
-    assert "timeout resolve 1s" in exported
-    assert "timeout retry 1s" in exported
-    assert "hold valid 10s" in exported
-    assert "hold nx 60s" in exported
-    assert "hold aa 5s" in exported
-    assert "accepted_payload_size 8192" in exported
+    assert 'resolvers mydns' in exported
+    assert 'parse-resolv-conf' in exported
+    assert 'nameserver dns1 8.8.8.8:53' in exported
+    assert 'nameserver dns2 1.1.1.1:53' in exported
+    assert 'resolve_retries 3' in exported
+    assert 'timeout resolve 1s' in exported
+    assert 'timeout retry 1s' in exported
+    assert 'hold valid 10s' in exported
+    assert 'hold nx 60s' in exported
+    assert 'hold aa 5s' in exported
+    assert 'accepted_payload_size 8192' in exported
 
 
 async def test_import_export_peers_new_fields(client: AsyncClient) -> None:
@@ -275,30 +275,30 @@ async def test_import_export_peers_new_fields(client: AsyncClient) -> None:
         peer haproxy2 10.0.0.2:10000
     """)
 
-    r = await client.post("/api/config/import", json={"config_text": cfg, "merge": False})
+    r = await client.post('/api/config/import', json={'config_text': cfg, 'merge': False})
     assert r.status_code == 200
 
-    r = await client.get("/api/config/export")
+    r = await client.get('/api/config/export')
     assert r.status_code == 200
-    exported = r.json()["config_text"]
+    exported = r.json()['config_text']
 
-    assert "peers mypeers" in exported
-    assert "bind :10000 ssl crt /etc/ssl/cert.pem" in exported
-    assert "default-server ssl verify none" in exported
-    assert "peer haproxy1 10.0.0.1:10000" in exported
-    assert "peer haproxy2 10.0.0.2:10000" in exported
+    assert 'peers mypeers' in exported
+    assert 'bind :10000 ssl crt /etc/ssl/cert.pem' in exported
+    assert 'default-server ssl verify none' in exported
+    assert 'peer haproxy1 10.0.0.1:10000' in exported
+    assert 'peer haproxy2 10.0.0.2:10000' in exported
 
 
 async def test_validate_valid_config(client: AsyncClient) -> None:
     """Validate endpoint accepts valid HAProxy config."""
 
-    resp = await client.post("/api/config/validate", json={"config_text": SAMPLE_CONFIG})
+    resp = await client.post('/api/config/validate', json={'config_text': SAMPLE_CONFIG})
     assert resp.status_code == 200
-    assert resp.json()["valid"] is True
+    assert resp.json()['valid'] is True
 
 
 async def test_validate_invalid_config(client: AsyncClient) -> None:
     """Validate endpoint rejects empty config_text at schema level."""
 
-    resp = await client.post("/api/config/validate", json={"config_text": ""})
+    resp = await client.post('/api/config/validate', json={'config_text': ''})
     assert resp.status_code == 422

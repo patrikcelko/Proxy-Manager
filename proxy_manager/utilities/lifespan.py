@@ -59,7 +59,7 @@ async def _check_ssl_certificates():
                 # Mark expired certificates
                 result = await session.execute(
                     select(SslCertificate).where(
-                        SslCertificate.status == "active",
+                        SslCertificate.status == 'active',
                         SslCertificate.expires_at.isnot(None),
                         SslCertificate.expires_at < now,
                     )
@@ -69,10 +69,10 @@ async def _check_ssl_certificates():
                     if cert.expires_at is None:
                         continue
 
-                    cert.status = "expired"
-                    cert.last_error = f"Certificate expired on {cert.expires_at.strftime('%Y-%m-%d')}"
+                    cert.status = 'expired'
+                    cert.last_error = f'Certificate expired on {cert.expires_at.strftime("%Y-%m-%d")}'
                     logger.warning(
-                        "SSL certificate for %s has expired (was %s)",
+                        'SSL certificate for %s has expired (was %s)',
                         cert.domain,
                         cert.expires_at,
                     )
@@ -80,7 +80,7 @@ async def _check_ssl_certificates():
                 # Log warnings for soon-to-expire certificates
                 result = await session.execute(
                     select(SslCertificate).where(
-                        SslCertificate.status == "active",
+                        SslCertificate.status == 'active',
                         SslCertificate.expires_at.isnot(None),
                         SslCertificate.expires_at >= now,
                         SslCertificate.expires_at <= warn_threshold,
@@ -93,7 +93,7 @@ async def _check_ssl_certificates():
 
                     days_left = (cert.expires_at.replace(tzinfo=UTC) - now).days if cert.expires_at.tzinfo is None else (cert.expires_at - now).days
                     logger.warning(
-                        "SSL certificate for %s expires in %d days (auto_renew=%s)",
+                        'SSL certificate for %s expires in %d days (auto_renew=%s)',
                         cert.domain,
                         days_left,
                         cert.auto_renew,
@@ -101,15 +101,15 @@ async def _check_ssl_certificates():
 
                 await session.commit()
                 logger.info(
-                    "SSL certificate check complete: %d expired, %d expiring soon",
+                    'SSL certificate check complete: %d expired, %d expiring soon',
                     len(expired_certs),
                     len(expiring_certs),
                 )
         except asyncio.CancelledError:
-            logger.info("SSL certificate check task cancelled")
+            logger.info('SSL certificate check task cancelled')
             break
         except Exception:
-            logger.exception("Error during SSL certificate check")
+            logger.exception('Error during SSL certificate check')
             await asyncio.sleep(60)  # Retry after 1 minute on error
 
 
@@ -122,11 +122,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     # Start background SSL certificate checker
     cert_task = asyncio.create_task(_check_ssl_certificates())
-    logger.info("Started background SSL certificate expiry checker (interval: %dh)", CERT_CHECK_INTERVAL // 3600)
+    logger.info('Started background SSL certificate expiry checker (interval: %dh)', CERT_CHECK_INTERVAL // 3600)
 
     # Start background config mount watcher
     mount_task = asyncio.create_task(_config_mount_watcher())
-    logger.info("Started background config mount watcher (interval: %ds)", MOUNT_CHECK_INTERVAL)
+    logger.info('Started background config mount watcher (interval: %ds)', MOUNT_CHECK_INTERVAL)
 
     yield
 
@@ -136,11 +136,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     try:
         await cert_task
     except asyncio.CancelledError:
-        logger.info("Background SSL certificate checker task cancelled successfully.")
+        logger.info('Background SSL certificate checker task cancelled successfully.')
     try:
         await mount_task
     except asyncio.CancelledError:
-        logger.info("Background config mount watcher task cancelled successfully.")
+        logger.info('Background config mount watcher task cancelled successfully.')
 
 
 async def _config_mount_watcher() -> None:
@@ -149,7 +149,7 @@ async def _config_mount_watcher() -> None:
     """
 
     last_hash: str | None = None
-    mount_dir = Path(os.environ.get("PM_MOUNT_DIR", ".mount"))
+    mount_dir = Path(os.environ.get('PM_MOUNT_DIR', '.mount'))
 
     # Write config immediately on startup, then poll
     first_run = True
@@ -237,14 +237,14 @@ async def _config_mount_watcher() -> None:
                 )
 
                 await asyncio.to_thread(mount_dir.mkdir, parents=True, exist_ok=True)
-                config_path = mount_dir / "haproxy.cfg"
+                config_path = mount_dir / 'haproxy.cfg'
                 await asyncio.to_thread(config_path.write_text, config_text)
                 last_hash = latest.hash
-                logger.info("Config regenerated to %s (version %s)", config_path, latest.hash[:8])
+                logger.info('Config regenerated to %s (version %s)', config_path, latest.hash[:8])
 
         except asyncio.CancelledError:
-            logger.info("Config mount watcher task cancelled")
+            logger.info('Config mount watcher task cancelled')
             break
         except Exception:
-            logger.exception("Error in config mount watcher")
+            logger.exception('Error in config mount watcher')
             await asyncio.sleep(5)

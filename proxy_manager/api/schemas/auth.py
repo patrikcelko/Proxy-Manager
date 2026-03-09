@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class UserLoginRequest(BaseModel):
     """Login credentials payload."""
 
-    email: str = Field(..., examples=["admin@example.com"])
+    email: str = Field(..., examples=['admin@example.com'])
     """Unique email address."""
 
     password: str = Field(...)
@@ -21,7 +21,7 @@ class UserLoginRequest(BaseModel):
 class UserRegisterRequest(BaseModel):
     """Registration payload with name, email, and password."""
 
-    email: str = Field(..., examples=["admin@example.com"])
+    email: str = Field(..., examples=['admin@example.com'])
     """Unique email address."""
 
     name: str = Field(..., min_length=1, max_length=255)
@@ -55,7 +55,7 @@ class TokenResponse(BaseModel):
     access_token: str
     """JWT access token."""
 
-    token_type: str = "bearer"  # noqa: S105
+    token_type: str = 'bearer'  # noqa: S105
     """Token type (always `bearer`)."""
 
     user: UserResponse

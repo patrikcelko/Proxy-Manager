@@ -15,7 +15,7 @@ from proxy_manager.database.models.base import Base
 class HttpErrorsSection(Base):
     """HAProxy 'http-errors' named section."""
 
-    __tablename__ = "http_errors_sections"
+    __tablename__ = 'http_errors_sections'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
@@ -32,20 +32,20 @@ class HttpErrorsSection(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<HttpErrorsSection(id={self.id}, name={self.name!r})>"
+        return f'<HttpErrorsSection(id={self.id}, name={self.name!r})>'
 
 
 class HttpErrorEntry(Base):
     """A single errorfile / errorloc directive within http-errors."""
 
-    __tablename__ = "http_error_entries"
+    __tablename__ = 'http_error_entries'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     """Primary key."""
 
     section_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("http_errors_sections.id", ondelete="CASCADE"),
+        ForeignKey('http_errors_sections.id', ondelete='CASCADE'),
         nullable=False,
         index=True,
     )
@@ -54,7 +54,7 @@ class HttpErrorEntry(Base):
     status_code: Mapped[int] = mapped_column(Integer, nullable=False)
     """HTTP status code."""
 
-    type: Mapped[str] = mapped_column(String(20), nullable=False, default="errorfile")
+    type: Mapped[str] = mapped_column(String(20), nullable=False, default='errorfile')
     """Error response type (`errorfile`, `errorloc`, etc.)."""
 
     value: Mapped[str] = mapped_column(Text, nullable=False)  # file path or URL
@@ -66,7 +66,7 @@ class HttpErrorEntry(Base):
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
 
-        return f"<HttpErrorEntry(id={self.id}, status={self.status_code})>"
+        return f'<HttpErrorEntry(id={self.id}, status={self.status_code})>'
 
 
 async def list_http_errors_sections(session: AsyncSession) -> list[HttpErrorsSection]:
@@ -108,10 +108,10 @@ async def update_http_errors_section(
 ) -> HttpErrorsSection:
     """Update an existing http-errors section."""
 
-    allowed = {c.name for c in HttpErrorsSection.__table__.columns} - {"id"}
+    allowed = {c.name for c in HttpErrorsSection.__table__.columns} - {'id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_http_errors_section: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_http_errors_section: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)
@@ -167,10 +167,10 @@ async def create_http_error_entry(session: AsyncSession, **kwargs: object) -> Ht
 async def update_http_error_entry(session: AsyncSession, obj: HttpErrorEntry, **kwargs: object) -> HttpErrorEntry:
     """Update an existing http-error entry."""
 
-    allowed = {c.name for c in HttpErrorEntry.__table__.columns} - {"id", "section_id"}
+    allowed = {c.name for c in HttpErrorEntry.__table__.columns} - {'id', 'section_id'}
     unknown = set(kwargs) - allowed
     if unknown:
-        logging.getLogger(__name__).warning("update_http_error_entry: ignoring unknown fields: %s", unknown)
+        logging.getLogger(__name__).warning('update_http_error_entry: ignoring unknown fields: %s', unknown)
     for k, v in kwargs.items():
         if k in allowed:
             setattr(obj, k, v)

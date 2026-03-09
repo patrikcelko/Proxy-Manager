@@ -34,7 +34,7 @@ from proxy_manager.database.models.userlist import (
 )
 from proxy_manager.utilities.auth import hash_password
 
-router = APIRouter(tags=["userlists"])
+router = APIRouter(tags=['userlists'])
 
 
 def _entry_response(e: UserlistEntry) -> UserlistEntryResponse:
@@ -60,7 +60,7 @@ async def _build_detail(session: AsyncSession, ul: Userlist) -> UserlistDetailRe
     )
 
 
-@router.get("/api/userlists", response_model=UserlistListResponse)
+@router.get('/api/userlists', response_model=UserlistListResponse)
 async def api_list_userlists(session: DBSession) -> UserlistListResponse:
     """List all userlists with their entries."""
 
@@ -69,18 +69,18 @@ async def api_list_userlists(session: DBSession) -> UserlistListResponse:
     return UserlistListResponse(count=len(items), items=items)
 
 
-@router.get("/api/userlists/{userlist_id}", response_model=UserlistDetailResponse)
+@router.get('/api/userlists/{userlist_id}', response_model=UserlistDetailResponse)
 async def api_get_userlist(userlist_id: int, session: DBSession) -> UserlistDetailResponse:
     """Get a single userlist by ID."""
 
     ul = await get_userlist(session, userlist_id)
     if not ul:
-        raise HTTPException(status_code=404, detail="Userlist not found")
+        raise HTTPException(status_code=404, detail='Userlist not found')
 
     return await _build_detail(session, ul)
 
 
-@router.post("/api/userlists", response_model=UserlistDetailResponse, status_code=201)
+@router.post('/api/userlists', response_model=UserlistDetailResponse, status_code=201)
 async def api_create_userlist(body: UserlistCreate, session: DBSession) -> UserlistDetailResponse:
     """Create a new userlist."""
 
@@ -92,13 +92,13 @@ async def api_create_userlist(body: UserlistCreate, session: DBSession) -> Userl
     return await _build_detail(session, row)
 
 
-@router.put("/api/userlists/{userlist_id}", response_model=UserlistDetailResponse)
+@router.put('/api/userlists/{userlist_id}', response_model=UserlistDetailResponse)
 async def api_update_userlist(userlist_id: int, body: UserlistUpdate, session: DBSession) -> UserlistDetailResponse:
     """Update an existing userlist."""
 
     ul = await get_userlist(session, userlist_id)
     if not ul:
-        raise HTTPException(status_code=404, detail="Userlist not found")
+        raise HTTPException(status_code=404, detail='Userlist not found')
 
     if body.name is not None and body.name != ul.name:
         conflict = await get_userlist_by_name(session, body.name)
@@ -109,25 +109,25 @@ async def api_update_userlist(userlist_id: int, body: UserlistUpdate, session: D
     return await _build_detail(session, updated)
 
 
-@router.delete("/api/userlists/{userlist_id}", response_model=MessageResponse)
+@router.delete('/api/userlists/{userlist_id}', response_model=MessageResponse)
 async def api_delete_userlist(userlist_id: int, session: DBSession) -> MessageResponse:
     """Delete a userlist and its entries."""
 
     ul = await get_userlist(session, userlist_id)
     if not ul:
-        raise HTTPException(status_code=404, detail="Userlist not found")
+        raise HTTPException(status_code=404, detail='Userlist not found')
 
     await delete_userlist(session, ul)
     return MessageResponse(detail=f"Userlist '{ul.name}' deleted")
 
 
-@router.post("/api/userlists/{userlist_id}/entries", response_model=UserlistEntryResponse, status_code=201)
+@router.post('/api/userlists/{userlist_id}/entries', response_model=UserlistEntryResponse, status_code=201)
 async def api_create_entry(userlist_id: int, body: UserlistEntryCreate, session: DBSession) -> UserlistEntryResponse:
     """Add an entry to a userlist."""
 
     ul = await get_userlist(session, userlist_id)
     if not ul:
-        raise HTTPException(status_code=404, detail="Userlist not found")
+        raise HTTPException(status_code=404, detail='Userlist not found')
 
     hashed = hash_password(body.password)
     entry = await create_userlist_entry(
@@ -141,13 +141,13 @@ async def api_create_entry(userlist_id: int, body: UserlistEntryCreate, session:
     return _entry_response(entry)
 
 
-@router.put("/api/userlists/{userlist_id}/entries/{entry_id}", response_model=UserlistEntryResponse)
+@router.put('/api/userlists/{userlist_id}/entries/{entry_id}', response_model=UserlistEntryResponse)
 async def api_update_entry(userlist_id: int, entry_id: int, body: UserlistEntryUpdate, session: DBSession) -> UserlistEntryResponse:
     """Update a userlist entry password or name."""
 
     entry = await get_userlist_entry(session, entry_id)
     if not entry or entry.userlist_id != userlist_id:
-        raise HTTPException(status_code=404, detail="Entry not found")
+        raise HTTPException(status_code=404, detail='Entry not found')
 
     pw_hash = hash_password(body.password) if body.password else None
     updated = await update_userlist_entry(
@@ -161,13 +161,13 @@ async def api_update_entry(userlist_id: int, entry_id: int, body: UserlistEntryU
     return _entry_response(updated)
 
 
-@router.delete("/api/userlists/{userlist_id}/entries/{entry_id}", response_model=MessageResponse)
+@router.delete('/api/userlists/{userlist_id}/entries/{entry_id}', response_model=MessageResponse)
 async def api_delete_entry(userlist_id: int, entry_id: int, session: DBSession) -> MessageResponse:
     """Delete a userlist entry."""
 
     entry = await get_userlist_entry(session, entry_id)
     if not entry or entry.userlist_id != userlist_id:
-        raise HTTPException(status_code=404, detail="Entry not found")
+        raise HTTPException(status_code=404, detail='Entry not found')
 
     await delete_userlist_entry(session, entry)
-    return MessageResponse(detail="Entry deleted")
+    return MessageResponse(detail='Entry deleted')

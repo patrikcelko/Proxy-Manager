@@ -32,7 +32,7 @@ from proxy_manager.database.models.listen_block import (
     update_listen_block_bind,
 )
 
-router = APIRouter(tags=["listen"])
+router = APIRouter(tags=['listen'])
 
 
 async def _build_detail(session: AsyncSession, lb: ListenBlock) -> ListenBlockDetailResponse:
@@ -59,7 +59,7 @@ async def _build_detail(session: AsyncSession, lb: ListenBlock) -> ListenBlockDe
     )
 
 
-@router.get("/api/listen-blocks", response_model=ListenBlockListResponse)
+@router.get('/api/listen-blocks', response_model=ListenBlockListResponse)
 async def api_list_listen_blocks(session: DBSession) -> ListenBlockListResponse:
     """List all listen blocks with their binds."""
 
@@ -69,18 +69,18 @@ async def api_list_listen_blocks(session: DBSession) -> ListenBlockListResponse:
     return ListenBlockListResponse(count=len(items), items=items)
 
 
-@router.get("/api/listen-blocks/{block_id}", response_model=ListenBlockDetailResponse)
+@router.get('/api/listen-blocks/{block_id}', response_model=ListenBlockDetailResponse)
 async def api_get_listen_block(block_id: int, session: DBSession) -> ListenBlockDetailResponse:
     """Get a single listen block by ID."""
 
     row = await get_listen_block(session, block_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Listen block not found")
+        raise HTTPException(status_code=404, detail='Listen block not found')
 
     return await _build_detail(session, row)
 
 
-@router.post("/api/listen-blocks", response_model=ListenBlockDetailResponse, status_code=201)
+@router.post('/api/listen-blocks', response_model=ListenBlockDetailResponse, status_code=201)
 async def api_create_listen_block(body: ListenBlockCreate, session: DBSession) -> ListenBlockDetailResponse:
     """Create a new listen block."""
 
@@ -92,7 +92,7 @@ async def api_create_listen_block(body: ListenBlockCreate, session: DBSession) -
     return await _build_detail(session, row)
 
 
-@router.put("/api/listen-blocks/{block_id}", response_model=ListenBlockDetailResponse)
+@router.put('/api/listen-blocks/{block_id}', response_model=ListenBlockDetailResponse)
 async def api_update_listen_block(
     block_id: int,
     body: ListenBlockUpdate,
@@ -102,7 +102,7 @@ async def api_update_listen_block(
 
     row = await get_listen_block(session, block_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Listen block not found")
+        raise HTTPException(status_code=404, detail='Listen block not found')
 
     if body.name is not None and body.name != row.name:
         conflict = await get_listen_block_by_name(session, body.name)
@@ -114,19 +114,19 @@ async def api_update_listen_block(
     return await _build_detail(session, updated)
 
 
-@router.delete("/api/listen-blocks/{block_id}", response_model=MessageResponse)
+@router.delete('/api/listen-blocks/{block_id}', response_model=MessageResponse)
 async def api_delete_listen_block(block_id: int, session: DBSession) -> MessageResponse:
     """Delete a listen block and its binds."""
 
     row = await get_listen_block(session, block_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Listen block not found")
+        raise HTTPException(status_code=404, detail='Listen block not found')
 
     await delete_listen_block(session, row)
     return MessageResponse(detail=f"Listen block '{row.name}' deleted")
 
 
-@router.post("/api/listen-blocks/{block_id}/binds", response_model=ListenBlockBindResponse, status_code=201)
+@router.post('/api/listen-blocks/{block_id}/binds', response_model=ListenBlockBindResponse, status_code=201)
 async def api_create_listen_bind(
     block_id: int,
     body: ListenBlockBindCreate,
@@ -136,7 +136,7 @@ async def api_create_listen_bind(
 
     lb = await get_listen_block(session, block_id)
     if not lb:
-        raise HTTPException(status_code=404, detail="Listen block not found")
+        raise HTTPException(status_code=404, detail='Listen block not found')
 
     bind = await create_listen_block_bind(
         session,
@@ -147,7 +147,7 @@ async def api_create_listen_bind(
     return ListenBlockBindResponse.model_validate(bind)
 
 
-@router.put("/api/listen-blocks/{block_id}/binds/{bind_id}", response_model=ListenBlockBindResponse)
+@router.put('/api/listen-blocks/{block_id}/binds/{bind_id}', response_model=ListenBlockBindResponse)
 async def api_update_listen_bind(
     block_id: int,
     bind_id: int,
@@ -158,19 +158,19 @@ async def api_update_listen_bind(
 
     bind = await get_listen_block_bind(session, bind_id)
     if not bind or bind.listen_block_id != block_id:
-        raise HTTPException(status_code=404, detail="Bind not found")
+        raise HTTPException(status_code=404, detail='Bind not found')
 
     updated = await update_listen_block_bind(session, bind, bind_line=body.bind_line, sort_order=body.sort_order)
     return ListenBlockBindResponse.model_validate(updated)
 
 
-@router.delete("/api/listen-blocks/{block_id}/binds/{bind_id}", response_model=MessageResponse)
+@router.delete('/api/listen-blocks/{block_id}/binds/{bind_id}', response_model=MessageResponse)
 async def api_delete_listen_bind(block_id: int, bind_id: int, session: DBSession) -> MessageResponse:
     """Remove a bind from a listen block."""
 
     bind = await get_listen_block_bind(session, bind_id)
     if not bind or bind.listen_block_id != block_id:
-        raise HTTPException(status_code=404, detail="Bind not found")
+        raise HTTPException(status_code=404, detail='Bind not found')
 
     await delete_listen_block_bind(session, bind)
-    return MessageResponse(detail="Bind deleted")
+    return MessageResponse(detail='Bind deleted')

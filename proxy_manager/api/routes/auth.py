@@ -31,18 +31,18 @@ from proxy_manager.database.models.user import (
 from proxy_manager.utilities.auth import create_access_token, hash_password, verify_password
 from proxy_manager.utilities.rate_limit import RATE_LIMIT_AUTH, limiter
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix='/auth', tags=['auth'])
 
 
-@router.get("/setup-required")
+@router.get('/setup-required')
 async def setup_required(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, bool]:
     """Check whether the application needs first-time user setup (no users exist)."""
 
     total = await count_users(session)
-    return {"setup_required": total == 0}
+    return {'setup_required': total == 0}
 
 
-@router.post("/register", response_model=TokenResponse)
+@router.post('/register', response_model=TokenResponse)
 @limiter.limit(RATE_LIMIT_AUTH)
 async def register(
     user_data: UserRegisterRequest,
@@ -60,37 +60,37 @@ async def register(
         # Require authentication for subsequent registrations
         from proxy_manager.utilities.auth import decode_access_token
 
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only authenticated users can create new accounts",
+                detail='Only authenticated users can create new accounts',
             )
-        token = auth_header.removeprefix("Bearer ").strip()
+        token = auth_header.removeprefix('Bearer ').strip()
         user_id = decode_access_token(token)
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
+                detail='Invalid token',
             )
         caller = await get_user_by_id(session, user_id)
         if not caller:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
+                detail='User not found',
             )
 
     if await user_exists(session, user_data.email):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Email already registered')
 
     password_hash = hash_password(user_data.password)
     user = await create_user(session, email=user_data.email, name=user_data.name, password_hash=password_hash)
 
     token = create_access_token(user.id)
-    return TokenResponse(access_token=token, token_type="bearer", user=UserResponse.model_validate(user))  # noqa: S106
+    return TokenResponse(access_token=token, token_type='bearer', user=UserResponse.model_validate(user))  # noqa: S106
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post('/login', response_model=TokenResponse)
 @limiter.limit(RATE_LIMIT_AUTH)
 async def login(
     credentials: UserLoginRequest,
@@ -101,13 +101,13 @@ async def login(
 
     user = await get_user_by_email(session, credentials.email)
     if not user or not verify_password(credentials.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid email or password')
 
     token = create_access_token(user.id)
-    return TokenResponse(access_token=token, token_type="bearer", user=UserResponse.model_validate(user))  # noqa
+    return TokenResponse(access_token=token, token_type='bearer', user=UserResponse.model_validate(user))  # noqa
 
 
-@router.patch("/profile", response_model=UserResponse)
+@router.patch('/profile', response_model=UserResponse)
 async def update_profile(
     request: ProfileUpdateRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -117,7 +117,7 @@ async def update_profile(
 
     if request.email is not None and request.email != user.email:
         if await user_exists(session, request.email):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Email already registered')
 
         user.email = request.email
 
@@ -126,10 +126,10 @@ async def update_profile(
 
     if request.new_password is not None:
         if request.current_password is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password required")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Current password required')
 
         if not verify_password(request.current_password, user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid current password')
 
         user.password_hash = hash_password(request.new_password)
 
@@ -139,14 +139,14 @@ async def update_profile(
     return UserResponse.model_validate(user)
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get('/me', response_model=UserResponse)
 async def get_current_user_info(user: Annotated[User, Depends(get_current_user)]) -> UserResponse:
     """Return the authenticated user's profile."""
 
     return UserResponse.model_validate(user)
 
 
-@router.get("/users", response_model=list[UserResponse])
+@router.get('/users', response_model=list[UserResponse])
 async def list_all_users(
     _user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -157,7 +157,7 @@ async def list_all_users(
     return [UserResponse.model_validate(u) for u in users]
 
 
-@router.delete("/users/{user_id}", response_model=dict[str, str])
+@router.delete('/users/{user_id}', response_model=dict[str, str])
 async def delete_user_by_id(
     user_id: int,
     current_user: CurrentUser,
@@ -166,14 +166,14 @@ async def delete_user_by_id(
     """Delete a user by ID (authenticated only, cannot delete yourself)."""
 
     if current_user.id == user_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot delete your own account')
 
     target = await get_user_by_id(session, user_id)
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
 
     await delete_user(session, target)
-    return {"detail": "User deleted"}
+    return {'detail': 'User deleted'}
 
 
 class AdminPasswordResetRequest(BaseModel):
@@ -182,7 +182,7 @@ class AdminPasswordResetRequest(BaseModel):
     new_password: str = Field(..., min_length=6)
 
 
-@router.patch("/users/{user_id}/password", response_model=dict[str, str])
+@router.patch('/users/{user_id}/password', response_model=dict[str, str])
 async def admin_reset_password(
     user_id: int,
     body: AdminPasswordResetRequest,
@@ -194,13 +194,13 @@ async def admin_reset_password(
     if current_user.id == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Use the profile endpoint to change your own password",
+            detail='Use the profile endpoint to change your own password',
         )
 
     target = await get_user_by_id(session, user_id)
     if not target:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
 
     target.password_hash = hash_password(body.new_password)
     await session.commit()
-    return {"detail": "Password updated"}
+    return {'detail': 'Password updated'}

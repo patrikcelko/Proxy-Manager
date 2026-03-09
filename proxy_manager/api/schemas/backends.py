@@ -96,7 +96,7 @@ class BackendUpdate(BaseModel):
     name: str | None = None
     """Unique name identifier."""
 
-    mode: str | None = Field(default=None, pattern=r"^(http|tcp)$")
+    mode: str | None = Field(default=None, pattern=r'^(http|tcp)$')
     """Proxy mode (`http` or `tcp`)."""
 
     balance: str | None = None
