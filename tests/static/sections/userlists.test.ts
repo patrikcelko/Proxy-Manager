@@ -169,7 +169,7 @@ describe("openUserlistModal", () => {
         openUserlistModal();
         const content = document.getElementById("modal-content")!;
         expect(content.innerHTML).toContain("New");
-        expect(content.innerHTML).toContain("User List");
+        expect(content.innerHTML).toContain("Auth List");
     });
 
     it("opens edit modal", () => {

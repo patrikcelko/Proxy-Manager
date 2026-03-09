@@ -3,7 +3,7 @@
  * ===================
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { loadUsers, filterUsers, openAddUserModal, saveNewUser, deleteUserById } from "@/sections/users";
 
@@ -151,12 +151,14 @@ describe("saveNewUser", () => {
             <input id="nu-name">
             <input id="nu-email">
             <input id="nu-password">
+            <input id="nu-password-confirm">
         `;
         document.body.appendChild(container);
         // Set values programmatically (jsdom doesn't sync value attribute -> property via innerHTML)
         (document.getElementById("nu-name") as HTMLInputElement).value = "New User";
         (document.getElementById("nu-email") as HTMLInputElement).value = "new@example.com";
         (document.getElementById("nu-password") as HTMLInputElement).value = "password123";
+        (document.getElementById("nu-password-confirm") as HTMLInputElement).value = "password123";
     });
 
     afterEach(() => container.remove());
@@ -215,7 +217,4 @@ describe("deleteUserById", () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 });
-function afterEach(_arg0: () => void) {
-    throw new Error("Function not implemented.");
-}
 

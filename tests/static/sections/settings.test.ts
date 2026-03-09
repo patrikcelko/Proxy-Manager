@@ -299,15 +299,13 @@ describe("openSettingsAddModal / openGlobalQuickAdd / openDefaultsQuickAdd", () 
     it("opens global quick-add modal", () => {
         openGlobalQuickAdd();
         const content = document.getElementById("modal-content")!;
-        expect(content.innerHTML).toContain("Quick Add");
-        expect(content.innerHTML).toContain("Global");
+        expect(content.innerHTML).toContain("Add Global Setting");
     });
 
     it("opens defaults quick-add modal", () => {
         openDefaultsQuickAdd();
         const content = document.getElementById("modal-content")!;
-        expect(content.innerHTML).toContain("Quick Add");
-        expect(content.innerHTML).toContain("Defaults");
+        expect(content.innerHTML).toContain("Add Defaults Setting");
     });
 
     it("renders preset cards in the grid", () => {
@@ -330,30 +328,20 @@ describe("applySettingPreset", () => {
         document.body.insertAdjacentHTML("beforeend", DOM);
     });
 
-    it("applies global preset via POST", async () => {
-        const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-            ok: true,
-            status: 201,
-            json: () => Promise.resolve({ id: 1 }),
-        } as Response);
+    it("applies global preset by filling form fields", async () => {
+        openSettingsAddModal("global");
         await applySettingPreset("global", 0);
-        const first = fetchSpy.mock.calls[0];
-        expect(first[0]).toBe("/api/global-settings");
-        expect((first[1] as any).method).toBe("POST");
-        const body = JSON.parse((first[1] as any).body);
-        expect(body.directive).toBe(GLOBAL_PRESETS[0].d);
-        expect(body.value).toBe(GLOBAL_PRESETS[0].v);
+        const dir = (document.getElementById("m-directive") as HTMLInputElement).value;
+        const val = (document.getElementById("m-value") as HTMLInputElement).value;
+        expect(dir).toBe(GLOBAL_PRESETS[0].d);
+        expect(val).toBe(GLOBAL_PRESETS[0].v);
     });
 
-    it("applies defaults preset via POST", async () => {
-        const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-            ok: true,
-            status: 201,
-            json: () => Promise.resolve({ id: 1 }),
-        } as Response);
+    it("applies defaults preset by filling form fields", async () => {
+        openSettingsAddModal("defaults");
         await applySettingPreset("defaults", 0);
-        const body = JSON.parse((fetchSpy.mock.calls[0][1] as any).body);
-        expect(body.directive).toBe(DEFAULTS_PRESETS[0].d);
+        const dir = (document.getElementById("m-directive") as HTMLInputElement).value;
+        expect(dir).toBe(DEFAULTS_PRESETS[0].d);
     });
 
     it("does nothing for out-of-range index", async () => {

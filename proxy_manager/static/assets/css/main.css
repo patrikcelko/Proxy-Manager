@@ -1768,19 +1768,16 @@ h3 {
 .toast-success {
     background: #166534;
     color: #bbf7d0;
-    border-left: 3px solid var(--ok);
 }
 
 .toast-error {
     background: #7f1d1d;
     color: #fecaca;
-    border-left: 3px solid var(--danger);
 }
 
 .toast-info {
     background: #1e3a5f;
     color: #bfdbfe;
-    border-left: 3px solid var(--info);
 }
 
 .toast.fade-out {
@@ -2154,7 +2151,6 @@ h3 {
     color: var(--accent);
     background: var(--accent-glow);
     font-weight: 600;
-    border-bottom: 2px solid var(--accent);
 }
 
 .stab-count {
