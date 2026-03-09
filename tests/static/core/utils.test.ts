@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { escHtml, escJsonAttr, safeInt, filterPresetGrid, searchPresetGrid } from "@/core/utils";
 
-/*  escHtml  */
+/* escHtml  */
 describe("escHtml", () => {
     it("escapes HTML special chars", () => {
         expect(escHtml('<script>"xss" & more</script>')).toBe("&lt;script&gt;&quot;xss&quot; &amp; more&lt;/script&gt;");
@@ -33,7 +33,7 @@ describe("escHtml", () => {
     });
 });
 
-/*  escJsonAttr  */
+/* escJsonAttr  */
 describe("escJsonAttr", () => {
     it("escapes JSON for safe use in HTML attributes", () => {
         const obj = { name: '<b>"Hello"</b>', val: "a & b" };
@@ -52,7 +52,7 @@ describe("escJsonAttr", () => {
     });
 });
 
-/*  safeInt  */
+/* safeInt  */
 describe("safeInt", () => {
     it("parses valid integer strings", () => {
         expect(safeInt("42")).toBe(42);
@@ -80,7 +80,7 @@ describe("safeInt", () => {
     });
 });
 
-/*  filterPresetGrid / searchPresetGrid  */
+/* filterPresetGrid / searchPresetGrid  */
 describe("filterPresetGrid", () => {
     beforeEach(() => {
         document.body.insertAdjacentHTML(

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { loadHistory, toggleHistoryDiff, rollbackVersion } from "@/sections/history";
+import { loadHistory, toggleHistoryDiff, rollbackVersion, switchDiffTab, renderDiffContent } from "@/sections/history";
 
 describe("loadHistory", () => {
     let container: HTMLDivElement;
@@ -232,5 +232,138 @@ describe("rollbackVersion", () => {
         const fetchSpy = vi.spyOn(globalThis, "fetch");
         await rollbackVersion(hash);
         expect(fetchSpy).not.toHaveBeenCalled();
+    });
+});
+
+describe("renderDiffContent", () => {
+    it("renders tabbed diff with Changes and Diff tabs", () => {
+        const diff = {
+            backends: {
+                created: [{ name: "new_be" }],
+                deleted: [{ name: "old_be" }],
+                updated: [
+                    { entity: "web", old: { mode: "http" }, new: { mode: "tcp" }, changes: [{ field: "mode", old: "http", new: "tcp" }] },
+                ],
+                total: 3,
+            },
+        };
+
+        const html = renderDiffContent(diff, "test-diff");
+        const wrap = document.createElement("div");
+        wrap.innerHTML = html;
+
+        // Has tab bar with two buttons
+        const tabs = wrap.querySelectorAll(".dtab-btn");
+        expect(tabs).toHaveLength(2);
+        expect(tabs[0].textContent).toContain("Changes");
+        expect(tabs[1].textContent).toContain("Diff");
+
+        // Has two panes
+        const panes = wrap.querySelectorAll(".dtab-pane");
+        expect(panes).toHaveLength(2);
+
+        // Changes pane is visible by default
+        expect((panes[0] as HTMLElement).style.display).toBe("block");
+        expect((panes[1] as HTMLElement).style.display).toBe("none");
+
+        // Summary stats present
+        expect(wrap.querySelector(".dtab-s-add")).not.toBeNull();
+        expect(wrap.querySelector(".dtab-s-del")).not.toBeNull();
+    });
+
+    it("uses SVG arrow icon instead of text arrow in field changes", () => {
+        const diff = {
+            backends: {
+                created: [],
+                deleted: [],
+                updated: [
+                    { entity: "web", old: { mode: "http" }, new: { mode: "tcp" }, changes: [{ field: "mode", old: "http", new: "tcp" }] },
+                ],
+                total: 1,
+            },
+        };
+
+        const html = renderDiffContent(diff, "arrow-test");
+        const wrap = document.createElement("div");
+        wrap.innerHTML = html;
+
+        const changesPane = wrap.querySelector(".dtab-pane[data-tab='changes']") as HTMLElement;
+        const arrow = changesPane.querySelector(".diff-arrow");
+        expect(arrow).not.toBeNull();
+        // Should contain an SVG element, not a text arrow
+        expect(arrow!.querySelector("svg")).not.toBeNull();
+        expect(arrow!.innerHTML).toContain("arrow-right-narrow");
+    });
+
+    it("shows empty state for empty diff", () => {
+        const html = renderDiffContent({}, "empty-test");
+        expect(html).toContain("No changes");
+    });
+
+    it("renders unified diff with +/- lines", () => {
+        const diff = {
+            frontends: {
+                created: [],
+                deleted: [],
+                updated: [
+                    { entity: "http", old: { mode: "http" }, new: { mode: "tcp" }, changes: [{ field: "mode", old: "http", new: "tcp" }] },
+                ],
+                total: 1,
+            },
+        };
+
+        const html = renderDiffContent(diff, "ud-test");
+        const wrap = document.createElement("div");
+        wrap.innerHTML = html;
+
+        // Unified diff pane has ud-section elements
+        const udPane = wrap.querySelectorAll(".dtab-pane")[1] as HTMLElement;
+        expect(udPane.querySelector(".ud-section")).not.toBeNull();
+        expect(udPane.querySelector(".ud-file-header")!.textContent).toContain("Frontends");
+
+        // Has add and del lines
+        expect(udPane.querySelector(".ud-del")).not.toBeNull();
+        expect(udPane.querySelector(".ud-add")).not.toBeNull();
+    });
+});
+
+describe("switchDiffTab", () => {
+    let container: HTMLDivElement;
+
+    beforeEach(() => {
+        container = document.createElement("div");
+        container.innerHTML = `
+            <div class="dtab-wrap" id="test-tabs">
+                <div class="dtab-bar">
+                    <button class="dtab-btn active" data-tab="changes">Changes</button>
+                    <button class="dtab-btn" data-tab="diff">Diff</button>
+                </div>
+                <div class="dtab-pane" data-tab="changes" style="display:block">Changes content</div>
+                <div class="dtab-pane" data-tab="diff" style="display:none">Diff content</div>
+            </div>`;
+        document.body.appendChild(container);
+    });
+
+    afterEach(() => container.remove());
+
+    it("switches to diff tab", () => {
+        switchDiffTab("test-tabs", "diff");
+
+        const btns = container.querySelectorAll(".dtab-btn");
+        expect(btns[0].classList.contains("active")).toBe(false);
+        expect(btns[1].classList.contains("active")).toBe(true);
+
+        const panes = container.querySelectorAll<HTMLElement>(".dtab-pane");
+        expect(panes[0].style.display).toBe("none");
+        expect(panes[1].style.display).toBe("block");
+    });
+
+    it("switches back to changes tab", () => {
+        switchDiffTab("test-tabs", "diff");
+        switchDiffTab("test-tabs", "changes");
+
+        const panes = container.querySelectorAll<HTMLElement>(".dtab-pane");
+        expect(panes[0].style.display).toBe("block");
+        expect(panes[1].style.display).toBe("none");
     });
 });

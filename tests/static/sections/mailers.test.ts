@@ -26,7 +26,7 @@ const makeEntry = (overrides: Partial<MailerEntry> = {}): MailerEntry => ({
     sort_order: 0,
     smtp_auth: false,
     smtp_user: null,
-    smtp_password: null,
+    has_smtp_password: false,
     use_tls: false,
     use_starttls: false,
     ...overrides,

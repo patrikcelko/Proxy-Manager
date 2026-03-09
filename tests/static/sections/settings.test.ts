@@ -42,9 +42,14 @@ const DOM = `
     <div class="sett-tab" data-tab="defaults">Defaults</div>
   </div>
   <div id="settings-section-label">Global Settings</div>
-  <div id="settings-cat-tabs"></div>
-  <div><table id="settings-table"><tbody></tbody></table></div>
-  <div id="settings-empty" style="display:none"></div>
+  <div id="global-tabs"></div>
+  <div><table id="global-table"><tbody></tbody></table></div>
+  <div id="global-empty" style="display:none"></div>
+  <div id="defaults-tabs"></div>
+  <div><table id="defaults-table"><tbody></tbody></table></div>
+  <div id="defaults-empty" style="display:none"></div>
+  <input id="global-search" />
+  <input id="defaults-search" />
 `;
 
 describe("GLOBAL_CATS / DEFAULTS_CATS", () => {
@@ -171,7 +176,7 @@ describe("loadSettings", () => {
         } as Response);
 
         await loadSettings("global");
-        const tbody = document.querySelector("#settings-table tbody")!;
+        const tbody = document.querySelector("#global-table tbody")!;
         expect(tbody.innerHTML).toContain("maxconn");
         expect(tbody.innerHTML).toContain("daemon");
     });
@@ -184,7 +189,7 @@ describe("loadSettings", () => {
         } as Response);
 
         await loadSettings("global");
-        expect(document.getElementById("settings-empty")!.style.display).toBe("block");
+        expect(document.getElementById("global-empty")!.style.display).toBe("block");
     });
 
     it("shows error toast on failure", async () => {
@@ -197,6 +202,7 @@ describe("loadSettings", () => {
 describe("renderSettingsTable", () => {
     beforeEach(() => {
         document.body.insertAdjacentHTML("beforeend", DOM);
+        switchSettingsTab("global");
     });
 
     it("renders sorted rows with directives and values", () => {
@@ -205,7 +211,7 @@ describe("renderSettingsTable", () => {
             makeSetting({ id: 2, directive: "daemon", value: "", sort_order: 0 }),
         ];
         renderSettingsTable(items);
-        const tbody = document.querySelector("#settings-table tbody")!;
+        const tbody = document.querySelector("#global-table tbody")!;
         const rows = tbody.querySelectorAll("tr");
         expect(rows.length).toBe(2);
         // Sorted by sort_order, daemon (0) first
@@ -219,14 +225,14 @@ describe("renderSettingsTable", () => {
             makeSetting({ id: 2, directive: "log /dev/log local0", value: "" }),
         ];
         renderSettingsTable(items);
-        const catTabs = document.getElementById("settings-cat-tabs")!;
+        const catTabs = document.getElementById("global-tabs")!;
         expect(catTabs.innerHTML).toContain("All");
     });
 
     it("renders comment column", () => {
         const items = [makeSetting({ comment: "My comment here" })];
         renderSettingsTable(items);
-        const tbody = document.querySelector("#settings-table tbody")!;
+        const tbody = document.querySelector("#global-table tbody")!;
         expect(tbody.innerHTML).toContain("My comment here");
     });
 
@@ -236,7 +242,7 @@ describe("renderSettingsTable", () => {
             makeSetting({ id: 2, sort_order: 1, directive: "daemon" }),
         ];
         renderSettingsTable(items);
-        const tbody = document.querySelector("#settings-table tbody")!;
+        const tbody = document.querySelector("#global-table tbody")!;
         expect(tbody.innerHTML).toContain("reorderSetting");
     });
 });
@@ -266,6 +272,7 @@ describe("switchSettingsTab", () => {
 describe("filterSettingsCat", () => {
     beforeEach(() => {
         document.body.insertAdjacentHTML("beforeend", DOM);
+        switchSettingsTab("global");
         renderSettingsTable([
             makeSetting({ id: 1, directive: "maxconn", value: "10000" }),
             makeSetting({ id: 2, directive: "log /dev/log local0", value: "" }),
@@ -274,13 +281,13 @@ describe("filterSettingsCat", () => {
 
     it("shows all when 'all'", () => {
         filterSettingsCat("all");
-        const rows = document.querySelectorAll<HTMLElement>("#settings-table tbody tr");
+        const rows = document.querySelectorAll<HTMLElement>("#global-table tbody tr");
         rows.forEach((r) => expect(r.style.display).toBe(""));
     });
 
     it("hides non-matching categories", () => {
         filterSettingsCat("perf");
-        const rows = document.querySelectorAll<HTMLElement>("#settings-table tbody tr");
+        const rows = document.querySelectorAll<HTMLElement>("#global-table tbody tr");
         const visible = [...rows].filter((r) => r.style.display !== "none");
         const hidden = [...rows].filter((r) => r.style.display === "none");
         expect(visible.length).toBeGreaterThan(0);
@@ -331,12 +338,11 @@ describe("applySettingPreset", () => {
         } as Response);
         await applySettingPreset("global", 0);
         const first = fetchSpy.mock.calls[0];
-        expect(first[0]).toBe("/api/settings");
+        expect(first[0]).toBe("/api/global-settings");
         expect((first[1] as any).method).toBe("POST");
         const body = JSON.parse((first[1] as any).body);
         expect(body.directive).toBe(GLOBAL_PRESETS[0].d);
         expect(body.value).toBe(GLOBAL_PRESETS[0].v);
-        expect(body.type).toBe("global");
     });
 
     it("applies defaults preset via POST", async () => {
@@ -348,7 +354,6 @@ describe("applySettingPreset", () => {
         await applySettingPreset("defaults", 0);
         const body = JSON.parse((fetchSpy.mock.calls[0][1] as any).body);
         expect(body.directive).toBe(DEFAULTS_PRESETS[0].d);
-        expect(body.type).toBe("defaults");
     });
 
     it("does nothing for out-of-range index", async () => {
@@ -379,8 +384,15 @@ describe("openSettingModal", () => {
 });
 
 describe("saveSetting", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         document.body.insertAdjacentHTML("beforeend", DOM);
+        // Reset settTab to "global" - may have been changed by previous test group
+        vi.spyOn(globalThis, "fetch").mockResolvedValue({
+            ok: true, status: 200,
+            json: () => Promise.resolve({ items: [] }),
+        } as Response);
+        await loadSettings("global");
+        vi.restoreAllMocks();
         openSettingModal();
     });
 
@@ -394,7 +406,7 @@ describe("saveSetting", () => {
         } as Response);
         await saveSetting(null);
         const first = fetchSpy.mock.calls[0];
-        expect(first[0]).toBe("/api/settings");
+        expect(first[0]).toBe("/api/global-settings");
         expect((first[1] as any).method).toBe("POST");
     });
 
@@ -407,7 +419,7 @@ describe("saveSetting", () => {
             json: () => Promise.resolve({ id: 5 }),
         } as Response);
         await saveSetting(5);
-        expect(fetchSpy.mock.calls[0][0]).toBe("/api/settings/5");
+        expect(fetchSpy.mock.calls[0][0]).toBe("/api/global-settings/5");
         expect((fetchSpy.mock.calls[0][1] as any).method).toBe("PUT");
     });
 
@@ -429,8 +441,15 @@ describe("saveSetting", () => {
 });
 
 describe("deleteSetting", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         document.body.insertAdjacentHTML("beforeend", DOM);
+        // Reset settTab to "global"
+        vi.spyOn(globalThis, "fetch").mockResolvedValue({
+            ok: true, status: 200,
+            json: () => Promise.resolve({ items: [] }),
+        } as Response);
+        await loadSettings("global");
+        vi.restoreAllMocks();
     });
 
     it("deletes via DELETE", async () => {
@@ -440,6 +459,6 @@ describe("deleteSetting", () => {
             json: () => Promise.resolve({ items: [] }),
         } as Response);
         await deleteSetting(3);
-        expect(fetchSpy).toHaveBeenCalledWith("/api/settings/3", expect.objectContaining({ method: "DELETE" }));
+        expect(fetchSpy).toHaveBeenCalledWith("/api/global-settings/3", expect.objectContaining({ method: "DELETE" }));
     });
 });
