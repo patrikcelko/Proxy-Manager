@@ -5,8 +5,8 @@ Auth protection tests
 Verifies that endpoints using get_current_user dependency
 properly reject unauthenticated/invalid requests with 401.
 
-NOTE: Only /me and /profile endpoints use auth. The config
-API endpoints are open by design (internal tool assumption).
+NOTE: CRUD config endpoints are open by design (internal tool
+assumption). Version-mutation and profile endpoints use auth.
 """
 
 import os
@@ -15,10 +15,16 @@ import jwt
 import pytest
 from httpx import AsyncClient
 
-# Only these endpoints use the get_current_user dependency
+# Endpoints that use the get_current_user
 _AUTH_PROTECTED_ENDPOINTS = [
     ("GET", "/auth/me"),
     ("PATCH", "/auth/profile"),
+    ("POST", "/api/versions/init/empty"),
+    ("POST", "/api/versions/init/import"),
+    ("POST", "/api/versions/save"),
+    ("POST", "/api/versions/discard"),
+    ("POST", "/api/versions/revert-section"),
+    ("POST", f"/api/versions/{'a' * 64}/rollback"),
 ]
 
 

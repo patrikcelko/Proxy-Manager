@@ -5,8 +5,6 @@ Listen block route tests
 
 from httpx import AsyncClient
 
-#  ListenBlocks
-
 
 async def test_list_empty(client: AsyncClient) -> None:
     """List empty."""

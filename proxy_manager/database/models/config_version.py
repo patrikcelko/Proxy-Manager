@@ -32,9 +32,7 @@ class ConfigVersion(Base):
     user_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     parent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     def __repr__(self) -> str:
         return f"<ConfigVersion(hash={self.hash[:8]!r}, message={self.message!r})>"
@@ -65,13 +63,17 @@ async def create_version(
     snapshot_json = json.dumps(snapshot_data, sort_keys=True, default=str)
 
     # Include metadata in hash (like Git commits) so rollbacks get unique hashes
-    hash_input = json.dumps({
-        "snapshot": snapshot_data,
-        "parent_hash": parent_hash,
-        "message": message,
-        "user_id": user_id,
-        "nonce": uuid.uuid4().hex,
-    }, sort_keys=True, default=str)
+    hash_input = json.dumps(
+        {
+            "snapshot": snapshot_data,
+            "parent_hash": parent_hash,
+            "message": message,
+            "user_id": user_id,
+            "nonce": uuid.uuid4().hex,
+        },
+        sort_keys=True,
+        default=str,
+    )
     version_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
     version = ConfigVersion(

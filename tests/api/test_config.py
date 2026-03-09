@@ -287,3 +287,18 @@ async def test_import_export_peers_new_fields(client: AsyncClient) -> None:
     assert "default-server ssl verify none" in exported
     assert "peer haproxy1 10.0.0.1:10000" in exported
     assert "peer haproxy2 10.0.0.2:10000" in exported
+
+
+async def test_validate_valid_config(client: AsyncClient) -> None:
+    """Validate endpoint accepts valid HAProxy config."""
+
+    resp = await client.post("/api/config/validate", json={"config_text": SAMPLE_CONFIG})
+    assert resp.status_code == 200
+    assert resp.json()["valid"] is True
+
+
+async def test_validate_invalid_config(client: AsyncClient) -> None:
+    """Validate endpoint rejects empty config_text at schema level."""
+
+    resp = await client.post("/api/config/validate", json={"config_text": ""})
+    assert resp.status_code == 422

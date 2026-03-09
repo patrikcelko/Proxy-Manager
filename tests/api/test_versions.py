@@ -5,7 +5,6 @@ Version management route tests
 
 from httpx import AsyncClient
 
-
 SAMPLE_CONFIG = """\
 global
     log 127.0.0.1 local0
@@ -27,9 +26,6 @@ backend be_web
     balance roundrobin
     server web1 10.0.0.1:8080 check
 """
-
-
-# ── Status ──────────────────────────────────────────────────────────
 
 
 async def test_status_not_initialized(client: AsyncClient) -> None:
@@ -58,9 +54,6 @@ async def test_status_after_init(auth_client: AsyncClient) -> None:
     assert len(data["current_hash"]) == 64
 
 
-# ── Init Empty ──────────────────────────────────────────────────────
-
-
 async def test_init_empty(auth_client: AsyncClient) -> None:
     """Init empty creates first version."""
 
@@ -82,9 +75,6 @@ async def test_init_empty_requires_auth(client: AsyncClient) -> None:
 
     resp = await client.post("/api/versions/init/empty")
     assert resp.status_code in (401, 403)
-
-
-# ── Init Import ─────────────────────────────────────────────────────
 
 
 async def test_init_import(auth_client: AsyncClient) -> None:
@@ -123,9 +113,6 @@ async def test_init_import_requires_auth(client: AsyncClient) -> None:
 
     resp = await client.post("/api/versions/init/import", json={"config_text": SAMPLE_CONFIG})
     assert resp.status_code in (401, 403)
-
-
-# ── Pending Changes ─────────────────────────────────────────────────
 
 
 async def test_pending_no_init(client: AsyncClient) -> None:
@@ -203,9 +190,6 @@ async def test_pending_after_delete(auth_client: AsyncClient) -> None:
     assert len(data["sections"]["frontends"]["deleted"]) >= 1
 
 
-# ── Save Version ────────────────────────────────────────────────────
-
-
 async def test_save_version(auth_client: AsyncClient) -> None:
     """Save creates a new committed version."""
 
@@ -262,9 +246,6 @@ async def test_save_requires_auth(client: AsyncClient) -> None:
     assert resp.status_code in (401, 403)
 
 
-# ── Discard Changes ─────────────────────────────────────────────────
-
-
 async def test_discard_changes(auth_client: AsyncClient) -> None:
     """Discard restores DB to last committed state."""
 
@@ -303,14 +284,18 @@ async def test_discard_preserves_committed(auth_client: AsyncClient) -> None:
     assert be_list.json()["items"][0]["name"] == "be_web"
 
 
-async def test_discard_not_initialized(client: AsyncClient) -> None:
+async def test_discard_not_initialized(auth_client: AsyncClient) -> None:
     """Discard fails if not initialized."""
 
-    resp = await client.post("/api/versions/discard")
+    resp = await auth_client.post("/api/versions/discard")
     assert resp.status_code == 409
 
 
-# ── Version History ──────────────────────────────────────────────────
+async def test_discard_requires_auth(client: AsyncClient) -> None:
+    """Discard requires authentication."""
+
+    resp = await client.post("/api/versions/discard")
+    assert resp.status_code in (401, 403)
 
 
 async def test_list_versions_empty(client: AsyncClient) -> None:
@@ -352,9 +337,6 @@ async def test_list_versions_pagination(auth_client: AsyncClient) -> None:
     assert data["total"] == 2
 
 
-# ── Version Detail ──────────────────────────────────────────────────
-
-
 async def test_version_detail(auth_client: AsyncClient) -> None:
     """Detail returns version with diff."""
 
@@ -365,6 +347,7 @@ async def test_version_detail(auth_client: AsyncClient) -> None:
 
     resp = await auth_client.get(f"/api/versions/{vh}")
     assert resp.status_code == 200
+
     data = resp.json()
     assert data["hash"] == vh
     assert "diff" in data
@@ -380,12 +363,10 @@ async def test_version_detail_first_version(auth_client: AsyncClient) -> None:
     resp = await auth_client.get(f"/api/versions/{vh}")
     data = resp.json()
     assert data["parent_hash"] is None
+
     # Should show created entities
     diff = data["diff"]
-    assert any(
-        len(diff.get(s, {}).get("created", [])) > 0
-        for s in diff
-    )
+    assert any(len(diff.get(s, {}).get("created", [])) > 0 for s in diff)
 
 
 async def test_version_detail_not_found(client: AsyncClient) -> None:
@@ -409,9 +390,6 @@ async def test_version_detail_diff_between_versions(auth_client: AsyncClient) ->
     data = resp.json()
     assert "backends" in data["diff"]
     assert data["diff"]["backends"]["total"] >= 1
-
-
-# ── Rollback ────────────────────────────────────────────────────────
 
 
 async def test_rollback(auth_client: AsyncClient) -> None:
@@ -476,9 +454,6 @@ async def test_rollback_requires_auth(client: AsyncClient) -> None:
     assert resp.status_code in (401, 403)
 
 
-# ── Revert Section ──────────────────────────────────────────────────
-
-
 async def test_revert_section(auth_client: AsyncClient) -> None:
     """Revert section restores only that section."""
 
@@ -513,14 +488,18 @@ async def test_revert_section_unknown(auth_client: AsyncClient) -> None:
     assert resp.status_code == 400
 
 
-async def test_revert_section_not_initialized(client: AsyncClient) -> None:
+async def test_revert_section_not_initialized(auth_client: AsyncClient) -> None:
     """Revert section fails if not initialized."""
 
-    resp = await client.post("/api/versions/revert-section", json={"section": "backends"})
+    resp = await auth_client.post("/api/versions/revert-section", json={"section": "backends"})
     assert resp.status_code == 409
 
 
-# ── Status with pending counts ──────────────────────────────────────
+async def test_revert_section_requires_auth(client: AsyncClient) -> None:
+    """Revert section requires authentication."""
+
+    resp = await client.post("/api/versions/revert-section", json={"section": "backends"})
+    assert resp.status_code in (401, 403)
 
 
 async def test_status_pending_counts(auth_client: AsyncClient) -> None:
@@ -535,11 +514,9 @@ async def test_status_pending_counts(auth_client: AsyncClient) -> None:
     assert data["has_pending"] is True
     assert data["pending_counts"]["backends"] >= 1
     assert data["pending_counts"]["frontends"] >= 1
+
     # Sections without changes should be 0
     assert data["pending_counts"]["caches"] == 0
-
-
-# ── Full workflow ────────────────────────────────────────────────────
 
 
 async def test_full_workflow(auth_client: AsyncClient) -> None:
@@ -573,3 +550,45 @@ async def test_full_workflow(auth_client: AsyncClient) -> None:
 
     status = await auth_client.get("/api/versions/status")
     assert status.json()["has_pending"] is False
+
+
+async def test_ssl_fields_preserved_after_discard(auth_client: AsyncClient) -> None:
+    """SSL certificate fields (email, dns_plugin, etc.) survive discard."""
+
+    await auth_client.post("/api/versions/init/empty")
+
+    # Create an SSL cert with all metadata fields
+    cert_data = {
+        "domain": "example.com",
+        "email": "admin@example.com",
+        "provider": "certbot",
+        "status": "active",
+        "challenge_type": "dns-01",
+        "dns_plugin": "cloudflare",
+        "auto_renew": True,
+        "comment": "main cert",
+    }
+    resp = await auth_client.post("/api/ssl-certificates", json=cert_data)
+    assert resp.status_code == 201
+
+    # Save version (snapshot captures current state)
+    await auth_client.post("/api/versions/save", json={"message": "with ssl cert"})
+
+    # Make a pending change (add another entity)
+    await auth_client.post("/api/backends", json={"name": "be_temp"})
+
+    # Discard pending changes -> restore_snapshot is called
+    await auth_client.post("/api/versions/discard")
+
+    # Verify SSL cert still has all its fields intact
+    certs = await auth_client.get("/api/ssl-certificates")
+    assert certs.json()["count"] == 1
+    cert = certs.json()["items"][0]
+    assert cert["domain"] == "example.com"
+    assert cert["email"] == "admin@example.com"
+    assert cert["dns_plugin"] == "cloudflare"
+    assert cert["challenge_type"] == "dns-01"
+    assert cert["provider"] == "certbot"
+    assert cert["status"] == "active"
+    assert cert["auto_renew"] is True
+    assert cert["comment"] == "main cert"

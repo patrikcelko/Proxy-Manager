@@ -8,7 +8,6 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from proxy_manager.database.models.config_version import (
-    ConfigVersion,
     compute_snapshot_hash,
     count_versions,
     create_version,

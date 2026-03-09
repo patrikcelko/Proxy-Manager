@@ -181,7 +181,7 @@ async def test_create_entry(client: AsyncClient) -> None:
     # SMTP auth defaults
     assert data["smtp_auth"] is False
     assert data["smtp_user"] is None
-    assert data["smtp_password"] is None
+    assert data["has_smtp_password"] is False
     assert data["use_tls"] is False
     assert data["use_starttls"] is False
 
@@ -209,7 +209,7 @@ async def test_create_entry_with_smtp_auth(client: AsyncClient) -> None:
     data = resp.json()
     assert data["smtp_auth"] is True
     assert data["smtp_user"] == "user@gmail.com"
-    assert data["smtp_password"] == "app-password"
+    assert data["has_smtp_password"] is True
     assert data["use_tls"] is False
     assert data["use_starttls"] is True
 
@@ -242,7 +242,7 @@ async def test_update_entry_smtp_auth(client: AsyncClient) -> None:
     data = resp.json()
     assert data["smtp_auth"] is True
     assert data["smtp_user"] == "admin"
-    assert data["smtp_password"] == "secret"
+    assert data["has_smtp_password"] is True
     assert data["use_tls"] is True
 
 

@@ -363,13 +363,30 @@ def test_backend_health_check() -> None:
 
 
 def test_backend_http_check_expect() -> None:
-    """`http-check expect` is emitted."""
+    """`http-check expect` is emitted only when health check is enabled."""
+
+    be = _mock(
+        Backend,
+        name="be",
+        mode="http",
+        health_check_enabled=True,
+        http_check_expect="status 200",
+    )
+    srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
+
+    result = _empty_gen(backends=[(be, [srv])])
+    assert "option httpchk" in result
+    assert "http-check expect status 200" in result
+
+
+def test_backend_http_check_expect_requires_health_check() -> None:
+    """`http-check expect` is NOT emitted when health check is disabled."""
 
     be = _mock(Backend, name="be", mode="http", http_check_expect="status 200")
     srv = _mock(BackendServer, name="s1", address="10.0.0.1", port=80)
 
     result = _empty_gen(backends=[(be, [srv])])
-    assert "http-check expect status 200" in result
+    assert "http-check expect" not in result
 
 
 def test_backend_cookie() -> None:
@@ -1131,3 +1148,27 @@ def test_roundtrip_full_config() -> None:
     assert len(parsed.backends) == 1
     assert len(parsed.listen_blocks) == 1
     assert len(parsed.userlists) == 1
+
+
+def test_frontend_mode_none_not_emitted() -> None:
+    """Frontend with mode=None does NOT emit `mode None`."""
+
+    fe = _mock(Frontend, name="fe_tcp", mode=None, default_backend="be")
+    bind = _mock(FrontendBind, bind_line="*:443")
+
+    result = _empty_gen(frontends=[(fe, [bind], [], [])])
+    assert "frontend fe_tcp" in result
+    assert "mode None" not in result
+    assert "mode " not in result
+
+
+def test_listen_mode_none_not_emitted() -> None:
+    """Listen block with mode=None does NOT emit `mode None`."""
+
+    lb = _mock(ListenBlock, name="lb_raw", mode=None, content="server s1 10.0.0.1:80")
+    lb_bind = _mock(ListenBlockBind, bind_line="*:8080")
+
+    result = _empty_gen(listen_blocks=[(lb, [lb_bind])])
+    assert "listen lb_raw" in result
+    assert "mode None" not in result
+    assert "mode " not in result
