@@ -9,13 +9,13 @@ So, whether you're managing a single reverse proxy or orchestrating dozens of fr
 ![Version](https://img.shields.io/badge/version-1.5.3-blue)
 ![Python 3.12](https://img.shields.io/badge/Python-3.13-red)
 
-## Dashboard
+### ashboard
 
 The interactive **flow topology diagram** on the dashboard gives you an instant birds-eye view of your entire traffic architecture: clients connecting to frontends, ACL rules routing to backends, servers resolving through DNS resolvers, and auxiliary services like peers, mailers, caches, and HTTP error pages, all rendered as an interactive SVG with hover-highlighting and connection tracing.
 
 <img width="3822" height="1870" alt="Dashboard" src="https://github.com/user-attachments/assets/361ab21c-2baf-4d62-afa5-77ab0656241a" />
 
-## Templates
+### Templates
 
 Instead of building every section from scratch, Proxy Manager ships with ready-made templates for the most common HAProxy patterns, reverse proxies with SSL termination, HTTP-to-HTTPS redirects, stats dashboards, load-balanced backend pools, and more. Select a template, customize the parameters, and deploy a production-ready configuration in seconds.
 
@@ -37,6 +37,33 @@ Before committing, the pending changes panel shows you a precise, field-by-field
 
 - **Docker** (version 20.10+)
 - **Docker Compose** (version 2.0+)
+
+## Control Scripts
+
+Proxy Manager includes helper scripts for building, deploying, and managing the service:
+
+```bash
+./proxy-manager help
+# Display this help message.
+
+./proxy-manager deploy [env]
+# Deploy Proxy Manager to a remote server. Uses .env_<env> (default: prod). The ENV_NAME from the env file determines the image tag pulled from registry.
+
+./proxy-manager build
+# Build the Docker image and push it to the registry.
+
+./proxy-manager start-docker [env]
+# Start already built container. Uses .env_<env> (default: local). Note that if the container is not built, this process will fail.
+
+./proxy-manager rebuild-docker [env]
+# This command will add a forced build attribute to docker compose. Uses .env_<env> (default: local). It should not affect stored data.
+
+./proxy-manager kill-docker
+# Forcefully kills all running docker containers (all containers!).
+
+./proxy-manager enter [name|id]
+# Allows us to enter any of the running docker containers if an ID or name is provided. If left empty, a listing will be displayed.
+```
 
 ## License
 
