@@ -1146,12 +1146,7 @@ def _strip_nested_sort_order(val: Any) -> Any:
     if not isinstance(val, list):
         return val
 
-    return [
-        {k: v for k, v in item.items() if k != "sort_order"}
-        if isinstance(item, dict)
-        else item
-        for item in val
-    ]
+    return [{k: v for k, v in item.items() if k != "sort_order"} if isinstance(item, dict) else item for item in val]
 
 
 def _compute_field_changes(old: dict[str, Any], new: dict[str, Any]) -> list[dict[str, Any]]:

@@ -50,7 +50,9 @@ export function switchSection(name: string): void {
     document.querySelectorAll(".nav-item").forEach((i) => i.classList.toggle("active", (i as HTMLElement).dataset.section === name));
     document.querySelectorAll(".section").forEach((s) => s.classList.toggle("active", s.id === `sec-${name}`));
     const titleEl = document.getElementById("top-bar-page-title");
-    if (titleEl) titleEl.textContent = _sectionTitles[name] || name;
+    const pageTitle = _sectionTitles[name] || name;
+    if (titleEl) titleEl.textContent = pageTitle;
+    document.title = `${pageTitle} | Proxy Manager`;
 
     // Close sidebar on mobile after navigation
     document.getElementById("sidebar")?.classList.remove("open");

@@ -7,8 +7,7 @@
  */
 
 import { api, toast, TOKEN, setToken } from "./api";
-import { openModal, closeModal } from "./ui";
-import { loadOverview } from "../sections/overview";
+import { openModal, closeModal, switchSection } from "./ui";
 import { escHtml } from "./utils";
 import { state } from "../state";
 
@@ -96,7 +95,7 @@ export function showApp(): void {
     document.getElementById("app-footer")!.style.display = "block";
     restoreSidebarState();
     loadUserInfo();
-    loadOverview();
+    switchSection("overview");
     // Refresh version badges asynchronously
     import("../sections/versions").then((m) => m.refreshPendingBadges());
 }
